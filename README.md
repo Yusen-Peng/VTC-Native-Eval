@@ -1,5 +1,4 @@
-# VTC-Eval
-VTC-Eval: comprehensive and structured Visual Token Compression Evaluation
+# VTC-Eval: comprehensive and structured Visual Token Compression Evaluation
 
 ## Research Questions
 

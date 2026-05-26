@@ -26,3 +26,6 @@ We evaluate a collection of **10** current visual token compression methods by a
 | VisionTrim | no | hybrid | yes |
 
 
+## Evaluation Benchmarks
+
+

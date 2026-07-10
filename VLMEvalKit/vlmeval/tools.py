@@ -107,11 +107,11 @@ models = {
     '4.33.0': list(qwen_series) + list(xcomposer_series) + [
         'mPLUG-Owl2', 'flamingov2', 'VisualGLM_6b', 'MMAlaya', 'PandaGPT_13B', 'VXVERSE'
     ] + list(idefics_series) + list(minigpt4_series) + list(instructblip_series),
-    '4.37.0': [x for x in llava_series if 'next' not in x] + list(internvl_series) + [
-        'TransCore_M', 'emu2_chat', 'MiniCPM-V', 'MiniCPM-V-2', 'OmniLMM_12B',
-        'cogvlm-grounding-generalist', 'cogvlm-chat', 'cogvlm2-llama3-chat-19B',
-        'mPLUG-Owl3'
-    ] + list(xtuner_series) + list(yivl_series) + list(deepseekvl_series) + list(janus_series) + list(cambrian_series),
+    # '4.37.0': [x for x in llava_series if 'next' not in x] + list(internvl_series) + [
+    #     'TransCore_M', 'emu2_chat', 'MiniCPM-V', 'MiniCPM-V-2', 'OmniLMM_12B',
+    #     'cogvlm-grounding-generalist', 'cogvlm-chat', 'cogvlm2-llama3-chat-19B',
+    #     'mPLUG-Owl3'
+    # ] + list(xtuner_series) + list(yivl_series) + list(deepseekvl_series) + list(janus_series) + list(cambrian_series),
     '4.36.2': ['Moondream1'],
     '4.40.0': [
         'idefics2_8b', 'Bunny-llama3-8B', 'MiniCPM-Llama3-V-2_5', '360VL-70B', 'Phi-3-Vision',
@@ -134,7 +134,7 @@ SKIP_MODELS = [
     'llava_next_72b', 'llava_next_110b', 'MiniCPM-V', 'sharecaptioner', 'XComposer',
     'VisualGLM_6b', 'idefics_9b_instruct', 'idefics_80b_instruct',
     'mPLUG-Owl2', 'MMAlaya', 'OmniLMM_12B', 'emu2_chat', 'VXVERSE'
-] + list(minigpt4_series) + list(instructblip_series) + list(xtuner_series) + list(chameleon_series) + list(vila_series)
+] + list(minigpt4_series) + list(instructblip_series) + list(xtuner_series) + list(chameleon_series) # + list(vila_series)
 
 LARGE_MODELS = [
     'idefics_80b_instruct', '360VL-70B', 'emu2_chat', 'InternVL2-76B',

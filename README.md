@@ -9,44 +9,33 @@ conda activate neo
 python -m pip install -r requirements.txt
 ```
 
-## Current benchmark/evaluation
+## Neo model checkpoints
 
-[Arxiv 2025] [UniPruneBench](https://arxiv.org/abs/2511.02650):
+pretraining checkpoint: [Paranioar/NEO1_0-2B-PT](https://huggingface.co/Paranioar/NEO1_0-2B-PT) for 2B, [Paranioar/NEO1_0-9B-PT](https://huggingface.co/Paranioar/NEO1_0-9B-PT) for 9B
 
-1. underrated baseline: *"Random pruning remains a surprisingly strong baseline."*
-2. no consistent winner: *"No single method achieves universal superiority."*
+mid-training checkpoint: [Paranioar/NEO1_0-2B-MT](https://huggingface.co/Paranioar/NEO1_0-2B-MT) for 2B, [Paranioar/NEO1_0-9B-MT](https://huggingface.co/Paranioar/NEO1_0-9B-MT) for 9B
 
-[ACL 2026] [VTC-Bench](https://aclanthology.org/2026.acl-long.195): 
+SFT checkpoint: [Paranioar/NEO1_0-2B-SFT](https://huggingface.co/Paranioar/NEO1_0-2B-SFT) for 2B, [Paranioar/NEO1_0-9B-SFT](https://huggingface.co/Paranioar/NEO1_0-9B-SFT) for 9B.
 
-1. filter "too hard" questions: *"drop out the samples answered incorrectly at the original resolution, which we consider are too hard for the original models to understand."* 
-2. decouple "hard" and "easy" questions: *Difficult Samples (Group A): Samples that are answered incorrectly by the downsampling method* and vice versa.
 
-**🍊🍊🍊Limitations of current evaluation/benchmarking** - no evaluation on Native VLMs (i.e., encoder-free VLMs)!!
+## Mid-training and SFT datasets
 
-## Research Questions
+The NEO author's suggestion: *"We do not currently have an open-source plan. Most of the data is open source. We recommend using the mid-training and SFT data from LLaVA-OneVision-1.5, which our lab has recently open-sourced."*
 
-We evaluate a collection of **10** current visual token compression methods by asking the following **4** research questions:
+Mid-training data from LLaVA-OV-1.5: [mvp-lab/LLaVA-OneVision-1.5-Mid-Training-85M](https://huggingface.co/datasets/mvp-lab/LLaVA-OneVision-1.5-Mid-Training-85M)
 
-1. **Early compression v.s. Late compression**: Does late compression within LLM decoder always perform better than early compression after image encoder?
-2. **Text-guided v.s. Text-agnostic**: Do text-guided methods always outperform text-agnostic methods?
-3. **Training-based v.s. Training-free**: Does finetuning bring performance recovery over the popular training-free approaches?
-4. **Lossy v.s. Lossless**: Which VQA benchmarks are "easy" (insensitive to compression rate) and which are "hard"?
+SFT data from LLaVA-OV-1.5: [mvp-lab/LLaVA-OneVision-1.5-Instruct-Data](https://huggingface.co/datasets/mvp-lab/LLaVA-OneVision-1.5-Instruct-Data)
 
-## Method Collection
 
-| method name | baseline? | compression stage? | text guidance? | training? |
-| ----------- | --------- | ------------------ | -------------- | --------- |
-| fixed pooling | yes | early | no | no/yes |
-| random pruning | yes | early | no | no/yes |
-| LLaVA-PruMerge | no | early | no | no |
-| PruneSID | no | early | no | no |
-| ToME | no | early | no | no |
-| FastV | no | early | no | no |
-| G-Prune | no | early | no | no |
-| VTW | no | late | no | no |
-| SparseVLM | no | hybrid | yes | no |
-| VisionTrim | no | hybrid | yes | no |
+## Quick Demo
 
+
+```bash
+salloc --nodes=1 --ntasks-per-node=1 --gpus-per-node=1 -A PAS2836 --partition debug-nextgen --time 00:20:00
+module load miniconda3/24.1.2-py310
+conda activate neo
+python VLMEvalKit/quick_demo.py
+```
 
 ## Evaluation Benchmarks
 

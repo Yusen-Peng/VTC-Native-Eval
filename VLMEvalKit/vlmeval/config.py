@@ -58,8 +58,8 @@ ungrouped = {
         ckpt_pth="openflamingo/OpenFlamingo-9B-vitl-mpt7b",
     ),
     "VisualGLM_6b": partial(VisualGLM, model_path="THUDM/visualglm-6b"),
-    "mPLUG-Owl2": partial(mPLUG_Owl2, model_path="MAGAer13/mplug-owl2-llama2-7b"),
-    "mPLUG-Owl3": partial(mPLUG_Owl3, model_path="mPLUG/mPLUG-Owl3-7B-240728"),
+    # "mPLUG-Owl2": partial(mPLUG_Owl2, model_path="MAGAer13/mplug-owl2-llama2-7b"),
+    # "mPLUG-Owl3": partial(mPLUG_Owl3, model_path="mPLUG/mPLUG-Owl3-7B-240728"),
     "OmniLMM_12B": partial(
         OmniLMM12B, model_path="openbmb/OmniLMM-12B", root=OmniLMM_ROOT
     ),
@@ -280,43 +280,43 @@ api_models = {
         timeout=300,
     ),
     # Gemini
-    "GeminiPro1-0": partial(
-        Gemini, model="gemini-1.0-pro", temperature=0, retry=10
-    ),  # now GeminiPro1-0 is only supported by vertex backend
-    "GeminiPro1-5": partial(
-        Gemini, model="gemini-1.5-pro", temperature=0, retry=10
-    ),
-    "GeminiFlash1-5": partial(
-        Gemini, model="gemini-1.5-flash", temperature=0, retry=10
-    ),
+    # "GeminiPro1-0": partial(
+    #     Gemini, model="gemini-1.0-pro", temperature=0, retry=10
+    # ),  # now GeminiPro1-0 is only supported by vertex backend
+    # "GeminiPro1-5": partial(
+    #     Gemini, model="gemini-1.5-pro", temperature=0, retry=10
+    # ),
+    # "GeminiFlash1-5": partial(
+    #     Gemini, model="gemini-1.5-flash", temperature=0, retry=10
+    # ),
     "GeminiPro1-5-002": partial(
         GPT4V, model="gemini-1.5-pro-002", temperature=0, retry=10
     ),  # Internal Use Only
     "GeminiFlash1-5-002": partial(
         GPT4V, model="gemini-1.5-flash-002", temperature=0, retry=10
     ),  # Internal Use Only
-    "GeminiFlash2-0": partial(
-        Gemini, model="gemini-2.0-flash", temperature=0, retry=10
-    ),
-    "GeminiFlashLite2-0": partial(
-        Gemini, model="gemini-2.0-flash-lite", temperature=0, retry=10
-    ),
-    "GeminiFlash2-5": partial(
-        Gemini, model="gemini-2.5-flash", temperature=0, retry=10
-    ),
-    "GeminiPro2-5": partial(
-        Gemini, model="gemini-2.5-pro", temperature=0, retry=10
-    ),
+    # "GeminiFlash2-0": partial(
+    #     Gemini, model="gemini-2.0-flash", temperature=0, retry=10
+    # ),
+    # "GeminiFlashLite2-0": partial(
+    #     Gemini, model="gemini-2.0-flash-lite", temperature=0, retry=10
+    # ),
+    # "GeminiFlash2-5": partial(
+    #     Gemini, model="gemini-2.5-flash", temperature=0, retry=10
+    # ),
+    # "GeminiPro2-5": partial(
+    #     Gemini, model="gemini-2.5-pro", temperature=0, retry=10
+    # ),
     
-    # Qwen-VL
-    "QwenVLPlus": partial(QwenVLAPI, model="qwen-vl-plus", temperature=0, retry=10),
-    "QwenVLMax": partial(QwenVLAPI, model="qwen-vl-max", temperature=0, retry=10),
-    "QwenVLMax-250408": partial(QwenVLAPI, model="qwen-vl-max-2025-04-08", temperature=0, retry=10),
+    # # Qwen-VL
+    # "QwenVLPlus": partial(QwenVLAPI, model="qwen-vl-plus", temperature=0, retry=10),
+    # "QwenVLMax": partial(QwenVLAPI, model="qwen-vl-max", temperature=0, retry=10),
+    # "QwenVLMax-250408": partial(QwenVLAPI, model="qwen-vl-max-2025-04-08", temperature=0, retry=10),
 
-    # Reka
-    "RekaEdge": partial(Reka, model="reka-edge-20240208"),
-    "RekaFlash": partial(Reka, model="reka-flash-20240226"),
-    "RekaCore": partial(Reka, model="reka-core-20240415"),
+    # # Reka
+    # "RekaEdge": partial(Reka, model="reka-edge-20240208"),
+    # "RekaFlash": partial(Reka, model="reka-flash-20240226"),
+    # "RekaCore": partial(Reka, model="reka-core-20240415"),
     # Step1V
     "Step1V": partial(
         GPT4V,
@@ -454,15 +454,15 @@ api_models = {
     "CongRong-v1.5": partial(CWWrapper, model="cw-congrong-v1.5", temperature=0, retry=10),
     "CongRong-v2.0": partial(CWWrapper, model="cw-congrong-v2.0", temperature=0, retry=10),
     # SenseNova
-    "SenseNova-V6-Pro": partial(
-        SenseChatVisionAPI, model="SenseNova-V6-Pro", temperature=0, retry=10
-    ),
-    "SenseNova-V6-Reasoner": partial(
-        SenseChatVisionAPI, model="SenseNova-V6-Reasoner", temperature=0, retry=10
-    ),
-    "SenseNova-V6-5-Pro": partial(
-        SenseChatVisionAPI, model="SenseNova-V6-5-Pro", retry=10
-    ),
+    # "SenseNova-V6-Pro": partial(
+    #     SenseChatVisionAPI, model="SenseNova-V6-Pro", temperature=0, retry=10
+    # ),
+    # "SenseNova-V6-Reasoner": partial(
+    #     SenseChatVisionAPI, model="SenseNova-V6-Reasoner", temperature=0, retry=10
+    # ),
+    # "SenseNova-V6-5-Pro": partial(
+    #     SenseChatVisionAPI, model="SenseNova-V6-5-Pro", retry=10
+    # ),
     "HunYuan-Vision": partial(
         HunyuanVision, model="hunyuan-vision", temperature=0, retry=10
     ),
@@ -472,14 +472,14 @@ api_models = {
     "HunYuan-Large-Vision": partial(
         HunyuanVision, model="hunyuan-large-vision", temperature=0, retry=10
     ),
-    "BailingMM-Lite-1203": partial(
-        bailingMMAPI, model="BailingMM-Lite-1203", temperature=0, retry=10
-    ),
-    "BailingMM-Pro-0120": partial(
-        bailingMMAPI, model="BailingMM-Pro-0120", temperature=0, retry=10
-    ),
-    # BlueLM-2.5
-    "BlueLM-2.5-3B": partial(BlueLM_API, model="BlueLM-2.5-3B", temperature=0, retry=3),
+    # "BailingMM-Lite-1203": partial(
+    #     bailingMMAPI, model="BailingMM-Lite-1203", temperature=0, retry=10
+    # ),
+    # "BailingMM-Pro-0120": partial(
+    #     bailingMMAPI, model="BailingMM-Pro-0120", temperature=0, retry=10
+    # ),
+    # # BlueLM-2.5
+    # "BlueLM-2.5-3B": partial(BlueLM_API, model="BlueLM-2.5-3B", temperature=0, retry=3),
     # JiuTian-VL
     "JTVL": partial(JTVLChatAPI, model="jt-vl-chat", temperature=0, retry=10),
     "Taiyi": partial(TaiyiAPI, model="taiyi", temperature=0, retry=10),
@@ -702,8 +702,8 @@ xtuner_series = {
 }
 
 qwen_series = {
-    "qwen_base": partial(QwenVL, model_path="Qwen/Qwen-VL"),
-    "qwen_chat": partial(QwenVLChat, model_path="Qwen/Qwen-VL-Chat"),
+    # "qwen_base": partial(QwenVL, model_path="Qwen/Qwen-VL"),
+    # "qwen_chat": partial(QwenVLChat, model_path="Qwen/Qwen-VL-Chat"),
     "monkey": partial(Monkey, model_path="echo840/Monkey"),
     "monkey-chat": partial(MonkeyChat, model_path="echo840/Monkey-Chat"),
     "minimonkey": partial(MiniMonkey, model_path="mx262/MiniMonkey"),
@@ -794,264 +794,264 @@ varco_vision_series = {
     ),
 }
 
-vita_series = {
-    "vita": partial(VITA, model_path="VITA-MLLM/VITA", root=VITA_ROOT),
-    "vita_qwen2": partial(VITAQwen2, model_path="VITA-MLLM/VITA-1.5", root=VITA_ROOT),
-}
+# vita_series = {
+#     "vita": partial(VITA, model_path="VITA-MLLM/VITA", root=VITA_ROOT),
+#     "vita_qwen2": partial(VITAQwen2, model_path="VITA-MLLM/VITA-1.5", root=VITA_ROOT),
+# }
 
-long_vita_series = {
-    "Long-VITA-16K": partial(
-        LongVITA, model_path="VITA-MLLM/Long-VITA-16K_HF", max_num_frame=128
-    ),
-    "Long-VITA-128K": partial(
-        LongVITA, model_path="VITA-MLLM/Long-VITA-128K_HF", max_num_frame=256
-    ),
-    "Long-VITA-1M": partial(
-        LongVITA, model_path="VITA-MLLM/Long-VITA-1M_HF", max_num_frame=256
-    ),
-}
+# long_vita_series = {
+#     "Long-VITA-16K": partial(
+#         LongVITA, model_path="VITA-MLLM/Long-VITA-16K_HF", max_num_frame=128
+#     ),
+#     "Long-VITA-128K": partial(
+#         LongVITA, model_path="VITA-MLLM/Long-VITA-128K_HF", max_num_frame=256
+#     ),
+#     "Long-VITA-1M": partial(
+#         LongVITA, model_path="VITA-MLLM/Long-VITA-1M_HF", max_num_frame=256
+#     ),
+# }
 
-internvl = {
-    "InternVL-Chat-V1-1": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL-Chat-V1-1", version="V1.1"
-    ),
-    "InternVL-Chat-V1-2": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL-Chat-V1-2", version="V1.2"
-    ),
-    "InternVL-Chat-V1-2-Plus": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL-Chat-V1-2-Plus", version="V1.2"
-    ),
-    "InternVL-Chat-V1-5": partial(
-        InternVLChat,
-        model_path="OpenGVLab/InternVL-Chat-V1-5",
-        version="V1.5",
-    )
-}
+# internvl = {
+#     "InternVL-Chat-V1-1": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL-Chat-V1-1", version="V1.1"
+#     ),
+#     "InternVL-Chat-V1-2": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL-Chat-V1-2", version="V1.2"
+#     ),
+#     "InternVL-Chat-V1-2-Plus": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL-Chat-V1-2-Plus", version="V1.2"
+#     ),
+#     "InternVL-Chat-V1-5": partial(
+#         InternVLChat,
+#         model_path="OpenGVLab/InternVL-Chat-V1-5",
+#         version="V1.5",
+#     )
+# }
 
-mini_internvl = {
-    "Mini-InternVL-Chat-2B-V1-5": partial(
-        InternVLChat, model_path="OpenGVLab/Mini-InternVL-Chat-2B-V1-5", version="V1.5"
-    ),
-    "Mini-InternVL-Chat-4B-V1-5": partial(
-        InternVLChat, model_path="OpenGVLab/Mini-InternVL-Chat-4B-V1-5", version="V1.5"
-    ),
-}
+# mini_internvl = {
+#     "Mini-InternVL-Chat-2B-V1-5": partial(
+#         InternVLChat, model_path="OpenGVLab/Mini-InternVL-Chat-2B-V1-5", version="V1.5"
+#     ),
+#     "Mini-InternVL-Chat-4B-V1-5": partial(
+#         InternVLChat, model_path="OpenGVLab/Mini-InternVL-Chat-4B-V1-5", version="V1.5"
+#     ),
+# }
 
-internvl2 = {
-    "InternVL2-1B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL2-1B", version="V2.0"
-    ),
-    "InternVL2-2B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL2-2B", version="V2.0"
-    ),
-    "InternVL2-4B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL2-4B", version="V2.0"
-    ),
-    "InternVL2-8B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL2-8B", version="V2.0"
-    ),
-    "InternVL2-26B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL2-26B", version="V2.0"
-    ),
-    "InternVL2-40B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL2-40B", version="V2.0"
-    ),
-    "InternVL2-76B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL2-Llama3-76B", version="V2.0"
-    ),
-    "InternVL2-8B-MPO": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL2-8B-MPO", version="V2.0"
-    ),
-    "InternVL2-8B-MPO-CoT": partial(
-        InternVLChat,
-        model_path="OpenGVLab/InternVL2-8B-MPO",
-        version="V2.0",
-        use_mpo_prompt=True,
-    ),
-}
+# internvl2 = {
+#     "InternVL2-1B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL2-1B", version="V2.0"
+#     ),
+#     "InternVL2-2B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL2-2B", version="V2.0"
+#     ),
+#     "InternVL2-4B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL2-4B", version="V2.0"
+#     ),
+#     "InternVL2-8B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL2-8B", version="V2.0"
+#     ),
+#     "InternVL2-26B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL2-26B", version="V2.0"
+#     ),
+#     "InternVL2-40B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL2-40B", version="V2.0"
+#     ),
+#     "InternVL2-76B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL2-Llama3-76B", version="V2.0"
+#     ),
+#     "InternVL2-8B-MPO": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL2-8B-MPO", version="V2.0"
+#     ),
+#     "InternVL2-8B-MPO-CoT": partial(
+#         InternVLChat,
+#         model_path="OpenGVLab/InternVL2-8B-MPO",
+#         version="V2.0",
+#         use_mpo_prompt=True,
+#     ),
+# }
 
-internvl2_5 = {
-    "InternVL2_5-1B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL2_5-1B", version="V2.0"
-    ),
-    "InternVL2_5-2B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL2_5-2B", version="V2.0"
-    ),
-    "QTuneVL1-2B": partial(
-        InternVLChat, model_path="hanchaow/QTuneVL1-2B", version="V2.0"
-    ),
-    "InternVL2_5-4B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL2_5-4B", version="V2.0"
-    ),
-    "InternVL2_5-8B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL2_5-8B", version="V2.0"
-    ),
-    "InternVL2_5-26B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL2_5-26B", version="V2.0"
-    ),
-    "InternVL2_5-38B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL2_5-38B", version="V2.0"
-    ),
-    "InternVL2_5-78B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL2_5-78B", version="V2.0"
-    ),
-    # InternVL2.5 series with Best-of-N evaluation
-    "InternVL2_5-8B-BoN-8": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL2_5-8B", version="V2.0",
-        best_of_n=8, reward_model_path="OpenGVLab/VisualPRM-8B",
-    ),
-}
+# internvl2_5 = {
+#     "InternVL2_5-1B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL2_5-1B", version="V2.0"
+#     ),
+#     "InternVL2_5-2B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL2_5-2B", version="V2.0"
+#     ),
+#     "QTuneVL1-2B": partial(
+#         InternVLChat, model_path="hanchaow/QTuneVL1-2B", version="V2.0"
+#     ),
+#     "InternVL2_5-4B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL2_5-4B", version="V2.0"
+#     ),
+#     "InternVL2_5-8B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL2_5-8B", version="V2.0"
+#     ),
+#     "InternVL2_5-26B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL2_5-26B", version="V2.0"
+#     ),
+#     "InternVL2_5-38B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL2_5-38B", version="V2.0"
+#     ),
+#     "InternVL2_5-78B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL2_5-78B", version="V2.0"
+#     ),
+#     # InternVL2.5 series with Best-of-N evaluation
+#     "InternVL2_5-8B-BoN-8": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL2_5-8B", version="V2.0",
+#         best_of_n=8, reward_model_path="OpenGVLab/VisualPRM-8B",
+#     ),
+# }
 
-internvl2_5_mpo = {
-    "InternVL2_5-1B-MPO": partial(
-        InternVLChat,
-        model_path="OpenGVLab/InternVL2_5-1B-MPO",
-        version="V2.0",
-        use_mpo_prompt=True,
-    ),
-    "InternVL2_5-2B-MPO": partial(
-        InternVLChat,
-        model_path="OpenGVLab/InternVL2_5-2B-MPO",
-        version="V2.0",
-        use_mpo_prompt=True,
-    ),
-    "InternVL2_5-4B-MPO": partial(
-        InternVLChat,
-        model_path="OpenGVLab/InternVL2_5-4B-MPO",
-        version="V2.0",
-        use_mpo_prompt=True,
-    ),
-    "InternVL2_5-8B-MPO": partial(
-        InternVLChat,
-        model_path="OpenGVLab/InternVL2_5-8B-MPO",
-        version="V2.0",
-        use_mpo_prompt=True,
-    ),
-    "InternVL2_5-26B-MPO": partial(
-        InternVLChat,
-        model_path="OpenGVLab/InternVL2_5-26B-MPO",
-        version="V2.0",
-        use_mpo_prompt=True,
-    ),
-    "InternVL2_5-38B-MPO": partial(
-        InternVLChat,
-        model_path="OpenGVLab/InternVL2_5-38B-MPO",
-        version="V2.0",
-        use_mpo_prompt=True,
-    ),
-    "InternVL2_5-78B-MPO": partial(
-        InternVLChat,
-        model_path="OpenGVLab/InternVL2_5-78B-MPO",
-        version="V2.0",
-        use_mpo_prompt=True,
-    ),
-    "InternVL2_5-8B-GUI": partial(
-        InternVLChat,
-        model_path="/fs-computility/mllm1/shared/zhaoxiangyu/models/internvl2_5_8b_internlm2_5_7b_dynamic_res_stage1", 
-        version="V2.0", 
-        max_new_tokens=512,
-        screen_parse=False,
-    ),
-     "InternVL3-7B-GUI": partial(
-        InternVLChat,
-        model_path="/fs-computility/mllm1/shared/zhaoxiangyu/GUI/checkpoints/internvl3_7b_dynamic_res_stage1_56/", 
-        version="V2.0", 
-        max_new_tokens=512,
-        screen_parse=False,
-    ),
-}
+# internvl2_5_mpo = {
+#     "InternVL2_5-1B-MPO": partial(
+#         InternVLChat,
+#         model_path="OpenGVLab/InternVL2_5-1B-MPO",
+#         version="V2.0",
+#         use_mpo_prompt=True,
+#     ),
+#     "InternVL2_5-2B-MPO": partial(
+#         InternVLChat,
+#         model_path="OpenGVLab/InternVL2_5-2B-MPO",
+#         version="V2.0",
+#         use_mpo_prompt=True,
+#     ),
+#     "InternVL2_5-4B-MPO": partial(
+#         InternVLChat,
+#         model_path="OpenGVLab/InternVL2_5-4B-MPO",
+#         version="V2.0",
+#         use_mpo_prompt=True,
+#     ),
+#     "InternVL2_5-8B-MPO": partial(
+#         InternVLChat,
+#         model_path="OpenGVLab/InternVL2_5-8B-MPO",
+#         version="V2.0",
+#         use_mpo_prompt=True,
+#     ),
+#     "InternVL2_5-26B-MPO": partial(
+#         InternVLChat,
+#         model_path="OpenGVLab/InternVL2_5-26B-MPO",
+#         version="V2.0",
+#         use_mpo_prompt=True,
+#     ),
+#     "InternVL2_5-38B-MPO": partial(
+#         InternVLChat,
+#         model_path="OpenGVLab/InternVL2_5-38B-MPO",
+#         version="V2.0",
+#         use_mpo_prompt=True,
+#     ),
+#     "InternVL2_5-78B-MPO": partial(
+#         InternVLChat,
+#         model_path="OpenGVLab/InternVL2_5-78B-MPO",
+#         version="V2.0",
+#         use_mpo_prompt=True,
+#     ),
+#     "InternVL2_5-8B-GUI": partial(
+#         InternVLChat,
+#         model_path="/fs-computility/mllm1/shared/zhaoxiangyu/models/internvl2_5_8b_internlm2_5_7b_dynamic_res_stage1", 
+#         version="V2.0", 
+#         max_new_tokens=512,
+#         screen_parse=False,
+#     ),
+#      "InternVL3-7B-GUI": partial(
+#         InternVLChat,
+#         model_path="/fs-computility/mllm1/shared/zhaoxiangyu/GUI/checkpoints/internvl3_7b_dynamic_res_stage1_56/", 
+#         version="V2.0", 
+#         max_new_tokens=512,
+#         screen_parse=False,
+#     ),
+# }
 
-internvl3 = {
-    "InternVL3-1B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3-1B", version="V2.0"
-    ),
-    "InternVL3-2B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3-2B", version="V2.0"
-    ),
-    "InternVL3-8B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3-8B", version="V2.0",
-    ),
-    "InternVL3-9B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3-9B", version="V2.0"
-    ),
-    "InternVL3-14B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3-14B", version="V2.0"
-    ),
-    "InternVL3-38B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3-38B", version="V2.0"
-    ),
-    "InternVL3-78B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3-78B", version="V2.0"
-    ),
-}
+# internvl3 = {
+#     "InternVL3-1B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3-1B", version="V2.0"
+#     ),
+#     "InternVL3-2B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3-2B", version="V2.0"
+#     ),
+#     "InternVL3-8B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3-8B", version="V2.0",
+#     ),
+#     "InternVL3-9B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3-9B", version="V2.0"
+#     ),
+#     "InternVL3-14B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3-14B", version="V2.0"
+#     ),
+#     "InternVL3-38B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3-38B", version="V2.0"
+#     ),
+#     "InternVL3-78B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3-78B", version="V2.0"
+#     ),
+# }
 
-# --------- deserve deserve to note --------- #
-internvl3_5 = {
-    "InternVL3_5-1B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3_5-1B", version="V2.0"
-    ),
-    "InternVL3_5-2B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3_5-2B", version="V2.0"
-    ),
-    "InternVL3_5-4B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3_5-4B", version="V2.0"
-    ),
-    "InternVL3_5-8B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3_5-8B", version="V2.0"
-    ),
-    "InternVL3_5-14B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3_5-14B", version="V2.0"
-    ),
-    "InternVL3_5-GPT-OSS-20B-A4B-Preview": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3_5-GPT-OSS-20B-A4B-Preview", version="V2.0"
-    ),
-    "InternVL3_5-30B-A3B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3_5-30B-A3B", version="V2.0"
-    ),
-    "InternVL3_5-38B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3_5-38B", version="V2.0"
-    ),
-    "InternVL3_5-241B-A28B": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3_5-241B-A28B", version="V2.0"
-    ),
+# # --------- deserve deserve to note --------- #
+# internvl3_5 = {
+#     "InternVL3_5-1B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3_5-1B", version="V2.0"
+#     ),
+#     "InternVL3_5-2B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3_5-2B", version="V2.0"
+#     ),
+#     "InternVL3_5-4B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3_5-4B", version="V2.0"
+#     ),
+#     "InternVL3_5-8B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3_5-8B", version="V2.0"
+#     ),
+#     "InternVL3_5-14B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3_5-14B", version="V2.0"
+#     ),
+#     "InternVL3_5-GPT-OSS-20B-A4B-Preview": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3_5-GPT-OSS-20B-A4B-Preview", version="V2.0"
+#     ),
+#     "InternVL3_5-30B-A3B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3_5-30B-A3B", version="V2.0"
+#     ),
+#     "InternVL3_5-38B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3_5-38B", version="V2.0"
+#     ),
+#     "InternVL3_5-241B-A28B": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3_5-241B-A28B", version="V2.0"
+#     ),
 
-    "InternVL3_5-1B-Thinking": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3_5-1B", use_lmdeploy=True,
-        max_new_tokens=2**16, cot_prompt_version="r1", do_sample=True, version="V2.0"
-    ),
-    "InternVL3_5-2B-Thinking": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3_5-2B", use_lmdeploy=True,
-        max_new_tokens=2**16, cot_prompt_version="r1", do_sample=True, version="V2.0"
-    ),
-    "InternVL3_5-4B-Thinking": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3_5-4B", use_lmdeploy=True,
-        max_new_tokens=2**16, cot_prompt_version="r1", do_sample=True, version="V2.0"
-    ),
-    "InternVL3_5-8B-Thinking": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3_5-8B", use_lmdeploy=True,
-        max_new_tokens=2**16, cot_prompt_version="r1", do_sample=True, version="V2.0"
-    ),
-    "InternVL3_5-14B-Thinking": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3_5-14B", use_lmdeploy=True,
-        max_new_tokens=2**16, cot_prompt_version="r1", do_sample=True, version="V2.0"
-    ),
-    "InternVL3_5-GPT-OSS-20B-A4B-Preview-Thinking": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3_5-GPT-OSS-20B-A4B-Preview", use_lmdeploy=True,
-        max_new_tokens=2**16, cot_prompt_version="r1", do_sample=True, version="V2.0"
-    ),
-    "InternVL3_5-30B-A3B-Thinking": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3_5-30B-A3B", use_lmdeploy=True,
-        max_new_tokens=2**16, cot_prompt_version="r1", do_sample=True, version="V2.0"
-    ),
-    "InternVL3_5-38B-Thinking": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3_5-38B", use_lmdeploy=True,
-        max_new_tokens=2**16, cot_prompt_version="r1", do_sample=True, version="V2.0"
-    ),
-    "InternVL3_5-241B-A28B-Thinking": partial(
-        InternVLChat, model_path="OpenGVLab/InternVL3_5-241B-A28B", use_lmdeploy=True,
-        max_new_tokens=2**16, cot_prompt_version="r1", do_sample=True, version="V2.0"
-    ),
-}
+#     "InternVL3_5-1B-Thinking": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3_5-1B", use_lmdeploy=True,
+#         max_new_tokens=2**16, cot_prompt_version="r1", do_sample=True, version="V2.0"
+#     ),
+#     "InternVL3_5-2B-Thinking": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3_5-2B", use_lmdeploy=True,
+#         max_new_tokens=2**16, cot_prompt_version="r1", do_sample=True, version="V2.0"
+#     ),
+#     "InternVL3_5-4B-Thinking": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3_5-4B", use_lmdeploy=True,
+#         max_new_tokens=2**16, cot_prompt_version="r1", do_sample=True, version="V2.0"
+#     ),
+#     "InternVL3_5-8B-Thinking": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3_5-8B", use_lmdeploy=True,
+#         max_new_tokens=2**16, cot_prompt_version="r1", do_sample=True, version="V2.0"
+#     ),
+#     "InternVL3_5-14B-Thinking": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3_5-14B", use_lmdeploy=True,
+#         max_new_tokens=2**16, cot_prompt_version="r1", do_sample=True, version="V2.0"
+#     ),
+#     "InternVL3_5-GPT-OSS-20B-A4B-Preview-Thinking": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3_5-GPT-OSS-20B-A4B-Preview", use_lmdeploy=True,
+#         max_new_tokens=2**16, cot_prompt_version="r1", do_sample=True, version="V2.0"
+#     ),
+#     "InternVL3_5-30B-A3B-Thinking": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3_5-30B-A3B", use_lmdeploy=True,
+#         max_new_tokens=2**16, cot_prompt_version="r1", do_sample=True, version="V2.0"
+#     ),
+#     "InternVL3_5-38B-Thinking": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3_5-38B", use_lmdeploy=True,
+#         max_new_tokens=2**16, cot_prompt_version="r1", do_sample=True, version="V2.0"
+#     ),
+#     "InternVL3_5-241B-A28B-Thinking": partial(
+#         InternVLChat, model_path="OpenGVLab/InternVL3_5-241B-A28B", use_lmdeploy=True,
+#         max_new_tokens=2**16, cot_prompt_version="r1", do_sample=True, version="V2.0"
+#     ),
+# }
 
 sail_series = {
     "SAIL-VL-2B": partial(SailVL, model_path="BytedanceDouyinContent/SAIL-VL-2B"),
@@ -1181,16 +1181,16 @@ chameleon_series = {
     "chameleon_30b": partial(Chameleon, model_path="facebook/chameleon-30b"),
 }
 
-vila_series = {
-    "VILA1.5-3b": partial(VILA, model_path="Efficient-Large-Model/VILA1.5-3b"),
-    "Llama-3-VILA1.5-8b": partial(
-        VILA, model_path="Efficient-Large-Model/Llama-3-VILA1.5-8b"
-    ),
-    "VILA1.5-13b": partial(VILA, model_path="Efficient-Large-Model/VILA1.5-13b"),
-    "VILA1.5-40b": partial(VILA, model_path="Efficient-Large-Model/VILA1.5-40b"),
-    "NVILA-8B": partial(NVILA, model_path="Efficient-Large-Model/NVILA-8B"),
-    "NVILA-15B": partial(NVILA, model_path="Efficient-Large-Model/NVILA-15B"),
-}
+# vila_series = {
+#     "VILA1.5-3b": partial(VILA, model_path="Efficient-Large-Model/VILA1.5-3b"),
+#     "Llama-3-VILA1.5-8b": partial(
+#         VILA, model_path="Efficient-Large-Model/Llama-3-VILA1.5-8b"
+#     ),
+#     "VILA1.5-13b": partial(VILA, model_path="Efficient-Large-Model/VILA1.5-13b"),
+#     "VILA1.5-40b": partial(VILA, model_path="Efficient-Large-Model/VILA1.5-40b"),
+#     "NVILA-8B": partial(NVILA, model_path="Efficient-Large-Model/NVILA-8B"),
+#     "NVILA-15B": partial(NVILA, model_path="Efficient-Large-Model/NVILA-15B"),
+# }
 
 ovis_series = {
     "Ovis1.5-Llama3-8B": partial(Ovis, model_path="AIDC-AI/Ovis1.5-Llama3-8B"),
@@ -1252,240 +1252,240 @@ hawkvl_series = {
     )
 }
 
-qwen2vl_series = {
-    "Qwen-VL-Max-20250813": partial(
-        Qwen2VLAPI,
-        model="qwen-vl-max-2025-08-13",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-        max_length=8192,
-    ),
-    "Qwen-VL-Max-0809": partial(
-        Qwen2VLAPI,
-        model="qwen-vl-max-0809",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-    ),
-    "Qwen-VL-Plus-0809": partial(
-        Qwen2VLAPI,
-        model="qwen-vl-plus-0809",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-    ),
-    "QVQ-72B-Preview": partial(
-        Qwen2VLChat,
-        model_path="Qwen/QVQ-72B-Preview",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-        system_prompt="You are a helpful and harmless assistant. You are Qwen developed by Alibaba. You should think step-by-step.",
-        max_new_tokens=8192,
-        post_process=False,
-    ),
-    "Qwen2-VL-72B-Instruct": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2-VL-72B-Instruct",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-    ),
-    "Qwen2-VL-7B-Instruct": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2-VL-7B-Instruct",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-    ),
-    "Qwen2-VL-7B-Instruct-AWQ": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2-VL-7B-Instruct-AWQ",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-    ),
-    "Qwen2-VL-7B-Instruct-GPTQ-Int4": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2-VL-7B-Instruct-GPTQ-Int4",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-    ),
-    "Qwen2-VL-7B-Instruct-GPTQ-Int8": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2-VL-7B-Instruct-GPTQ-Int8",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-    ),
-    "Qwen2-VL-2B-Instruct": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2-VL-2B-Instruct",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-    ),
-    "Qwen2-VL-2B-Instruct-AWQ": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2-VL-2B-Instruct-AWQ",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-    ),
-    "Qwen2-VL-2B-Instruct-GPTQ-Int4": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2-VL-2B-Instruct-GPTQ-Int4",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-    ),
-    "Qwen2-VL-2B-Instruct-GPTQ-Int8": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2-VL-2B-Instruct-GPTQ-Int8",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-    ),
-    "XinYuan-VL-2B-Instruct": partial(
-        Qwen2VLChat,
-        model_path="Cylingo/Xinyuan-VL-2B",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-    ),
-    "Qwen2.5-VL-3B-Instruct": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2.5-VL-3B-Instruct",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-        use_custom_prompt=False,
-    ),
-    "Qwen2.5-VL-3B-Instruct-AWQ": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2.5-VL-3B-Instruct-AWQ",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-        use_custom_prompt=False,
-    ),
-    "Qwen2.5-VL-7B-Instruct": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2.5-VL-7B-Instruct",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-        use_custom_prompt=False,
-    ),
-    "Qwen2.5-VL-7B-Instruct-ForVideo": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2.5-VL-7B-Instruct",
-        min_pixels=128 * 28 * 28,
-        max_pixels=768 * 28 * 28,
-        total_pixels=24576 * 28 * 28,
-        use_custom_prompt=False,
-    ),
-    "Qwen2.5-VL-7B-Instruct-AWQ": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2.5-VL-7B-Instruct-AWQ",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-        use_custom_prompt=False,
-    ),
-    "Qwen2.5-VL-32B-Instruct": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2.5-VL-32B-Instruct",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-        use_custom_prompt=False,
-    ),
-    "Qwen2.5-VL-72B-Instruct": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2.5-VL-72B-Instruct",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-        use_custom_prompt=False,
-    ),
-    "MiMo-VL-7B-SFT": partial(
-        Qwen2VLChat,
-        model_path="XiaomiMiMo/MiMo-VL-7B-SFT",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-        use_custom_prompt=False,
-        use_lmdeploy=True
-    ),
-    "MiMo-VL-7B-RL": partial(
-        Qwen2VLChat,
-        model_path="XiaomiMiMo/MiMo-VL-7B-RL",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-        use_custom_prompt=False,
-        use_lmdeploy=True
-    ),
-    "Qwen2.5-VL-72B-Instruct-ForVideo": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2.5-VL-72B-Instruct",
-        min_pixels=128 * 28 * 28,
-        max_pixels=768 * 28 * 28,
-        total_pixels=24576 * 28 * 28,
-        use_custom_prompt=False,
-    ),
-    "Qwen2.5-VL-72B-Instruct-AWQ": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2.5-VL-72B-Instruct-AWQ",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-        use_custom_prompt=False,
-    ),
-    "Qwen2.5-Omni-7B-ForVideo": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2.5-Omni-7B",
-        min_pixels=128 * 28 * 28,
-        max_pixels=768 * 28 * 28,
-        total_pixels=24576 * 28 * 28,
-        use_custom_prompt=False,
-        use_audio_in_video=True, # set use audio in video
-    ),
-    "Qwen2.5-Omni-7B": partial(
-        Qwen2VLChat,
-        model_path="Qwen/Qwen2.5-Omni-7B",
-        min_pixels=1280 * 28 * 28,
-        max_pixels=16384 * 28 * 28,
-        use_custom_prompt=False,
-    ),
-    'VLM-R1': partial(
-        VLMR1Chat, 
-        model_path='omlab/VLM-R1-Qwen2.5VL-3B-Math-0305', 
-        min_pixels=1280*28*28, 
-        max_pixels=16384*28*28, 
-        use_custom_prompt=False),
-    'VLAA-Thinker-Qwen2.5VL-3B': partial(
-        VLAAThinkerChat, 
-        model_path='UCSC-VLAA/VLAA-Thinker-Qwen2.5VL-3B', 
-        min_pixels=1280*28*28, 
-        max_pixels=16384*28*28, 
-        use_custom_prompt=False,
-        post_process=True, # post processing for evaluation
-        system_prompt=(''
-                    "You are VL-Thinking🤔, a helpful assistant with excellent reasoning ability."
-                    " A user asks you a question, and you should try to solve it."
-                    " You should first think about the reasoning process in the mind and then provides the user with the answer."
-                    " The reasoning process and answer are enclosed within <think> </think> and"
-                    "<answer> </answer> tags, respectively, i.e., <think> reasoning process here </think>"
-                    "<answer> answer here </answer>"
-                ),
-    ),
-    'VLAA-Thinker-Qwen2.5VL-7B': partial(
-        VLAAThinkerChat, 
-        model_path='UCSC-VLAA/VLAA-Thinker-Qwen2.5VL-7B', 
-        min_pixels=1280*28*28, 
-        max_pixels=16384*28*28, 
-        use_custom_prompt=False,
-        post_process=True, # post processing for evaluation
-        system_prompt=(''
-                    "You are VL-Thinking🤔, a helpful assistant with excellent reasoning ability."
-                    " A user asks you a question, and you should try to solve it."
-                    " You should first think about the reasoning process in the mind and then provides the user with the answer."
-                    " The reasoning process and answer are enclosed within <think> </think> and"
-                    "<answer> </answer> tags, respectively, i.e., <think> reasoning process here </think>"
-                    "<answer> answer here </answer>"
-                ),
-    ),
-    'WeThink-Qwen2.5VL-7B': partial(
-        WeThinkVL, 
-        model_path='yangjie-cv/WeThink-Qwen2.5VL-7B', 
-        min_pixels=1280*28*28, 
-        max_pixels=16384*28*28, 
-        use_custom_prompt=False,
-        system_prompt=("You FIRST think about the reasoning process as an internal monologue and then provide the final answer.\nThe reasoning process MUST BE enclosed within <think> </think> tags. The final answer MUST BE enclosed within <answer> </answer> tags."
-        ),
-    ),
-}
+# qwen2vl_series = {
+    # "Qwen-VL-Max-20250813": partial(
+    #     Qwen2VLAPI,
+    #     model="qwen-vl-max-2025-08-13",
+    #     min_pixels=1280 * 28 * 28,
+    #     max_pixels=16384 * 28 * 28,
+    #     max_length=8192,
+    # ),
+    # "Qwen-VL-Max-0809": partial(
+    #     Qwen2VLAPI,
+    #     model="qwen-vl-max-0809",
+    #     min_pixels=1280 * 28 * 28,
+    #     max_pixels=16384 * 28 * 28,
+    # ),
+    # "Qwen-VL-Plus-0809": partial(
+    #     Qwen2VLAPI,
+    #     model="qwen-vl-plus-0809",
+    #     min_pixels=1280 * 28 * 28,
+    #     max_pixels=16384 * 28 * 28,
+    # ),
+#     "QVQ-72B-Preview": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/QVQ-72B-Preview",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#         system_prompt="You are a helpful and harmless assistant. You are Qwen developed by Alibaba. You should think step-by-step.",
+#         max_new_tokens=8192,
+#         post_process=False,
+#     ),
+#     "Qwen2-VL-72B-Instruct": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2-VL-72B-Instruct",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#     ),
+#     "Qwen2-VL-7B-Instruct": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2-VL-7B-Instruct",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#     ),
+#     "Qwen2-VL-7B-Instruct-AWQ": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2-VL-7B-Instruct-AWQ",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#     ),
+#     "Qwen2-VL-7B-Instruct-GPTQ-Int4": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2-VL-7B-Instruct-GPTQ-Int4",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#     ),
+#     "Qwen2-VL-7B-Instruct-GPTQ-Int8": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2-VL-7B-Instruct-GPTQ-Int8",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#     ),
+#     "Qwen2-VL-2B-Instruct": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2-VL-2B-Instruct",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#     ),
+#     "Qwen2-VL-2B-Instruct-AWQ": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2-VL-2B-Instruct-AWQ",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#     ),
+#     "Qwen2-VL-2B-Instruct-GPTQ-Int4": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2-VL-2B-Instruct-GPTQ-Int4",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#     ),
+#     "Qwen2-VL-2B-Instruct-GPTQ-Int8": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2-VL-2B-Instruct-GPTQ-Int8",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#     ),
+#     "XinYuan-VL-2B-Instruct": partial(
+#         Qwen2VLChat,
+#         model_path="Cylingo/Xinyuan-VL-2B",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#     ),
+#     "Qwen2.5-VL-3B-Instruct": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2.5-VL-3B-Instruct",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#         use_custom_prompt=False,
+#     ),
+#     "Qwen2.5-VL-3B-Instruct-AWQ": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2.5-VL-3B-Instruct-AWQ",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#         use_custom_prompt=False,
+#     ),
+#     "Qwen2.5-VL-7B-Instruct": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2.5-VL-7B-Instruct",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#         use_custom_prompt=False,
+#     ),
+#     "Qwen2.5-VL-7B-Instruct-ForVideo": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2.5-VL-7B-Instruct",
+#         min_pixels=128 * 28 * 28,
+#         max_pixels=768 * 28 * 28,
+#         total_pixels=24576 * 28 * 28,
+#         use_custom_prompt=False,
+#     ),
+#     "Qwen2.5-VL-7B-Instruct-AWQ": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2.5-VL-7B-Instruct-AWQ",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#         use_custom_prompt=False,
+#     ),
+#     "Qwen2.5-VL-32B-Instruct": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2.5-VL-32B-Instruct",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#         use_custom_prompt=False,
+#     ),
+#     "Qwen2.5-VL-72B-Instruct": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2.5-VL-72B-Instruct",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#         use_custom_prompt=False,
+#     ),
+#     "MiMo-VL-7B-SFT": partial(
+#         Qwen2VLChat,
+#         model_path="XiaomiMiMo/MiMo-VL-7B-SFT",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#         use_custom_prompt=False,
+#         use_lmdeploy=True
+#     ),
+#     "MiMo-VL-7B-RL": partial(
+#         Qwen2VLChat,
+#         model_path="XiaomiMiMo/MiMo-VL-7B-RL",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#         use_custom_prompt=False,
+#         use_lmdeploy=True
+#     ),
+#     "Qwen2.5-VL-72B-Instruct-ForVideo": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2.5-VL-72B-Instruct",
+#         min_pixels=128 * 28 * 28,
+#         max_pixels=768 * 28 * 28,
+#         total_pixels=24576 * 28 * 28,
+#         use_custom_prompt=False,
+#     ),
+#     "Qwen2.5-VL-72B-Instruct-AWQ": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2.5-VL-72B-Instruct-AWQ",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#         use_custom_prompt=False,
+#     ),
+#     "Qwen2.5-Omni-7B-ForVideo": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2.5-Omni-7B",
+#         min_pixels=128 * 28 * 28,
+#         max_pixels=768 * 28 * 28,
+#         total_pixels=24576 * 28 * 28,
+#         use_custom_prompt=False,
+#         use_audio_in_video=True, # set use audio in video
+#     ),
+#     "Qwen2.5-Omni-7B": partial(
+#         Qwen2VLChat,
+#         model_path="Qwen/Qwen2.5-Omni-7B",
+#         min_pixels=1280 * 28 * 28,
+#         max_pixels=16384 * 28 * 28,
+#         use_custom_prompt=False,
+#     ),
+#     'VLM-R1': partial(
+#         VLMR1Chat, 
+#         model_path='omlab/VLM-R1-Qwen2.5VL-3B-Math-0305', 
+#         min_pixels=1280*28*28, 
+#         max_pixels=16384*28*28, 
+#         use_custom_prompt=False),
+#     'VLAA-Thinker-Qwen2.5VL-3B': partial(
+#         VLAAThinkerChat, 
+#         model_path='UCSC-VLAA/VLAA-Thinker-Qwen2.5VL-3B', 
+#         min_pixels=1280*28*28, 
+#         max_pixels=16384*28*28, 
+#         use_custom_prompt=False,
+#         post_process=True, # post processing for evaluation
+#         system_prompt=(''
+#                     "You are VL-Thinking🤔, a helpful assistant with excellent reasoning ability."
+#                     " A user asks you a question, and you should try to solve it."
+#                     " You should first think about the reasoning process in the mind and then provides the user with the answer."
+#                     " The reasoning process and answer are enclosed within <think> </think> and"
+#                     "<answer> </answer> tags, respectively, i.e., <think> reasoning process here </think>"
+#                     "<answer> answer here </answer>"
+#                 ),
+#     ),
+#     'VLAA-Thinker-Qwen2.5VL-7B': partial(
+#         VLAAThinkerChat, 
+#         model_path='UCSC-VLAA/VLAA-Thinker-Qwen2.5VL-7B', 
+#         min_pixels=1280*28*28, 
+#         max_pixels=16384*28*28, 
+#         use_custom_prompt=False,
+#         post_process=True, # post processing for evaluation
+#         system_prompt=(''
+#                     "You are VL-Thinking🤔, a helpful assistant with excellent reasoning ability."
+#                     " A user asks you a question, and you should try to solve it."
+#                     " You should first think about the reasoning process in the mind and then provides the user with the answer."
+#                     " The reasoning process and answer are enclosed within <think> </think> and"
+#                     "<answer> </answer> tags, respectively, i.e., <think> reasoning process here </think>"
+#                     "<answer> answer here </answer>"
+#                 ),
+#     ),
+#     'WeThink-Qwen2.5VL-7B': partial(
+#         WeThinkVL, 
+#         model_path='yangjie-cv/WeThink-Qwen2.5VL-7B', 
+#         min_pixels=1280*28*28, 
+#         max_pixels=16384*28*28, 
+#         use_custom_prompt=False,
+#         system_prompt=("You FIRST think about the reasoning process as an internal monologue and then provide the final answer.\nThe reasoning process MUST BE enclosed within <think> </think> tags. The final answer MUST BE enclosed within <answer> </answer> tags."
+#         ),
+#     ),
+# }
 
 slime_series = {
     "Slime-7B": partial(SliME, model_path="yifanzhang114/SliME-vicuna-7B"),
@@ -1597,19 +1597,19 @@ gemma_series = {
     'Gemma3-27B': partial(Gemma3, model_path='google/gemma-3-27b-it')
 }
 
-aguvis_series = {
-    "aguvis_7b": partial(
-        Qwen2VLChatAguvis,
-        model_path=os.getenv(
-            "EVAL_MODEL",
-            "xlangai/Aguvis-7B-720P",
-        ),
-        min_pixels=256 * 28 * 28,
-        max_pixels=46 * 26 * 28 * 28,
-        use_custom_prompt=False,
-        mode='grounding',
-    )
-}
+# aguvis_series = {
+#     "aguvis_7b": partial(
+#         Qwen2VLChatAguvis,
+#         model_path=os.getenv(
+#             "EVAL_MODEL",
+#             "xlangai/Aguvis-7B-720P",
+#         ),
+#         min_pixels=256 * 28 * 28,
+#         max_pixels=46 * 26 * 28 * 28,
+#         use_custom_prompt=False,
+#         mode='grounding',
+#     )
+# }
 
 kimi_series = {
     'Kimi-VL-A3B-Thinking': partial(KimiVL, model_path='moonshotai/Kimi-VL-A3B-Thinking'),
@@ -1648,13 +1648,13 @@ kimi_vllm_series = {
 }
 
 
-treevgr_series = {
-    'TreeVGR-7B': partial(
-        TreeVGR, 
-        model_path='HaochenWang/TreeVGR-7B',
-        min_pixels=1280*28*28, max_pixels=16384*28*28,
-    ),
-}
+# treevgr_series = {
+#     'TreeVGR-7B': partial(
+#         TreeVGR, 
+#         model_path='HaochenWang/TreeVGR-7B',
+#         min_pixels=1280*28*28, max_pixels=16384*28*28,
+#     ),
+# }
 
 # QTuneVL series
 qtunevl_series = {
@@ -1690,30 +1690,32 @@ neo_series = {
     )
 }
 
-internvl_groups = [
-    internvl, internvl2, internvl2_5, mini_internvl, internvl2_5_mpo, 
-    internvl3, internvl3_5, neo_series
-]
-internvl_series = {}
-for group in internvl_groups:
-    internvl_series.update(group)
+# internvl_groups = [
+#     internvl, internvl2, internvl2_5, mini_internvl, internvl2_5_mpo, 
+#     internvl3, internvl3_5, neo_series
+# ]
+# internvl_series = {}
+# for group in internvl_groups:
+#     internvl_series.update(group)
 
 supported_VLM = {}
 
-model_groups = [
-    ungrouped, o1_apis, api_models, xtuner_series, qwen_series, llava_series, granite_vision_series,
-    internvl_series, yivl_series, xcomposer_series, minigpt4_series, 
-    idefics_series, instructblip_series, deepseekvl_series, deepseekvl2_series, 
-    janus_series, minicpm_series, cogvlm_series, wemm_series, cambrian_series, 
-    chameleon_series, video_models, ovis_series, vila_series, mantis_series,
-    mmalaya_series, phi3_series, phi4_series, xgen_mm_series, qwen2vl_series,
-    slime_series, eagle_series, moondream_series, llama_series, molmo_series,
-    kosmos_series, points_series, nvlm_series, vintern_series, h2ovl_series,
-    aria_series, smolvlm_series, sail_series, valley_series, vita_series,
-    ross_series, emu_series, ola_series, ursa_series, gemma_series,
-    long_vita_series, ristretto_series, kimi_series, aguvis_series, hawkvl_series, 
-    flash_vl, kimi_vllm_series, oryx_series, treevgr_series, varco_vision_series, qtunevl_series, xvl_series, thyme_series,
-]
+# model_groups = [
+#     ungrouped, o1_apis, api_models, xtuner_series, qwen_series, llava_series, granite_vision_series,
+#     internvl_series, yivl_series, xcomposer_series, minigpt4_series, 
+#     idefics_series, instructblip_series, deepseekvl_series, deepseekvl2_series, 
+#     janus_series, minicpm_series, cogvlm_series, wemm_series, cambrian_series, 
+#     chameleon_series, video_models, ovis_series, vila_series, mantis_series,
+#     mmalaya_series, phi3_series, phi4_series, xgen_mm_series, qwen2vl_series,
+#     slime_series, eagle_series, moondream_series, llama_series, molmo_series,
+#     kosmos_series, points_series, nvlm_series, vintern_series, h2ovl_series,
+#     aria_series, smolvlm_series, sail_series, valley_series, vita_series,
+#     ross_series, emu_series, ola_series, ursa_series, gemma_series,
+#     long_vita_series, ristretto_series, kimi_series, aguvis_series, hawkvl_series, 
+#     flash_vl, kimi_vllm_series, oryx_series, treevgr_series, varco_vision_series, qtunevl_series, xvl_series, thyme_series,
+# ]
+
+model_groups = [neo_series]
 
 for grp in model_groups:
     supported_VLM.update(grp)

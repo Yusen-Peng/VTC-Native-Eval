@@ -21,7 +21,7 @@ from .llava import (
     LLaVA_OneVision,
     LLaVA_OneVision_HF,
 )
-from .vita import VITA, VITAQwen2
+# from .vita import VITA, VITAQwen2
 from .long_vita import LongVITA
 from .minicpm_v import MiniCPM_V, MiniCPM_Llama3_V, MiniCPM_V_2_6, MiniCPM_o_2_6
 from .minigpt4 import MiniGPT4
@@ -29,12 +29,12 @@ from .mmalaya import MMAlaya, MMAlaya2
 from .monkey import Monkey, MonkeyChat
 from .moondream import Moondream1, Moondream2
 from .minimonkey import MiniMonkey
-from .mplug_owl2 import mPLUG_Owl2
+# from .mplug_owl2 import mPLUG_Owl2
 from .omnilmm import OmniLMM12B
 from .open_flamingo import OpenFlamingo
 from .pandagpt import PandaGPT
-from .qwen_vl import QwenVL, QwenVLChat
-from .qwen2_vl import Qwen2VLChat, Qwen2VLChatAguvis
+# from .qwen_vl import QwenVL, QwenVLChat
+# from .qwen2_vl import Qwen2VLChat, Qwen2VLChatAguvis
 from .transcore_m import TransCoreM
 from .visualglm import VisualGLM
 from .xcomposer import (
@@ -45,7 +45,7 @@ from .xcomposer import (
     XComposer2d5,
 )
 from .yi_vl import Yi_VL
-from .internvl import InternVLChat
+# from .internvl import InternVLChat
 from .neo import NEOChat
 from .deepseek_vl import DeepSeekVL
 from .deepseek_vl2 import DeepSeekVL2
@@ -69,7 +69,7 @@ from .video_llm import (
     VideoChat2_HD,
     PLLaVA,
 )
-from .vila import VILA, NVILA
+# from .vila import VILA, NVILA
 from .ovis import Ovis, Ovis1_6, Ovis1_6_Plus, Ovis2, OvisU1
 from .mantis import Mantis
 from .mixsense import LLama3Mixsense
@@ -78,7 +78,7 @@ from .omchat import OmChat
 from .rbdash import RBDash
 from .xgen_mm import XGenMM
 from .slime import SliME
-from .mplug_owl3 import mPLUG_Owl3
+# from .mplug_owl3 import mPLUG_Owl3
 from .pixtral import Pixtral
 from .llama_vision import llama_vision
 from .llama4 import llama4
@@ -95,15 +95,15 @@ from .ross import Ross
 from .ola import Ola
 from .x_vl import X_VL_HF
 from .ursa import UrsaChat
-from .vlm_r1 import VLMR1Chat
+# from .vlm_r1 import VLMR1Chat
 from .aki import AKI
 from .ristretto import Ristretto
-from .vlaa_thinker import VLAAThinkerChat
+# from .vlaa_thinker import VLAAThinkerChat
 from .kimi_vl import KimiVL
-from .wethink_vl import WeThinkVL
+# from .wethink_vl import WeThinkVL
 from .flash_vl import FlashVL
 from .oryx import Oryx
-from .treevgr import TreeVGR
+# from .treevgr import TreeVGR
 from .glm4_1v import GLM4_1v
 from .varco_vision import VarcoVision
 from .qtunevl import (

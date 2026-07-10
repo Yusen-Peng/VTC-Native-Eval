@@ -1,5 +1,14 @@
 # VTC-Native-Eval: Towards a Structured Study of Visual Token Compression Evaluation for Native VLMs
 
+## Environment
+
+```bash
+module load miniconda3/24.1.2-py310
+conda create -n neo python=3.12 -y
+conda activate neo
+python -m pip install -r requirements.txt
+```
+
 ## Current benchmark/evaluation
 
 [Arxiv 2025] [UniPruneBench](https://arxiv.org/abs/2511.02650):

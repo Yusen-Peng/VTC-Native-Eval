@@ -411,7 +411,8 @@ class NEOChat(BaseModel):
                     grid_hw=grid_hw,
                     question=prompt,
                     generation_config=kwargs_default,
-                    verbose=idx == 0,
+                    # verbose=idx == 0,
+                    verbose=False, # do not print anything unless asked to do so
                 )
             response_list.append(response)
 

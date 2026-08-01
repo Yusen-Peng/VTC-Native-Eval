@@ -21,7 +21,8 @@ from .mug_u import MUGUAPI
 from .kimivl_api import KimiVLAPIWrapper, KimiVLAPI
 
 __all__ = [
-    'OpenAIWrapper', 'HFChatModel', 'GPT4V', 'Claude3V', 'Claude_Wrapper',
+    'OpenAIWrapper', 'HFChatModel', 'GPT4V',
+    'Claude3V', 'Claude_Wrapper',
     'GLMVisionAPI', 'CWWrapper', 'HunyuanVision',
     'JTVLChatAPI',
     'TaiyiAPI', 'TeleMMAPI', 'SiliconFlowAPI', 'LMDeployAPI',

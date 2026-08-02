@@ -6,6 +6,10 @@ import warnings
 from PIL import Image
 from transformers import AutoTokenizer, AutoModel
 
+
+from .local_models.configuration_neo_chat import NEOChatConfig
+from .local_models.modeling_neo_chat import NEOChatModel
+
 from .utils import (build_multi_choice_prompt,
                     build_video_prompt,
                     build_mpo_prompt,
@@ -159,7 +163,9 @@ class NEOChat(BaseModel):
             self.cot_prompt = None
 
         self.model_path = model_path
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True, use_fast=False)
+        # self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True, use_fast=False)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
+
 
         # self.tokenizer.encode('<img><IMG_CONTEXT><image> hello world.</img>')
         # [151670, 151669, 23811, 1879, 13, 151671]   
@@ -197,13 +203,25 @@ class NEOChat(BaseModel):
             torch.cuda.set_device(0)
             self.device = 'cuda'
         else:
-            self.model = AutoModel.from_pretrained(
+            # self.model = AutoModel.from_pretrained(
+            #     model_path,
+            #     torch_dtype=torch.bfloat16,
+            #     load_in_8bit=load_in_8bit,
+            #     trust_remote_code=True,
+            #     low_cpu_mem_usage=True,
+            #     device_map="auto").eval()
+            
+            config = NEOChatConfig.from_pretrained(model_path)
+
+            self.model = NEOChatModel.from_pretrained(
                 model_path,
-                torch_dtype=torch.bfloat16,
+                config=config,
+                dtype=torch.bfloat16,
                 load_in_8bit=load_in_8bit,
-                trust_remote_code=True,
                 low_cpu_mem_usage=True,
-                device_map="auto").eval()
+                device_map="auto"
+            ).eval()
+
             self.device = 'cuda'
 
         if best_of_n > 1:

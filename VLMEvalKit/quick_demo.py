@@ -1,6 +1,8 @@
 # Demo
 from vlmeval.config import supported_VLM
+
 model = supported_VLM['NEO-2B-SFT']()
+# model = supported_VLM['NEO-9B-SFT']()
 
 
 # Model Name	Model Weight

@@ -1,6 +1,8 @@
-# VTC-Native-Eval: Towards a Structured Study of Visual Token Compression Evaluation for Native VLMs
+# NativeEval: A Structured Study of Visual Token Compression Methods for Native VLMs
 
 ## Environment Setup
+
+We closely follow the setup from [NEO repository](https://github.com/EvolvingLMMs-Lab/NEO/blob/main/VLMEvalKit/docs/en/Quickstart.md) to set up the environment:
 
 ```bash
 module load miniconda3/24.1.2-py310
@@ -23,6 +25,57 @@ cd VLMEvalKit
 python quick_demo.py
 ```
 
+## VLM Evaluation
+
+Let's find all available datasets first:
+
+```bash
+python -c "
+from vlmeval.dataset import SUPPORTED_DATASETS
+for name in sorted(set(SUPPORTED_DATASETS)):
+    print(name)
+" > supported_datasets.txt
+```
+
+Then we can run one-liner evaluation:
+
+```bash
+salloc --nodes=1 --ntasks-per-node=1 --gpus-per-node=1 -A PAS2836 --partition debug-nextgen --time 00:10:00
+module load miniconda3/24.1.2-py310
+conda activate neo
+cd VLMEvalKit
+export LMUData=/fs/scratch/PAS2836/yusenpeng_dataset/VLMEvalKit_data
+# MMBench
+python run.py --data MMBench_DEV_EN --model NEO-2B-SFT --verbose
+# MME
+python run.py --data MME --model NEO-2B-SFT --verbose
+# MMMU
+python run.py --data MMMU_DEV_VAL --model NEO-2B-SFT --verbose
+# TextVQA
+python run.py --data TextVQA_VAL --model NEO-2B-SFT --verbose
+# DocVQA
+python run.py --data DocVQA_VAL --model NEO-2B-SFT --verbose
+# OCRBench
+python run.py --data OCRBench --model NEO-2B-SFT --verbose
+# OCRBench 2
+python run.py --data OCRBench_v2 --model NEO-2B-SFT --verbose
+
+# ChartQA
+ChartQA_TEST
+# GQA
+GQA_TestDev_Balanced
+# RealWorldQA
+RealWorldQA
+```
+
+| model | MMBench | MME | MMMU (val) | GQA | RealWorldQA | TextVQA | DocVQA | OCRBench | OCRBench 2 | ChartQA | 
+| ----- | ------- | --- | ------------- | ----- | ----- | ---- | ---- | ---- | ---- | ---- | 
+| **2B Scale** | | | | | | | |
+| time | 25 mins | 15 mins | 15 mins | | | 55 mins | 2 hours | 25 mins | ?? | ?? | 
+| NEO-2B-SFT | 76.20 | 1565.7 | 48.33 |  |  |  73.94 | 89.86 | 77.0 | running | wait |
+| **9B Scale** | | | | | | | |
+| NEO-9b-SFT |
+
 
 ## Neo model checkpoints
 
@@ -41,11 +94,5 @@ Mid-training data from LLaVA-OV-1.5: [mvp-lab/LLaVA-OneVision-1.5-Mid-Training-8
 
 SFT data from LLaVA-OV-1.5: [mvp-lab/LLaVA-OneVision-1.5-Instruct-Data](https://huggingface.co/datasets/mvp-lab/LLaVA-OneVision-1.5-Instruct-Data)
 
-
-
-
-## Evaluation Benchmarks
-
-TBD
 
 

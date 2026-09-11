@@ -22,6 +22,8 @@ class NEOVisionConfig(PretrainedConfig):
             max_position_embeddings_vision=10000,
             min_pixels=65536,
             max_pixels=4194304,
+            vtc_method="none",
+            compression_ratio=1.0,
             **kwargs,
     ):
         super().__init__(**kwargs)
@@ -36,6 +38,9 @@ class NEOVisionConfig(PretrainedConfig):
         self.min_pixels = min_pixels
         self.max_pixels = max_pixels
 
+        # VTC
+        self.vtc_method = vtc_method
+        self.compression_ratio = compression_ratio
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path: Union[str, os.PathLike], **kwargs) -> 'PretrainedConfig':
         config_dict, kwargs = cls.get_config_dict(pretrained_model_name_or_path, **kwargs)

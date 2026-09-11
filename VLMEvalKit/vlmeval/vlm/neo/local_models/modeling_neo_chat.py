@@ -82,6 +82,16 @@ class NEOChatModel(PreTrainedModel):
         self.patch_size = patch_size
         self.template = config.template
         self.downsample_ratio = config.downsample_ratio
+        self.vtc_method = getattr(config.vision_config, "vtc_method", "none")
+        self.compression_ratio = getattr(config.vision_config, "compression_ratio", 1.0)
+
+        if self.vtc_method == "none":
+            self.pooling_factor = 1
+        elif self.vtc_method == "fixed":
+            self.pooling_factor = int(round(1.0 / self.compression_ratio))
+        else:
+            raise ValueError(f"Unsupported vtc_method: {self.vtc_method}")
+
         config.llm_config._attn_implementation = 'eager'
 
         if vision_model is not None:
@@ -97,6 +107,50 @@ class NEOChatModel(PreTrainedModel):
         self.img_start_token_id = None
         self.conv_template = get_conv_template(self.template)
         self.system_message = self.conv_template.system_message
+
+    def _get_num_visual_tokens(self, h, w):
+        h_native = int(h) // int(1 / self.downsample_ratio)
+        w_native = int(w) // int(1 / self.downsample_ratio)
+        num_tokens = h_native * w_native
+
+        if self.vtc_method == "fixed":
+            num_tokens = (num_tokens + self.pooling_factor - 1) // self.pooling_factor
+        return num_tokens
+
+    def _get_compressed_visual_positions(self, grid_hw, device):
+        """Build h/w position indices matching the visual tokens."""
+        downsample_factor = int(1 / self.downsample_ratio)
+        all_h = []
+        all_w = []
+        for i in range(grid_hw.shape[0]):
+            h = int(grid_hw[i, 0].item()) // downsample_factor
+            w = int(grid_hw[i, 1].item()) // downsample_factor
+
+            # Native NEO positions in row-major order
+            y, x = torch.meshgrid(
+                torch.arange(h, device=device),
+                torch.arange(w, device=device),
+                indexing="ij",
+            )
+
+            pos_h = y.reshape(-1)
+            pos_w = x.reshape(-1)
+
+            if self.vtc_method == "fixed":
+                # For fixed 1D pooling: 
+                # use the final token in each pooling segment as the representative position.
+                N = pos_h.numel()
+                # Last token of every full pooling group
+                idx = torch.arange(self.pooling_factor - 1, N, self.pooling_factor, device=device)
+                # If there is an incomplete final group, its final token is also a representative.
+                if idx.numel() == 0 or idx[-1].item() != N - 1:
+                    idx = torch.cat([idx, torch.tensor([N - 1], device=device, dtype=idx.dtype)])
+                pos_h = pos_h[idx]
+                pos_w = pos_w[idx]
+            all_h.append(pos_h)
+            all_w.append(pos_w)
+
+        return torch.cat(all_w), torch.cat(all_h)
 
     def forward(
             self,
@@ -260,7 +314,8 @@ class NEOChatModel(PreTrainedModel):
             print(f'dynamic image size: {grid_hw * self.patch_size}')
 
         for i in range(grid_hw.shape[0]):
-            num_patch_token = int(grid_hw[i, 0] * grid_hw[i, 1] * self.downsample_ratio**2)
+            # num_patch_token = int(grid_hw[i, 0] * grid_hw[i, 1] * self.downsample_ratio**2)
+            num_patch_token = self._get_num_visual_tokens(grid_hw[i, 0], grid_hw[i, 1])
             image_tokens = IMG_START_TOKEN + IMG_CONTEXT_TOKEN * num_patch_token + IMG_END_TOKEN
             query = query.replace('<image>', image_tokens, 1)
 
@@ -359,8 +414,9 @@ class NEOChatModel(PreTrainedModel):
 
         selected = (input_ids == self.img_context_token_id)
         if selected.long().sum() > 0:
-            abs_pos_w, abs_pos_h = build_abs_positions_from_grid_hw(
-                grid_hw // int(1 / self.downsample_ratio), device=t_indexes.device)
+            # abs_pos_w, abs_pos_h = build_abs_positions_from_grid_hw(
+            #     grid_hw // int(1 / self.downsample_ratio), device=t_indexes.device)
+            abs_pos_w, abs_pos_h = self._get_compressed_visual_positions(grid_hw=grid_hw, device=t_indexes.device)
             h_indexes[selected] = abs_pos_h.to(t_indexes.device, t_indexes.dtype)
             w_indexes[selected] = abs_pos_w.to(t_indexes.device, t_indexes.dtype)
         return torch.stack([t_indexes, h_indexes, w_indexes], dim=0)

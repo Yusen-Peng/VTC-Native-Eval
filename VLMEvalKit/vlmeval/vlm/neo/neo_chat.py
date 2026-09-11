@@ -114,6 +114,9 @@ class NEOChat(BaseModel):
                  min_pixels=65536,
                  max_pixels=4194304,
                  downsample_ratio=0.5,
+                 # VTC
+                 vtc_method="none",
+                 compression_ratio=1.0,
                  # Best-of-N parameters
                  best_of_n=1,
                  reward_model_path=None,
@@ -141,6 +144,9 @@ class NEOChat(BaseModel):
         self.downsample_ratio = downsample_ratio
         self.min_pixels = min_pixels
         self.max_pixels = max_pixels
+        # VTC
+        self.vtc_method = vtc_method
+        self.compression_ratio = compression_ratio
 
         if cot_prompt_version == 'r1':
             self.system_prompt = R1_SYSTEM_PROMPT
@@ -203,15 +209,10 @@ class NEOChat(BaseModel):
             torch.cuda.set_device(0)
             self.device = 'cuda'
         else:
-            # self.model = AutoModel.from_pretrained(
-            #     model_path,
-            #     torch_dtype=torch.bfloat16,
-            #     load_in_8bit=load_in_8bit,
-            #     trust_remote_code=True,
-            #     low_cpu_mem_usage=True,
-            #     device_map="auto").eval()
-            
             config = NEOChatConfig.from_pretrained(model_path)
+            config.vision_config.vtc_method = self.vtc_method
+            config.vision_config.compression_ratio = self.compression_ratio
+            print(f"[NEO VTC] method={config.vision_config.vtc_method}, compression_ratio={config.vision_config.compression_ratio}", flush=True)
 
             self.model = NEOChatModel.from_pretrained(
                 model_path,

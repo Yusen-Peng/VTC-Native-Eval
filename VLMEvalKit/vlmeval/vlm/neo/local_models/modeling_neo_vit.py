@@ -7,6 +7,7 @@ from transformers.modeling_outputs import BaseModelOutputWithPooling
 from transformers.modeling_utils import PreTrainedModel
 
 from .configuration_neo_vit import NEOVisionConfig
+from .compressor import BaseVTCCompressor, FixedPoolingCompressor
 
 
 def precompute_rope_freqs_sincos(
@@ -143,6 +144,15 @@ class NEOVisionEmbeddings(nn.Module):
         self.register_buffer("cos_cached_y", cos_y, persistent=False)
         self.register_buffer("sin_cached_y", sin_y, persistent=False)
 
+        self.vtc_method = getattr(config, "vtc_method", "none")
+        self.compression_ratio = getattr(config, "compression_ratio", 1.0)
+        if self.vtc_method == "fixed":
+            self.compressor = FixedPoolingCompressor(compression_ratio=self.compression_ratio)
+        elif self.vtc_method == "none":
+            self.compressor = None
+        else:
+            raise ValueError(f"Unknown VTC method: {self.vtc_method}")
+
     def _apply_2d_rotary_pos_emb(self, patch_embeds, grid_hw):
         """
         Apply 2D Rotary Position Embedding to the patch embeddings.
@@ -183,17 +193,16 @@ class NEOVisionEmbeddings(nn.Module):
             patches_per_img = self.dense_embedding(patches_per_img.permute(0, 3, 1, 2)) # [1, D_llm, H/2, W/2]
             patches_per_img = patches_per_img.permute(0, 2, 3, 1) # [1, H/2, W/2, D_llm]
 
-            # ⭐⭐⭐ VTC modules operate here (after 2x2 downsample + projection to LLM space)
-            # patches_per_img = self.compressor(patches_per_img)
+            # ⭐⭐⭐ VTC modules (after 2x2 downsample + projection to LLM space)
+            if self.compressor is not None:
+                patches_per_img = self.compressor(patches_per_img)
 
             patches_list.append(patches_per_img.view(-1, patches_per_img.shape[-1]))
             cur_position += h * w
 
         embeddings = torch.cat(patches_list, dim=0)  # (N_total // downsample_factor**2, C)
-        # print("🥹 🥹 🥹 image embeddings are ready!", flush=True)
 
         assert cur_position == patch_embeds.shape[0]
-        assert embeddings.shape[0] == int(patch_embeds.shape[0] / self.downsample_factor**2)
 
         return embeddings
 

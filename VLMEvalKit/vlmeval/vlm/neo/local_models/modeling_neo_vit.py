@@ -175,15 +175,22 @@ class NEOVisionEmbeddings(nn.Module):
 
         patches_list = []
         cur_position = 0
+        # NEO model packs all image patches within a batch together;
+        # we need a for loop to iterate over individual images
         for i in range(grid_hw.shape[0]):
             h, w = grid_hw[i]
             patches_per_img = patch_embeds[cur_position : cur_position + h * w].view(h, w, -1).unsqueeze(0)
-            patches_per_img = self.dense_embedding(patches_per_img.permute(0, 3, 1, 2))
-            patches_per_img = patches_per_img.permute(0, 2, 3, 1)
+            patches_per_img = self.dense_embedding(patches_per_img.permute(0, 3, 1, 2)) # [1, D_llm, H/2, W/2]
+            patches_per_img = patches_per_img.permute(0, 2, 3, 1) # [1, H/2, W/2, D_llm]
+
+            # ⭐⭐⭐ VTC modules operate here (after 2x2 downsample + projection to LLM space)
+            # patches_per_img = self.compressor(patches_per_img)
+
             patches_list.append(patches_per_img.view(-1, patches_per_img.shape[-1]))
             cur_position += h * w
 
         embeddings = torch.cat(patches_list, dim=0)  # (N_total // downsample_factor**2, C)
+        # print("🥹 🥹 🥹 image embeddings are ready!", flush=True)
 
         assert cur_position == patch_embeds.shape[0]
         assert embeddings.shape[0] == int(patch_embeds.shape[0] / self.downsample_factor**2)
@@ -226,6 +233,7 @@ class NEOVisionModel(PreTrainedModel):
         else:
             assert pixel_values.dim() == 2, f"pixel_values must be 2D for native resolution, got: {pixel_values.dim()}"
             hidden_states = self.embeddings(pixel_values, grid_hw=grid_hw)
+            # print("🥹 🥹 🥹 image features being extracted!", flush=True)
 
         return BaseModelOutputWithPooling(
             last_hidden_state=hidden_states,

@@ -18,6 +18,6 @@ print(f"Model Type: {type(model)}")
 # Forward Single Image
 ret = model.generate(['assets/apple_1.png', 'What is in this image?'])
 print(ret)
-# Forward Multiple Images
-ret = model.generate(['assets/apple_1.png', 'assets/apple_2.png', 'How many apples are there in total in the provided images? '])
-print(ret)
+# # Forward Multiple Images
+# ret = model.generate(['assets/apple_1.png', 'assets/apple_2.png', 'How many apples are there in total in the provided images? '])
+# print(ret)

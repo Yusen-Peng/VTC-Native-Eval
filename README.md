@@ -1,4 +1,4 @@
-# NativeEval: A Structured Study of Visual Token Compression Methods for Native VLMs
+# VTCNativeEval: A Structured Study of Visual Token Compression Methods for Native VLMs
 
 ## Environment Setup
 
@@ -51,31 +51,19 @@ python run.py --data MMBench_DEV_EN --model NEO-2B-SFT --verbose
 python run.py --data MME --model NEO-2B-SFT --verbose
 # MMMU
 python run.py --data MMMU_DEV_VAL --model NEO-2B-SFT --verbose
+# RealWorldQA
+python run.py --data RealWorldQA --model NEO-2B-SFT --verbose
 # TextVQA
 python run.py --data TextVQA_VAL --model NEO-2B-SFT --verbose
 # DocVQA
 python run.py --data DocVQA_VAL --model NEO-2B-SFT --verbose
 # OCRBench
 python run.py --data OCRBench --model NEO-2B-SFT --verbose
-# OCRBench 2
-python run.py --data OCRBench_v2 --model NEO-2B-SFT --verbose
-
 # ChartQA
-ChartQA_TEST
-# GQA
-GQA_TestDev_Balanced
-# RealWorldQA
-RealWorldQA
+python run.py --data ChartQA_TEST --model NEO-2B-SFT --verbose
 ```
 
-| model | MMBench | MME | MMMU (val) | GQA | RealWorldQA | TextVQA | DocVQA | OCRBench | OCRBench 2 | ChartQA | 
-| ----- | ------- | --- | ------------- | ----- | ----- | ---- | ---- | ---- | ---- | ---- | 
-| **2B Scale** | | | | | | | |
-| time | 25 mins | 15 mins | 15 mins | | | 55 mins | 2 hours | 25 mins | ?? | ?? | 
-| NEO-2B-SFT | 76.20 | 1565.7 | 48.33 |  |  |  73.94 | 89.86 | 77.0 | running | wait |
-| **9B Scale** | | | | | | | |
-| NEO-9b-SFT |
-
+We update the results on Overleaf: [VTC-Native-Eval](https://www.overleaf.com/read/wjvqxyygyjpn#73895d)
 
 ## Neo model checkpoints
 

@@ -557,7 +557,6 @@ class Qwen3ForCausalLM(Qwen3PreTrainedModel, GenerationMixin):
         loss = None
         if labels is not None:
             loss = self.loss_function(logits=logits, labels=labels, vocab_size=self.config.vocab_size, **kwargs)
-            print(f"[DEBUG LOSS] shape={loss.shape}, dim={loss.dim()}, dtype={loss.dtype}", flush=True)
 
         return CausalLMOutputWithPast(
             loss=loss,

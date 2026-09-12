@@ -326,6 +326,9 @@ class NEOChatModel(PreTrainedModel):
 
         return llm_outputs
 
+    def floating_point_ops(self, input_dict, exclude_embeddings=True):
+        return 0
+
     def extract_feature(self, pixel_values, grid_hw=None):
 
         return self.vision_model(pixel_values=pixel_values, 

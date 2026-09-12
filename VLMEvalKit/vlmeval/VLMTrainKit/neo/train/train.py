@@ -1,13 +1,18 @@
 import os
 import pathlib
-
+import sys
 import torch
 from transformers import HfArgumentParser, Trainer, set_seed
 from transformers.utils import logging
 
-from neo.data.data_processor import make_supervised_data_module
-from neo.model.build import build_model_and_tokenizer
-from neo.train.argument import DataArguments, ModelArguments, TrainingArguments
+
+
+FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(FILE_DIR, "../../../../../"))
+sys.path.insert(0, PROJECT_ROOT)
+from VLMEvalKit.vlmeval.VLMTrainKit.neo.data.data_processor import make_supervised_data_module
+from VLMEvalKit.vlmeval.VLMTrainKit.neo.train.build import build_model_and_tokenizer
+from VLMEvalKit.vlmeval.VLMTrainKit.neo.train.argument import DataArguments, ModelArguments, TrainingArguments
 
 
 def safe_save_model_for_hf_trainer(trainer: Trainer, output_dir: str):
@@ -69,7 +74,7 @@ def train():
 
             model.get_input_embeddings().register_forward_hook(make_inputs_require_grad)
 
-    data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
+    data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args, training_args=training_args)
     trainer = Trainer(
         model=model, tokenizer=tokenizer, args=training_args, **data_module
     )

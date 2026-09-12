@@ -75,3 +75,7 @@ class NEOChatConfig(PretrainedConfig):
         output['template'] = self.template
 
         return output
+
+    @property
+    def hidden_size(self):
+        return self.llm_config.hidden_size

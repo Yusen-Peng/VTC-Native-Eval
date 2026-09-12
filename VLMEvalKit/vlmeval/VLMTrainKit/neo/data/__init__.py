@@ -1,5 +1,11 @@
 import re
 
+
+LLAVA_665K = {
+    "annotation_path": "/fs/scratch/PAS2836/yusenpeng_dataset/LLaVA_finetuning/cleaned.json",
+    "data_path": "/fs/scratch/PAS2836/yusenpeng_dataset/LLaVA_finetuning",
+}
+
 CAMBRIAN_737K = {
     "annotation_path": "PATH_TO_CAMBRIAN_737K_ANNOTATION",
     "data_path": "",
@@ -32,9 +38,7 @@ SBU_CAPTIONS = {
 }
 
 
-data_dict = {
-    "sbu_captions": SBU_CAPTIONS,
-}
+data_dict = {"llava_665k": LLAVA_665K}
 
 
 def parse_sampling_rate(dataset_name):

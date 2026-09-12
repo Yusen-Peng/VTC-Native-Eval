@@ -226,6 +226,12 @@ mid-training checkpoint: [Paranioar/NEO1_0-2B-MT](https://huggingface.co/Paranio
 
 SFT checkpoint: [Paranioar/NEO1_0-2B-SFT](https://huggingface.co/Paranioar/NEO1_0-2B-SFT) for 2B, [Paranioar/NEO1_0-9B-SFT](https://huggingface.co/Paranioar/NEO1_0-9B-SFT) for 9B.
 
+## Continual SFT
+
+```bash
+sbatch VLMEvalKit/vlmeval/VLMTrainKit/SFT.sh
+```
+
 
 ## Mid-training and SFT datasets
 

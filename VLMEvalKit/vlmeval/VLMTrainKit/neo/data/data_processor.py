@@ -1,5 +1,6 @@
 import json
 import random
+import os
 from dataclasses import dataclass
 from functools import partial
 from typing import Dict, Sequence
@@ -155,6 +156,9 @@ class LazySupervisedDataset(Dataset):
             )
             images, num_tiles = [], []
             for image_path in image_path_list:
+                if not os.path.isabs(image_path):
+                    image_path = os.path.join(source["data_path"], image_path)
+                
                 image = Image.open(image_path).convert("RGB")
                 patch = dynamic_preprocess_native_resolution(
                     image,
@@ -406,67 +410,3 @@ def make_supervised_data_module(tokenizer, data_args, training_args):
     return dict(
         train_dataset=train_dataset, eval_dataset=None, data_collator=data_collator
     )
-
-
-if __name__ == "__main__":
-    from types import SimpleNamespace
-
-    from torch.utils.data import DataLoader
-    from transformers import AutoProcessor
-
-    data_args = SimpleNamespace(
-        dataset_use="sbu_captions%1",
-        dynamic_image_size="native_resolution",
-        patch_size=16,
-        image_size=512,
-        down_sample_ratio=0.5,
-        max_pixels=262144,
-        min_pixels=65536,
-        max_seq_length=2048,
-        data_flatten=True,
-        loss_reduction="square",
-    )
-    tokenizer_path = ""
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
-    num_new_tokens = tokenizer.add_tokens(ALL_SPECIAL_TOKEN_LIST, special_tokens=True)
-
-    data_module = make_supervised_data_module(tokenizer, data_args)
-
-    train_dataset = data_module["train_dataset"]
-    data_collator = data_module["data_collator"]
-    print(f"Dataset size: {len(train_dataset)}")
-
-    # test single sample
-    # print("\nTest getting a single sample:")
-    # sample = train_dataset[0]
-    # print(f"Sample keys: {sample.keys()}")
-    # print(f"input_ids shape: {sample['input_ids'].shape}")
-    # print(f"labels shape: {sample['labels'].shape}")
-    # if "pixel_values" in sample:
-    #     print(f"pixel_values shape: {sample['pixel_values'][0].shape}")
-
-    # ===== test data_collator =====
-    print("\nTest data_collator:")
-    batch_samples = [train_dataset[i] for i in range(min(2, len(train_dataset)))]
-    batch = data_collator(batch_samples)
-    print(f"Batch keys: {batch.keys()}")
-    # ===== test DataLoader =====
-    print("\nTest DataLoader:")
-    dataloader = DataLoader(
-        train_dataset,
-        batch_size=2,
-        collate_fn=data_collator,
-        shuffle=False,
-        num_workers=0,
-    )
-
-    for i, batch in enumerate(dataloader):
-        print(f"\nBatch {i}:")
-        print(f"  input_ids: {batch['input_ids'].shape}")
-        print(f"  labels: {batch['labels'].shape}")
-        if batch.get("pixel_values") is not None:
-            print(f"  pixel_values: {batch['pixel_values'].shape}")
-        if i >= 0:
-            break
-
-    print("\nTest completed!")

@@ -413,12 +413,7 @@ class Qwen3Model(Qwen3PreTrainedModel):
         use_cache: Optional[bool] = None,
         cache_position: Optional[torch.LongTensor] = None,
         **kwargs: Unpack[TransformersKwargs],
-    ) -> BaseModelOutputWithPast:
-        
-        assert position_ids is not None
-        assert cache_position is not None
-        assert past_key_values is not None 
-        
+    ) -> BaseModelOutputWithPast:        
         if (input_ids is None) ^ (inputs_embeds is not None):
             raise ValueError("You must specify exactly one of input_ids or inputs_embeds")
 
@@ -562,6 +557,7 @@ class Qwen3ForCausalLM(Qwen3PreTrainedModel, GenerationMixin):
         loss = None
         if labels is not None:
             loss = self.loss_function(logits=logits, labels=labels, vocab_size=self.config.vocab_size, **kwargs)
+            print(f"[DEBUG LOSS] shape={loss.shape}, dim={loss.dim()}, dtype={loss.dtype}", flush=True)
 
         return CausalLMOutputWithPast(
             loss=loss,

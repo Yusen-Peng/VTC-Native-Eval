@@ -1,5 +1,23 @@
 # VTCNativeEval: A Structured Study of Visual Token Compression Methods for Native VLMs
 
+## Project Proposal
+
+### Current benchmark/evaluation
+
+[Arxiv 2025] [UniPruneBench](https://arxiv.org/abs/2511.02650):
+
+1. underrated baseline: *"Random pruning remains a surprisingly strong baseline."*
+2. no consistent winner: *"No single method achieves universal superiority."*
+
+[ACL 2026] [VTC-Bench](https://aclanthology.org/2026.acl-long.195): 
+
+1. filter "too hard" questions: *"drop out the samples answered incorrectly at the original resolution, which we consider are too hard for the original models to understand."* 
+2. decouple "hard" and "easy" questions: *Difficult Samples (Group A): Samples that are answered incorrectly by the downsampling method* and vice versa.
+
+**🍊🍊🍊Limitations of current evaluation/benchmarking** - no evaluation on Native VLMs (i.e., encoder-free VLMs)
+
+
+
 ## Environment Setup
 
 We closely follow the setup from [NEO repository](https://github.com/EvolvingLMMs-Lab/NEO/blob/main/VLMEvalKit/docs/en/Quickstart.md) to set up the environment:
@@ -11,18 +29,6 @@ conda activate neo
 cd VLMEvalKit
 python -m pip install -e .
 python -m pip install transformers==4.57.1
-```
-
-then you are all set!
-
-## Quick inference demo
-
-```bash
-salloc --nodes=1 --ntasks-per-node=1 --gpus-per-node=1 -A PAS2836 --partition debug-nextgen --time 00:10:00
-module load miniconda3/24.1.2-py310
-conda activate neo
-cd VLMEvalKit
-python quick_demo.py
 ```
 
 ## VLM Evaluation

@@ -18,13 +18,11 @@ cd /users/PAS2912/yusenpeng/VTC-Eval/VLMEvalKit/vlmeval/VLMTrainKit
 
 MASTER_ADDR=${MASTER_ADDR:-"127.0.0.1"}
 MASTER_PORT=${MASTER_PORT:-$(shuf -i 20001-29999 -n 1)}
-
-deepspeed="./scripts/zero3.json"
 mllm="Paranioar/NEO1_0-2B-SFT"
 
-lr=2e-4
+lr=2e-5
 batch_size=1
-grad_accum_steps=1
+grad_accum_steps=32
 
 entry_file="./neo/train/train.py"
 
@@ -34,7 +32,6 @@ run_name="NEO-continue-training-DEBUG"
 output_dir="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output"
 
 args=(
-    --deepspeed "${deepspeed}"
     --model_name_or_path "${mllm}"
     --tokenizer_name_or_path "${mllm}"
     --dataset_use "${datasets}"

@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=continue_SFT_DEBUG
-#SBATCH --output=continue_SFT_DEBUG.out
+#SBATCH --output=continue_SFT_DEBUG.log
 #SBATCH --account=PAS2836
 #SBATCH --partition=debug-nextgen
 #SBATCH --nodes=1
@@ -22,14 +22,14 @@ mllm="Paranioar/NEO1_0-2B-SFT"
 
 lr=2e-5
 batch_size=1
-grad_accum_steps=32
+grad_accum_steps=128
 
 entry_file="./neo/train/train.py"
 
 datasets="llava_665k%10"
 
-run_name="NEO-continue-training-DEBUG"
-output_dir="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output"
+run_name="NEO_continue_SFT_10"
+output_dir="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/${run_name}"
 
 args=(
     --model_name_or_path "${mllm}"
@@ -48,8 +48,8 @@ args=(
     --min_pixels 1310720
     --eval_strategy "no"
     --save_strategy "steps"
-    --save_steps 1000
-    --save_total_limit 1
+    --save_steps 5
+    --save_total_limit 3
     --learning_rate "${lr}"
     --weight_decay 0.0
     --warmup_steps 10

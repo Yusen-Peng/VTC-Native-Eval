@@ -1672,8 +1672,16 @@ qtunevl_series = {
     ),
 }
 
-# --------- deserve deserve to note --------- #
+###### NOTE: do not touch stuff above #####
+
+
+
+
+
+
 neo_series = {
+    #### training-free methods ####
+
     "NEO-2B-SFT": partial(
         NEOChat, model_path="Paranioar/NEO1_0-2B-SFT", 
         patch_size=16,
@@ -1717,7 +1725,18 @@ neo_series = {
         min_pixels=1280 * 32 * 32,
         max_pixels=4096 * 32 * 32,
         downsample_ratio=0.5,
-    )
+    ),
+    #### training-based methods ####
+    "NEO-2B-SFT-LoRA": partial(
+        NEOChat,
+        model_path="Paranioar/NEO1_0-2B-SFT",
+        lora_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_10/checkpoint-10",
+        patch_size=16,
+        min_pixels=1280 * 32 * 32,
+        max_pixels=4096 * 32 * 32,
+        downsample_ratio=0.5,
+    ),
+
 }
 
 supported_VLM = {}

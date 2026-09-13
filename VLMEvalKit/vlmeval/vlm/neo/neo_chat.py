@@ -106,6 +106,7 @@ class NEOChat(BaseModel):
 
     def __init__(self,
                  model_path=None,
+                 lora_path=None,
                  load_in_8bit=False,
                  use_mpo_prompt=False,
                  screen_parse=True,
@@ -169,7 +170,7 @@ class NEOChat(BaseModel):
             self.cot_prompt = None
 
         self.model_path = model_path
-        # self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True, use_fast=False)
+        self.lora_path = lora_path
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
 
 
@@ -221,8 +222,18 @@ class NEOChat(BaseModel):
                 load_in_8bit=load_in_8bit,
                 low_cpu_mem_usage=True,
                 device_map="auto"
-            ).eval()
+            )
 
+            if lora_path is not None:
+                from peft import PeftModel
+                print(f"[NEO LoRA] Loading adapter from: {lora_path}", flush=True)
+                self.model.language_model = PeftModel.from_pretrained(
+                    self.model.language_model,
+                    lora_path,
+                    is_trainable=False,
+                )
+
+            self.model.eval()
             self.device = 'cuda'
 
         if best_of_n > 1:

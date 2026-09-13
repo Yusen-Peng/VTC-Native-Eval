@@ -232,6 +232,8 @@ SFT checkpoint: [Paranioar/NEO1_0-2B-SFT](https://huggingface.co/Paranioar/NEO1_
 
 ## Continual SFT
 
+With LoRA:
+
 ```bash
 sbatch VLMEvalKit/vlmeval/VLMTrainKit/SFT.sh
 ```

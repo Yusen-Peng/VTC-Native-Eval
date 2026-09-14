@@ -96,9 +96,12 @@ class LazySupervisedDataset(Dataset):
                         logger.info(f"  {key}: shape={value.shape}")
                 return sample
             except Exception as e:
-                logger.warning(
-                    f"[Try #{attempt_idx}] Failed to fetch sample {i}. Exception: {e}"
-                )
+                # logger.warning(
+                #     f"[Try #{attempt_idx}] Failed to fetch sample {i}. Exception: {e}"
+                # )
+                # we can skip
+                logger.warning(f"Skipping bad sample {i}: {type(e).__name__}: {e}")
+                return self.__getitem__((i + 1) % len(self.list_data_dict)) 
 
         # If all retries failed, try a random sample
         logger.error(

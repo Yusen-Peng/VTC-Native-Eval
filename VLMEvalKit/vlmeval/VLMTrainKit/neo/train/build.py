@@ -21,9 +21,6 @@ logger = logging.get_logger(__name__)
 
 
 def build_model(model_args, data_args, tokenizer):
-    # model = NEOChatModel.from_pretrained(
-    #     model_args.model_name_or_path, dtype=model_args.dtype, device="auto"
-    # )
     config = NEOChatConfig.from_pretrained(model_args.model_name_or_path)
     config.vision_config.vtc_method = model_args.vtc_method
     config.vision_config.compression_ratio = model_args.compression_ratio
@@ -62,30 +59,3 @@ def build_model_and_tokenizer(model_args, data_args):
     model.config.bos_token_id = tokenizer.bos_token_id
 
     return model, tokenizer
-
-
-if __name__ == "__main__":
-    from types import SimpleNamespace
-
-    data_args = SimpleNamespace(
-        dataset_use="",
-        dynamic_image_size="native_resolution",
-        patch_size=16,
-        image_size=512,
-        downsample_ratio=0.5,
-        max_pixels=262144,
-        min_pixels=65536,
-        max_seq_length=2048,
-        data_flatten=True,
-        loss_reduction="square",
-    )
-    model_args = SimpleNamespace(
-        model_name_or_path=None,
-        tokenizer_path="",
-        llm_model_name_or_path="",
-        vision_num_channels=3,
-        vision_hidden_size=1024,
-        vision_llm_hidden_size=2048,
-        dtype="bfloat16",
-    )
-    model = build_model(model_args, data_args)

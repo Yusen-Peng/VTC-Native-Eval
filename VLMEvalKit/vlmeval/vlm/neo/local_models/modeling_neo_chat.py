@@ -248,6 +248,58 @@ class NEOChatModel(PreTrainedModel):
 
         return torch.cat(all_w), torch.cat(all_h)
 
+    def _compress_training_sequence(self, input_ids, labels, indexes, loss_weight, seq_boundaries):
+        """
+            Remove unused IMG_CONTEXT positions from the training sequence 
+            such that the LLM sequence matches the compressed visual tokens.
+        """
+        if self.vtc_method == "none":
+            return input_ids, labels, indexes, loss_weight, seq_boundaries
+        elif self.vtc_method == "fixed":
+            ids = input_ids[0]
+            S = ids.shape[0]
+            keep_mask = torch.ones(S, dtype=torch.bool, device=ids.device)
+            is_img = ids == self.img_context_token_id
+
+            # Find contiguous IMG_CONTEXT runs, where each run corresponds to one image.
+            padded = F.pad(is_img.long(), (1, 1), value=0)
+            diff = padded[1:] - padded[:-1]
+            starts = torch.where(diff == 1)[0]
+            ends = torch.where(diff == -1)[0]  # exclusive
+            assert len(starts) == len(ends)
+            for start, end in zip(starts.tolist(), ends.tolist()):
+                N = end - start
+                # we can start by dropping all image-token positions 
+                keep_mask[start:end] = False
+
+                # NOTE: Keep the exact representatives corresponding to fixed pooling:
+                # last token of every pooling group.
+                local_idx = torch.arange(self.pooling_factor - 1, N, self.pooling_factor, device=ids.device)
+
+                # Preserve final partial group properly
+                if local_idx.numel() == 0 or local_idx[-1].item() != N - 1:
+                    local_idx = torch.cat([local_idx, torch.tensor([N - 1], device=ids.device, dtype=torch.long,)])
+                keep_mask[start + local_idx] = True
+
+            # Update sequence boundaries before slicing.
+            # Each old boundary b maps to number of retained tokens before b
+            old_boundaries = seq_boundaries
+            # Count how many tokens survive before each original sequence position.
+            num_kept_before_position = torch.cat([torch.zeros(1, device=ids.device, dtype=torch.long), keep_mask.long().cumsum(0),])
+            seq_boundaries = num_kept_before_position[old_boundaries.long()]
+
+            # Slice every sequence-aligned tensor
+            input_ids = input_ids[:, keep_mask]
+            if labels is not None:
+                labels = labels[keep_mask] if labels.dim() == 1 else labels[:, keep_mask]
+            if indexes is not None:
+                indexes = indexes[keep_mask]
+            if loss_weight is not None:
+                if isinstance(loss_weight, list):
+                    loss_weight = torch.as_tensor(loss_weight, device=keep_mask.device)
+                loss_weight = loss_weight[keep_mask] if loss_weight.dim() == 1 else loss_weight[:, keep_mask]
+            return input_ids, labels, indexes, loss_weight, seq_boundaries
+
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,  # input_ids: (Seq_len,)
@@ -279,13 +331,17 @@ class NEOChatModel(PreTrainedModel):
 
         pixel_values = pixel_values[0].to(self.dtype)
         vit_embeds = self.extract_feature(pixel_values, grid_hw=grid_hw)
+        input_ids, labels, indexes, loss_weight, seq_boundaries = self._compress_training_sequence(
+                input_ids=input_ids,
+                labels=labels,
+                indexes=indexes,
+                loss_weight=loss_weight,
+                seq_boundaries=seq_boundaries)
         hidden_states = self.language_model.get_input_embeddings()(input_ids)
         selected = input_ids == self.img_context_token_id
         vit_embeds = vit_embeds.reshape((-1, vit_embeds.shape[-1]))
 
-        abs_pos_w, abs_pos_h = build_abs_positions_from_grid_hw(
-            grid_hw // int(1 / self.downsample_ratio), device=self.device
-        )
+        abs_pos_w, abs_pos_h = self._get_compressed_visual_positions(grid_hw=grid_hw, device=indexes.device)
         pos_h = torch.zeros_like(indexes)
         pos_w = torch.zeros_like(indexes)
         pos_h[selected[0]] = abs_pos_h.to(dtype=pos_h.dtype)

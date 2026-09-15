@@ -1680,7 +1680,16 @@ qtunevl_series = {
 
 
 neo_series = {
-    #### training-free methods ####
+
+
+    ## training-free methods ####
+    "NEO-2B-MT": partial(
+        NEOChat, model_path="Paranioar/NEO1_0-2B-MT", 
+        patch_size=16,
+        min_pixels=1280 * 32 * 32,
+        max_pixels=4096 * 32 * 32,
+        downsample_ratio=0.5,
+    ),
 
     "NEO-2B-SFT": partial(
         NEOChat, model_path="Paranioar/NEO1_0-2B-SFT", 

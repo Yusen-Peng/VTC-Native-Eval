@@ -1,14 +1,14 @@
 #!/bin/bash
-#SBATCH --job-name=NEO_continue_SFT_5pa_fixed_4x
-#SBATCH --output=NEO_continue_SFT_5pa_fixed_4x.log
+#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_CLEVR
+#SBATCH --output=NEO_continue_SFT_LLaVA_OV_CLEVR.log
 #SBATCH --account=PAS2836
-#SBATCH --partition=debug-nextgen
+#SBATCH --partition=nextgen
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=128G
-#SBATCH --time=00:30:00
+#SBATCH --time=05:30:00
 
 module load miniconda3/24.1.2-py310
 conda deactivate
@@ -26,9 +26,9 @@ grad_accum_steps=128
 
 entry_file="./neo/train/train.py"
 
-datasets="llava_665k%5"
+datasets="clevr_llava_onevision%5"
 
-run_name="NEO_continue_SFT_5pa_fixed_4x"
+run_name="NEO_continue_SFT_LLaVA_OV_CLEVR"
 output_dir="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/${run_name}"
 
 args=(
@@ -48,8 +48,8 @@ args=(
     --min_pixels 1310720
     --eval_strategy "no"
     --save_strategy "steps"
-    --save_steps 100
-    --save_total_limit 4
+    --save_steps 50
+    --save_total_limit 10
     --learning_rate "${lr}"
     --weight_decay 0.0
     --warmup_steps 10
@@ -61,8 +61,8 @@ args=(
     --dataloader_num_workers 4
     --run_name "${run_name}"
     --report_to none
-    --vtc_method fixed
-    --compression_ratio 0.25
+    --vtc_method none
+    --compression_ratio 1.0
 )
 
 torchrun \

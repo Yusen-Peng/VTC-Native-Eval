@@ -349,7 +349,7 @@ args=(
 )
 ```
 
-And finally we can run the training experiment with LoRA:
+And finally we can run the training experiment with LoRA!
 
 ```bash
 sbatch VLMEvalKit/vlmeval/VLMTrainKit/SFT.sh

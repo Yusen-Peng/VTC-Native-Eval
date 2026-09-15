@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass
 from functools import partial
 from typing import Dict, Sequence
-
+from datasets import load_dataset
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
@@ -20,6 +20,19 @@ from .utils import (build_transform, dynamic_preprocess_native_resolution,
 
 logger = logging.get_logger(__name__)
 
+
+def convert_hf_conversations(conversations):
+    role_map = {
+        "user": "human",
+        "assistant": "gpt",
+    }
+    return [
+        {
+            "from": role_map[x["role"]],
+            "value": x["content"],
+        }
+        for x in conversations
+    ]
 
 def read_jsonl(path):
     with open(path, "r") as f:
@@ -55,26 +68,42 @@ class LazySupervisedDataset(Dataset):
         dataset_list = data_list(data_args.dataset_use.split(","))
         list_data_dict = []
         for data in dataset_list:
-            file_format = data["annotation_path"].split(".")[-1]
-            if file_format == "jsonl":
-                annotations = read_jsonl(data["annotation_path"])
+            is_hf = "hf_dataset" in data
+
+            if is_hf:
+                dataset = load_dataset(data["hf_dataset"], data["hf_config"], split=data.get("hf_split", "train"))
+                sampling_rate = data.get("sampling_rate", 1.0)
+                if sampling_rate < 1.0:
+                    num_samples = int(len(dataset) * sampling_rate)
+                    indices = random.sample(range(len(dataset)), num_samples)
+                    dataset = dataset.select(indices)
+                list_data_dict = dataset
             else:
-                annotations = json.load(open(data["annotation_path"], "r"))
-            sampling_rate = data.get("sampling_rate", 1.0)
-            if sampling_rate < 1.0:
-                annotations = random.sample(
-                    annotations, int(len(annotations) * sampling_rate)
-                )
-                logger.info(f"sampling {len(annotations)} examples from dataset {data}")
-            else:
-                logger.info(f"dataset name: {data}")
-            for ann in annotations:
-                if isinstance(ann, list):
-                    for sub_ann in ann:
-                        sub_ann["data_path"] = data["data_path"]
+                file_format = data["annotation_path"].split(".")[-1]
+                if file_format == "jsonl":
+                    annotations = read_jsonl(data["annotation_path"])
                 else:
-                    ann["data_path"] = data["data_path"]
-            list_data_dict += annotations
+                    annotations = json.load(
+                        open(data["annotation_path"], "r")
+                    )
+
+                sampling_rate = data.get("sampling_rate", 1.0)
+                if sampling_rate < 1.0:
+                    annotations = random.sample(
+                        annotations,
+                        int(len(annotations) * sampling_rate),
+                    )
+
+                    logger.info(
+                        f"sampling {len(annotations)} examples from dataset {data}"
+                    )
+                for ann in annotations:
+                    if isinstance(ann, list):
+                        for sub_ann in ann:
+                            sub_ann["data_path"] = data["data_path"]
+                    else:
+                        ann["data_path"] = data["data_path"]
+                list_data_dict += annotations
         logger.info(f"Total training samples: {len(list_data_dict)}")
         self.list_data_dict = list_data_dict
         self.item_fn = self._get_item
@@ -128,6 +157,11 @@ class LazySupervisedDataset(Dataset):
         min_pixels = self.data_args.min_pixels
         max_pixels = self.data_args.max_pixels
         source = sources[0]
+        
+        # HuggingFace format: role/content -> NEO format: from/value
+        if (len(source["conversations"]) > 0 and "role" in source["conversations"][0]):
+            source["conversations"] = convert_hf_conversations(source["conversations"])
+
 
         if "image" in source:
             image_path_list = (
@@ -158,11 +192,28 @@ class LazySupervisedDataset(Dataset):
                 resize=False,
             )
             images, num_tiles = [], []
-            for image_path in image_path_list:
-                if not os.path.isabs(image_path):
-                    image_path = os.path.join(source["data_path"], image_path)
-                
-                image = Image.open(image_path).convert("RGB")
+            for image_obj in image_path_list:
+                if isinstance(image_obj, Image.Image):
+                    image = image_obj.convert("RGB")
+
+                elif isinstance(image_obj, dict):
+                    if image_obj.get("path") is not None:
+                        image = Image.open(image_obj["path"]).convert("RGB")
+                    else:
+                        raise ValueError(
+                            f"Unsupported HF image object: {image_obj.keys()}"
+                        )
+
+                else:
+                    image_path = image_obj
+
+                    if not os.path.isabs(image_path):
+                        image_path = os.path.join(
+                            source["data_path"],
+                            image_path,
+                        )
+
+                    image = Image.open(image_path).convert("RGB")
                 patch = dynamic_preprocess_native_resolution(
                     image,
                     min_pixels=min_pixels,

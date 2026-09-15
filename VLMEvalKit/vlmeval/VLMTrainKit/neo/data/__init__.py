@@ -1,6 +1,13 @@
 import re
 
 
+CLEVR_LLAVA_ONEVISION = {
+    "hf_dataset": "mvp-lab/LLaVA-OneVision-1.5-Instruct-Data",
+    "hf_config": "CLEVR",
+    "hf_split": "train",
+}
+
+
 LLAVA_665K = {
     "annotation_path": "/fs/scratch/PAS2836/yusenpeng_dataset/LLaVA_finetuning/cleaned.json",
     "data_path": "/fs/scratch/PAS2836/yusenpeng_dataset/LLaVA_finetuning",
@@ -38,7 +45,7 @@ SBU_CAPTIONS = {
 }
 
 
-data_dict = {"llava_665k": LLAVA_665K}
+data_dict = {"llava_665k": LLAVA_665K, "clevr_llava_onevision": CLEVR_LLAVA_ONEVISION}
 
 
 def parse_sampling_rate(dataset_name):

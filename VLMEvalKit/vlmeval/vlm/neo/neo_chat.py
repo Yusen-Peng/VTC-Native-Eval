@@ -257,7 +257,7 @@ class NEOChat(BaseModel):
             print(f'Enable Best-of-N evaluation with PRM: {reward_model_path}')
 
         self.best_of_n = best_of_n
-        kwargs_default = dict(do_sample=False, max_new_tokens=4096, top_p=None)
+        kwargs_default = dict(do_sample=False, max_new_tokens=128, top_p=None)
         kwargs_default.update(kwargs)
         self.kwargs = kwargs_default
 
@@ -286,7 +286,7 @@ class NEOChat(BaseModel):
         assert dataset is None or isinstance(dataset, str)
         tgt_path = self.dump_image(line, dataset)
         if dataset is not None and listinstr(['BMMR'], dataset):
-            self.kwargs['max_new_tokens'] = max(self.kwargs.get('max_new_tokens', 4096), 8196)
+            self.kwargs['max_new_tokens'] = max(self.kwargs.get('max_new_tokens', 128), 8196)
             print(f'[Warning] BMMR dataset requires a larger max_new_tokens, set to {self.kwargs["max_new_tokens"]}')
 
         if dataset is not None and DATASET_TYPE(dataset) == 'Y/N':

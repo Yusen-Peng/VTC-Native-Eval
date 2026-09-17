@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Dict, Sequence
 from datasets import load_dataset
+from torch.utils.data import Dataset, ConcatDataset
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
@@ -21,18 +22,32 @@ from .utils import (build_transform, dynamic_preprocess_native_resolution,
 logger = logging.get_logger(__name__)
 
 
-def convert_hf_conversations(conversations):
+
+
+def normalize_conversations(conversations):
     role_map = {
         "user": "human",
         "assistant": "gpt",
     }
-    return [
-        {
-            "from": role_map[x["role"]],
-            "value": x["content"],
-        }
-        for x in conversations
-    ]
+    normalized = []
+    for x in conversations:
+        # HF role/content format
+        if x.get("role") is not None and x.get("content") is not None:
+            normalized.append({
+                "from": role_map[x["role"]],
+                "value": x["content"],
+            })
+        # Already NEO/LLaVA from/value format
+        elif x.get("from") is not None and x.get("value") is not None:
+            normalized.append({
+                "from": x["from"],
+                "value": x["value"],
+            })
+        else:
+            raise ValueError(
+                f"Unsupported conversation message format: {x}"
+            )
+    return normalized
 
 def read_jsonl(path):
     with open(path, "r") as f:
@@ -53,6 +68,8 @@ def pad_and_cat(tensor_list):
     return stacked_tensor
 
 
+
+
 class LazySupervisedDataset(Dataset):
     def __init__(
         self,
@@ -61,52 +78,75 @@ class LazySupervisedDataset(Dataset):
         is_train: bool = False,
     ):
         super().__init__()
+
         self.tokenizer = tokenizer
         self.data_args = data_args
-        self.is_train = False
+        self.is_train = is_train
 
-        dataset_list = data_list(data_args.dataset_use.split(","))
-        list_data_dict = []
-        for data in dataset_list:
-            is_hf = "hf_dataset" in data
+        dataset_configs = data_list(data_args.dataset_use.split(","))
 
-            if is_hf:
-                dataset = load_dataset(data["hf_dataset"], data["hf_config"], split=data.get("hf_split", "train"))
-                sampling_rate = data.get("sampling_rate", 1.0)
-                if sampling_rate < 1.0:
-                    num_samples = int(len(dataset) * sampling_rate)
-                    indices = random.sample(range(len(dataset)), num_samples)
-                    dataset = dataset.select(indices)
-                list_data_dict = dataset
-            else:
-                file_format = data["annotation_path"].split(".")[-1]
-                if file_format == "jsonl":
-                    annotations = read_jsonl(data["annotation_path"])
-                else:
-                    annotations = json.load(
-                        open(data["annotation_path"], "r")
-                    )
+        datasets = [
+            self._load_dataset(config)
+            for config in dataset_configs
+        ]
 
-                sampling_rate = data.get("sampling_rate", 1.0)
-                if sampling_rate < 1.0:
-                    annotations = random.sample(
-                        annotations,
-                        int(len(annotations) * sampling_rate),
-                    )
+        self.list_data_dict = ConcatDataset(datasets)
 
-                    logger.info(
-                        f"sampling {len(annotations)} examples from dataset {data}"
-                    )
-                for ann in annotations:
-                    if isinstance(ann, list):
-                        for sub_ann in ann:
-                            sub_ann["data_path"] = data["data_path"]
-                    else:
-                        ann["data_path"] = data["data_path"]
-                list_data_dict += annotations
-        logger.info(f"Total training samples: {len(list_data_dict)}")
-        self.list_data_dict = list_data_dict
+        logger.info(
+            f"Total training samples: {len(self.list_data_dict)}"
+        )
+
         self.item_fn = self._get_item
+
+    def _load_dataset(self, config):
+        """Load and optionally subsample one dataset."""
+        if "hf_dataset" in config:
+            dataset = self._load_hf_dataset(config)
+        else:
+            dataset = self._load_local_dataset(config)
+
+        sampling_rate = config.get("sampling_rate", 1.0)
+
+        if sampling_rate < 1.0:
+            num_samples = int(len(dataset) * sampling_rate)
+            indices = random.sample(range(len(dataset)), num_samples)
+            dataset = dataset.select(indices)
+
+        logger.info(
+            f"Adding {len(dataset)} examples from "
+            f"{config.get('hf_config', config.get('annotation_path'))}"
+        )
+
+        return dataset
+
+    def _load_hf_dataset(self, config):
+        """Load a Hugging Face dataset."""
+        return load_dataset(
+            config["hf_dataset"],
+            config["hf_config"],
+            split=config.get("hf_split", "train"),
+        )
+
+    def _load_local_dataset(self, config):
+        """Load a local JSON/JSONL dataset."""
+        annotation_path = config["annotation_path"]
+
+        if annotation_path.endswith(".jsonl"):
+            annotations = read_jsonl(annotation_path)
+        else:
+            with open(annotation_path, "r") as f:
+                annotations = json.load(f)
+
+        for ann in annotations:
+            if isinstance(ann, list):
+                for sub_ann in ann:
+                    sub_ann["data_path"] = config["data_path"]
+            else:
+                ann["data_path"] = config["data_path"]
+
+        # Convert the Python list into an HF Dataset so all datasets
+        # have the same interface.
+        return Dataset.from_list(annotations)
 
     def __len__(self):
         return len(self.list_data_dict)
@@ -157,10 +197,7 @@ class LazySupervisedDataset(Dataset):
         min_pixels = self.data_args.min_pixels
         max_pixels = self.data_args.max_pixels
         source = sources[0]
-        
-        # HuggingFace format: role/content -> NEO format: from/value
-        if (len(source["conversations"]) > 0 and "role" in source["conversations"][0]):
-            source["conversations"] = convert_hf_conversations(source["conversations"])
+        source["conversations"] = normalize_conversations(source["conversations"])
 
 
         if "image" in source:

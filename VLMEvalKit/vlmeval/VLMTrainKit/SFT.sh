@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_CLEVR_fixed_2x
-#SBATCH --output=NEO_continue_SFT_LLaVA_OV_CLEVR_fixed_2x.log
+#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_Multi_dataset
+#SBATCH --output=NEO_continue_SFT_LLaVA_OV_Multi_dataset.log
 #SBATCH --account=PAS2836
 #SBATCH --partition=debug-nextgen
 #SBATCH --nodes=1
@@ -20,15 +20,22 @@ MASTER_ADDR=${MASTER_ADDR:-"127.0.0.1"}
 MASTER_PORT=${MASTER_PORT:-$(shuf -i 20001-29999 -n 1)}
 mllm="Paranioar/NEO1_0-2B-SFT"
 
+export HF_HOME="/fs/scratch/PAS2836/yusenpeng_cache/huggingface"
+export HF_DATASETS_CACHE="${HF_HOME}/datasets"
+export HUGGINGFACE_HUB_CACHE="${HF_HOME}/hub"
+
+mkdir -p "${HF_DATASETS_CACHE}"
+mkdir -p "${HUGGINGFACE_HUB_CACHE}"
+
 lr=2e-5
 batch_size=1
 grad_accum_steps=128
 
 entry_file="./neo/train/train.py"
 
-datasets="clevr_llava_onevision%1"
+datasets="infographic_vqa_llava_onevision%2,textvqa_llava_onevision%5,clevr_llava_onevision%1"
 
-run_name="NEO_continue_SFT_LLaVA_OV_CLEVR_fixed_2x"
+run_name="NEO_continue_SFT_LLaVA_OV_Multi_dataset"
 output_dir="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/${run_name}"
 
 args=(
@@ -61,8 +68,8 @@ args=(
     --dataloader_num_workers 4
     --run_name "${run_name}"
     --report_to none
-    --vtc_method fixed
-    --compression_ratio 0.5
+    --vtc_method none
+    --compression_ratio 1.0
 )
 
 torchrun \

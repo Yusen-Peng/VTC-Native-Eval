@@ -7,6 +7,30 @@ CLEVR_LLAVA_ONEVISION = {
     "hf_split": "train",
 }
 
+TEXTVQA_LLAVA_ONEVISION = {
+    "hf_dataset": "mvp-lab/LLaVA-OneVision-1.5-Instruct-Data",
+    "hf_config": "textvqa",
+    "hf_split": "train",
+}
+
+INFOGRAPHIC_VQA_LLAVA_ONEVISION = {
+    "hf_dataset": "mvp-lab/LLaVA-OneVision-1.5-Instruct-Data",
+    "hf_config": "infographic_vqa",
+    "hf_split": "train",
+}
+
+ARXIV_FIGS_LLAVA_ONEVISION = {
+    "hf_dataset": "mvp-lab/LLaVA-OneVision-1.5-Instruct-Data",
+    "hf_config": "arxiv_figs",
+    "hf_split": "train",
+}
+
+FIGUREQA_LLAVA_ONEVISION = {
+    "hf_dataset": "mvp-lab/LLaVA-OneVision-1.5-Instruct-Data",
+    "hf_config": "FigureQA",
+    "hf_split": "train",
+}
+
 
 LLAVA_665K = {
     "annotation_path": "/fs/scratch/PAS2836/yusenpeng_dataset/LLaVA_finetuning/cleaned.json",
@@ -45,7 +69,13 @@ SBU_CAPTIONS = {
 }
 
 
-data_dict = {"llava_665k": LLAVA_665K, "clevr_llava_onevision": CLEVR_LLAVA_ONEVISION}
+data_dict = {
+    "clevr_llava_onevision": CLEVR_LLAVA_ONEVISION,
+    "textvqa_llava_onevision": TEXTVQA_LLAVA_ONEVISION,
+    "infographic_vqa_llava_onevision": INFOGRAPHIC_VQA_LLAVA_ONEVISION,
+    "arxiv_figs_llava_onevision": ARXIV_FIGS_LLAVA_ONEVISION,
+    "figureqa_llava_onevision": FIGUREQA_LLAVA_ONEVISION,
+}
 
 
 def parse_sampling_rate(dataset_name):

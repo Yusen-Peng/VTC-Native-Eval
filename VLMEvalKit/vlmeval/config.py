@@ -1759,6 +1759,7 @@ neo_series = {
         compression_ratio=0.5,
     ),
 
+    
 }
 
 supported_VLM = {}

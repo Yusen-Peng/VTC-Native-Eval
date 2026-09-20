@@ -1,0 +1,258 @@
+\documentclass[11pt]{article}
+
+% Change "review" to "final" to generate the final (sometimes called camera-ready) version.
+% Change to "preprint" to generate a non-anonymous version with page numbers.
+\usepackage[review]{acl}
+
+% Standard package includes
+\usepackage{times}
+\usepackage{latexsym}
+
+% For proper rendering and hyphenation of words containing Latin characters (including in bib files)
+\usepackage[T1]{fontenc}
+\usepackage{float}
+% For Vietnamese characters
+% \usepackage[T5]{fontenc}
+% See https://www.latex-project.org/help/documentation/encguide.pdf for other character sets
+
+% This assumes your files are encoded as UTF8
+\usepackage[utf8]{inputenc}
+
+% This is not strictly necessary, and may be commented out,
+% but it will improve the layout of the manuscript,
+% and will typically save some space.
+\usepackage{microtype}
+
+% This is also not strictly necessary, and may be commented out.
+% However, it will improve the aesthetics of text in
+% the typewriter font.
+\usepackage{inconsolata}
+
+%Including images in your LaTeX document requires adding
+%additional package(s)
+\usepackage{graphicx}
+\usepackage{makecell}
+\usepackage{adjustbox}
+\usepackage{makecell}
+\usepackage[table]{xcolor}
+\usepackage{booktabs}
+\usepackage{pifont}
+\newcommand{\cmark}{\textcolor{green}{\ding{51}}}
+\newcommand{\xmark}{\textcolor{red}{\ding{55}}}
+
+% If the title and author information does not fit in the area allocated, uncomment the following
+%
+%\setlength\titlebox{<dim>}
+%
+% and set <dim> to something 5cm or larger.
+
+\title{A Structured Study of Visual Token Compression for Native VLMs}
+
+% Author information can be set in various styles:
+% For several authors from the same institution:
+% \author{Author 1 \and ... \and Author n \\
+%         Address line \\ ... \\ Address line}
+% if the names do not fit well on one line use
+%         Author 1 \\ {\bf Author 2} \\ ... \\ {\bf Author n} \\
+% For authors from different institutions:
+% \author{Author 1 \\ Address line \\  ... \\ Address line
+%         \And  ... \And
+%         Author n \\ Address line \\ ... \\ Address line}
+% To start a separate ``row'' of authors use \AND, as in
+% \author{Author 1 \\ Address line \\  ... \\ Address line
+%         \AND
+%         Author 2 \\ Address line \\ ... \\ Address line \And
+%         Author 3 \\ Address line \\ ... \\ Address line}
+
+\author{First Author \\
+  Affiliation / Address line 1 \\
+  Affiliation / Address line 2 \\
+  Affiliation / Address line 3 \\
+  \texttt{email@domain} \\\And
+  Second Author \\
+  Affiliation / Address line 1 \\
+  Affiliation / Address line 2 \\
+  Affiliation / Address line 3 \\
+  \texttt{email@domain} \\}
+
+%\author{
+%  \textbf{First Author\textsuperscript{1}},
+%  \textbf{Second Author\textsuperscript{1,2}},
+%  \textbf{Third T. Author\textsuperscript{1}},
+%  \textbf{Fourth Author\textsuperscript{1}},
+%\\
+%  \textbf{Fifth Author\textsuperscript{1,2}},
+%  \textbf{Sixth Author\textsuperscript{1}},
+%  \textbf{Seventh Author\textsuperscript{1}},
+%  \textbf{Eighth Author \textsuperscript{1,2,3,4}},
+%\\
+%  \textbf{Ninth Author\textsuperscript{1}},
+%  \textbf{Tenth Author\textsuperscript{1}},
+%  \textbf{Eleventh E. Author\textsuperscript{1,2,3,4,5}},
+%  \textbf{Twelfth Author\textsuperscript{1}},
+%\\
+%  \textbf{Thirteenth Author\textsuperscript{3}},
+%  \textbf{Fourteenth F. Author\textsuperscript{2,4}},
+%  \textbf{Fifteenth Author\textsuperscript{1}},
+%  \textbf{Sixteenth Author\textsuperscript{1}},
+%\\
+%  \textbf{Seventeenth S. Author\textsuperscript{4,5}},
+%  \textbf{Eighteenth Author\textsuperscript{3,4}},
+%  \textbf{Nineteenth N. Author\textsuperscript{2,5}},
+%  \textbf{Twentieth Author\textsuperscript{1}}
+%\\
+%\\
+%  \textsuperscript{1}Affiliation 1,
+%  \textsuperscript{2}Affiliation 2,
+%  \textsuperscript{3}Affiliation 3,
+%  \textsuperscript{4}Affiliation 4,
+%  \textsuperscript{5}Affiliation 5
+%\\
+%  \small{
+%    \textbf{Correspondence:} \href{mailto:email@domain}{email@domain}
+%  }
+%}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+\end{abstract}
+
+\section{Research Questions}
+
+\paragraph{RQ1 -- Global landscape: what method works the best for general VQA? what method works the best for OCR?} We need to have leaderboard-like results and FLOP-performance tradeoff plots?
+
+\paragraph{RQ2 -- Effect of model scaling: what changes when we go from NEO 2B to NEO 9B, and what does not change?} pretty straightforward analysis to do
+
+\paragraph{RQ3 -- Effect of paradigm shift: how does the performance shift from encoder-based VLMs (i.e. LLaVA) to encoder-free VLMs (NEO)?} we can reuse results of LLaVA from DRIP paper!
+
+\paragraph{RQ4 -- Effect of continual SFT data: what kind of data scale and composition and lead to effective and efficient VTC training-based methods?} we need to curate a good, diverse, balanced, and not-too-large SFT dataset for doing continual SFT.
+
+\begin{table*}[ht]
+    \centering
+    \adjustbox{width=1.0\textwidth}{
+    \begin{tabular}{ccccp{8cm}c}
+        \toprule
+        \textbf{Method} & \textbf{Require training?} & \textbf{Compression level} & \textbf{Can integrate?} & \textbf{Notes} & \textbf{Already integrated?} \\
+        \midrule
+        \cellcolor{green!10}Fixed pooling & training-\textbf{free} & encoder-level & \cmark & -- & \cmark \\
+        \cellcolor{green!10}Fixed pooling & training-\textbf{based} & encoder-level & \cmark & -- & \cmark \\
+        \cellcolor{green!10}Random pruning & training-\textbf{free} & encoder-level & \cmark & & \\
+        \cellcolor{green!10}Random pruning & training~\textbf{based} & encoder-level & \cmark & & \\
+        \cellcolor{gray!10}PruMerge[ICCV'25] & training-\textbf{free} & encoder-level & \xmark & need attention! & NA \\
+        \cellcolor{gray!10}PruneSID[ICLR'26] & training-\textbf{free} & encoder-level & \xmark & need attention! & NA \\
+        \cellcolor{green!10}ToME[ICLR'23] & training-\textbf{free} & encoder-level & \cmark & \url{https://github.com/facebookresearch/ToMe/blob/main/tome/merge.py} & \\
+        \cellcolor{green!10}Perceiver[ICML'21] & training-\textbf{based} & encoder-level & \cmark & \url{https://github.com/Yusen-Peng/DRIP/blob/main/src/LLaVA_wrapper/llava_local/model/multimodal_encoder/perceiver_utils.py} & \\
+        \cellcolor{green!10}DRIP & training-\textbf{based} & encoder-level & \cmark & \url{https://github.com/Yusen-Peng/DRIP/blob/main/src/LLaVA_wrapper/llava_local/model/multimodal_encoder/clip_encoder.py} &  \\
+        \cellcolor{green!10}FastV[ECCV'24] & training-\textbf{free} & LLM-level & \cmark & \url{https://github.com/pkunlp-icler/FastV/blob/main/src/FastV/llava-hf/transformers/src/transformers/models/llama/modeling_llama.py} & \\
+        \cellcolor{green!10}SparseVLM[ICML'25] & training-\textbf{free} & LLM-level & \cmark & \url{https://github.com/Gumpest/SparseVLMs/blob/main/llava/model/language_model/modelling_sparse_llama.py} & \\
+        \bottomrule
+    \end{tabular}}
+    \caption{Method list}
+    \label{tab:methods}
+\end{table*}
+
+\begin{table*}[ht]
+    \centering
+    \adjustbox{width=1.0\textwidth}{
+    \begin{tabular}{c|cccc|cccc}
+        \toprule
+         \textbf{\textcolor{cyan}{Training-free} Model} & \colorbox{yellow!20}{\textbf{MMBench}} & \colorbox{yellow!20}{\textbf{MME}} & \colorbox{yellow!20}{\textbf{MMMU}} & \colorbox{yellow!20}{\textbf{RealWorldQA}} & \colorbox{red!20}{\textbf{TextVQA}} & \colorbox{red!20}{\textbf{DocVQA}} & \colorbox{red!20}{\textbf{OCRBench}} & \colorbox{red!20}{\textbf{ChartQA}} \\
+        \midrule
+        \rowcolor{gray!10}\multicolumn{9}{c}{2B scale} \\
+        time estimate & 25 mins & 15 mins & 15 mins & 10 mins & 55 mins & 2 hours & 25 mins & 35 mins \\
+        NEO-2B-MT & 74.74 & 1501.42 & 47.88 & 60.65 & 67.68 & 86.28 & 76.3 & 79.88 \\        
+        NEO-2B-SFT & 76.20 & \textbf{1565.7} & 48.33 & 62.74 & 73.94 & 89.86 & 77.0 & 81.0 \\
+        \rowcolor{green!10}\multicolumn{9}{c}{2x compression} \\
+        + fixed pooling &  & 1444.2 & \\
+        + random pruning & \\
+        + ToMe (re-implement) & \\
+
+        
+        \rowcolor{green!10}\multicolumn{9}{c}{4x compression} \\
+        + fixed pooling & & 781.13 &  \\
+        + random pruning & \\
+        + ToMe (re-implement) & \\   
+
+        \rowcolor{green!10}\multicolumn{9}{c}{8x compression} \\
+        + fixed pooling & & 565.8 & \\
+        + random pruning & \\
+        + ToMe (re-implement) & \\        
+        \rowcolor{gray!10}\multicolumn{9}{c}{9B scale} \\
+        NEO-9B-SFT & \\
+        \bottomrule
+    \end{tabular}}
+    \caption{Training-free experiments (more like a motivation table).}
+    \label{tab:training-free}
+\end{table*}
+
+\begin{table*}
+    \centering
+    \adjustbox{width=1.0\linewidth}{
+    \begin{tabular}{cccccc}
+        \toprule
+        \textbf{source} & \textbf{subset} & \textbf{domain} & \textbf{\#samples} & \textcolor{red}{\textbf{\%downsample}} & \textcolor{red}{\textbf{final \#samples}} \\
+        \midrule
+        % LLaVA-OV1.5 & CLEVR & visual reasoning & 514K & 1\% & 5.14K \\
+        LLaVA-OV1.5 & textvqa & text recognition & 8.45K & 100\% & 8.45K \\
+        LLaVA-OV1.5 & infographic\_vqa & text recognition & 12.6K & 100\% & 12.6K \\
+
+        LLaVA-OV1.5 & arxiv\_figs & table understanding & 151K & 10\% & 15.1K \\ 
+        LLaVA-OV1.5 & FigureQA & chart understanding & 117K & 10\% & 11.7K \\
+        LLaVA-OV1.5 & Docmatix-part-00-of-10 & document understanding & 56.3K & 50\% & 28.2K \\
+         \bottomrule
+    \end{tabular}}
+    \caption{Continual SFT DATA archive: \textbf{OCR@76K}}
+    \label{tab:SFT_data}
+\end{table*}
+
+\begin{table*}[ht]
+    \centering
+    \adjustbox{width=1.0\textwidth}{
+    \begin{tabular}{c|cccc|cccc}
+        \toprule
+        \textbf{\textcolor{red}{Training-based} Model} & \colorbox{yellow!20}{\textbf{MMBench}} & \colorbox{yellow!20}{\textbf{MME}} & \colorbox{yellow!20}{\textbf{MMMU}} & \colorbox{yellow!20}{\textbf{RealWorldQA}} & \colorbox{red!20}{\textbf{TextVQA}} & \colorbox{red!20}{\textbf{DocVQA}} & \colorbox{red!20}{\textbf{OCRBench}} & \colorbox{red!20}{\textbf{ChartQA}} \\
+        \midrule
+        \rowcolor{gray!10}\multicolumn{9}{c}{2B scale} \\
+        time estimate & 25 mins & 15 mins & 15 mins & 10 mins & 55 mins & 2 hours & 25 mins & 35 mins \\
+        \textcolor{gray}{NEO-2B-MT} & \textcolor{gray}{74.74} & \textcolor{gray}{1501.42} & \textcolor{gray}{47.88} & \textcolor{gray}{60.65} & \textcolor{gray}{67.68} & \textcolor{gray}{86.28} & \textcolor{gray}{76.3} & \textcolor{gray}{79.88} \\
+        \textcolor{gray}{NEO-2B-SFT} & \textcolor{gray}{76.20} & \textcolor{gray}{1565.7} & \textcolor{gray}{48.33} & \textcolor{gray}{62.74} & \textcolor{gray}{73.94} & \textcolor{gray}{89.86} & \textcolor{gray}{77.0} & \textcolor{gray}{81.0} \\
+        NEO-2B-SFT@OV (30 *128) & 76.20 & 1564.01 & 47.66 & 62.87 & 74.06 & 89.71 & 76.7 & 80.92 \\
+        NEO-2B-SFT@OV (OCR@76K) & \cellcolor{cyan!10}training! \\
+    
+        \rowcolor{green!10}\multicolumn{9}{c}{2x compression} \\
+        + fixed pooling@OV (30*128) & 70.10 & 1435.62 & 46.77 & 57.65 & 28.11 & 29.01 & 11.2 & 37.44 \\
+        + fixed pooling@OV (OCR@76K) & \cellcolor{cyan!10}submitted & \\
+        + random pruning & \\
+        + Perceiver & \\
+        + DRIP & \\
+
+        
+        \rowcolor{green!10}\multicolumn{9}{c}{4x compression} \\
+        + fixed pooling & & &  \\
+        + random pruning & \\
+        + Perceiver & \\
+        + DRIP & \\   
+
+        \rowcolor{green!10}\multicolumn{9}{c}{8x compression} \\
+        + fixed pooling & &  & \\
+        + random pruning & \\
+        + Perceiver & \\
+        + DRIP & \\        
+        
+        \rowcolor{gray!10}\multicolumn{9}{c}{9B scale} \\
+        NEO-9B-SFT & \\
+        \bottomrule
+    \end{tabular}}
+    \caption{Training-based experiments (this will be the main results table).}
+    \label{tab:training-based}
+\end{table*}
+
+
+
+
+% \cite{andrew2007scalable}
+% \bibliography{custom}
+
+\end{document}
+

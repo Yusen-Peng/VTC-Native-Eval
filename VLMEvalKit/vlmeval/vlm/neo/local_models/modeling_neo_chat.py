@@ -181,13 +181,6 @@ class NEOChatModel(PreTrainedModel):
         self.vtc_method = getattr(config.vision_config, "vtc_method", "none")
         self.compression_ratio = getattr(config.vision_config, "compression_ratio", 1.0)
 
-        if self.vtc_method == "none":
-            self.pooling_factor = 1
-        elif self.vtc_method == "fixed":
-            self.pooling_factor = int(round(1.0 / self.compression_ratio))
-        else:
-            raise ValueError(f"Unsupported vtc_method: {self.vtc_method}")
-
         config.llm_config._attn_implementation = 'eager'
 
         if vision_model is not None:
@@ -204,101 +197,76 @@ class NEOChatModel(PreTrainedModel):
         self.conv_template = get_conv_template(self.template)
         self.system_message = self.conv_template.system_message
 
-    def _get_num_visual_tokens(self, h, w):
-        h_native = int(h) // int(1 / self.downsample_ratio)
-        w_native = int(w) // int(1 / self.downsample_ratio)
-        num_tokens = h_native * w_native
+    @property
+    def compressor(self):
+        """The VTC compressor: single source of truth for token counts / positions."""
+        return self.vision_model.embeddings.compressor
 
-        if self.vtc_method == "fixed":
-            num_tokens = (num_tokens + self.pooling_factor - 1) // self.pooling_factor
-        return num_tokens
+    def _get_native_hw(self, h, w):
+        downsample_factor = int(1 / self.downsample_ratio)
+        return int(h) // downsample_factor, int(w) // downsample_factor
+
+    def _get_num_visual_tokens(self, h, w):
+        h_native, w_native = self._get_native_hw(h, w)
+        return self.compressor.num_output_tokens(h_native, w_native)
 
     def _get_compressed_visual_positions(self, grid_hw, device):
         """Build h/w position indices matching the visual tokens."""
-        downsample_factor = int(1 / self.downsample_ratio)
         all_h = []
         all_w = []
         for i in range(grid_hw.shape[0]):
-            h = int(grid_hw[i, 0].item()) // downsample_factor
-            w = int(grid_hw[i, 1].item()) // downsample_factor
-
-            # Native NEO positions in row-major order
-            y, x = torch.meshgrid(
-                torch.arange(h, device=device),
-                torch.arange(w, device=device),
-                indexing="ij",
-            )
-
-            pos_h = y.reshape(-1)
-            pos_w = x.reshape(-1)
-
-            if self.vtc_method == "fixed":
-                # For fixed 1D pooling: 
-                # use the final token in each pooling segment as the representative position.
-                N = pos_h.numel()
-                # Last token of every full pooling group
-                idx = torch.arange(self.pooling_factor - 1, N, self.pooling_factor, device=device)
-                # If there is an incomplete final group, its final token is also a representative.
-                if idx.numel() == 0 or idx[-1].item() != N - 1:
-                    idx = torch.cat([idx, torch.tensor([N - 1], device=device, dtype=idx.dtype)])
-                pos_h = pos_h[idx]
-                pos_w = pos_w[idx]
+            h, w = self._get_native_hw(grid_hw[i, 0], grid_hw[i, 1])
+            pos_h, pos_w = self.compressor.output_positions(h, w, device=device)
             all_h.append(pos_h)
             all_w.append(pos_w)
 
         return torch.cat(all_w), torch.cat(all_h)
 
-    def _compress_training_sequence(self, input_ids, labels, indexes, loss_weight, seq_boundaries):
+    def _compress_training_sequence(self, input_ids, labels, indexes, loss_weight, seq_boundaries, grid_hw):
         """
             Remove unused IMG_CONTEXT positions from the training sequence 
             such that the LLM sequence matches the compressed visual tokens.
         """
-        if self.vtc_method == "none":
+        ids = input_ids[0]
+        S = ids.shape[0]
+        keep_mask = torch.ones(S, dtype=torch.bool, device=ids.device)
+        is_img = ids == self.img_context_token_id
+
+        # Find contiguous IMG_CONTEXT runs, where each run corresponds to one image.
+        padded = F.pad(is_img.long(), (1, 1), value=0)
+        diff = padded[1:] - padded[:-1]
+        starts = torch.where(diff == 1)[0]
+        ends = torch.where(diff == -1)[0]  # exclusive
+        assert len(starts) == len(ends)
+        for i, (start, end) in enumerate(zip(starts.tolist(), ends.tolist())):
+            h, w = self._get_native_hw(grid_hw[i, 0], grid_hw[i, 1])
+            assert end - start == h * w, f"image {i}: {end - start} IMG_CONTEXT tokens but native grid is {h}x{w}"
+            # we can start by dropping all image-token positions 
+            keep_mask[start:end] = False
+            # NOTE: Keep the exact representatives chosen by the compressor.
+            keep_mask[start + self.compressor.kept_indices(h, w, device=ids.device)] = True
+
+        if bool(keep_mask.all()):
             return input_ids, labels, indexes, loss_weight, seq_boundaries
-        elif self.vtc_method == "fixed":
-            ids = input_ids[0]
-            S = ids.shape[0]
-            keep_mask = torch.ones(S, dtype=torch.bool, device=ids.device)
-            is_img = ids == self.img_context_token_id
 
-            # Find contiguous IMG_CONTEXT runs, where each run corresponds to one image.
-            padded = F.pad(is_img.long(), (1, 1), value=0)
-            diff = padded[1:] - padded[:-1]
-            starts = torch.where(diff == 1)[0]
-            ends = torch.where(diff == -1)[0]  # exclusive
-            assert len(starts) == len(ends)
-            for start, end in zip(starts.tolist(), ends.tolist()):
-                N = end - start
-                # we can start by dropping all image-token positions 
-                keep_mask[start:end] = False
+        # Update sequence boundaries before slicing.
+        # Each old boundary b maps to number of retained tokens before b
+        old_boundaries = seq_boundaries
+        # Count how many tokens survive before each original sequence position.
+        num_kept_before_position = torch.cat([torch.zeros(1, device=ids.device, dtype=torch.long), keep_mask.long().cumsum(0),])
+        seq_boundaries = num_kept_before_position[old_boundaries.long()]
 
-                # NOTE: Keep the exact representatives corresponding to fixed pooling:
-                # last token of every pooling group.
-                local_idx = torch.arange(self.pooling_factor - 1, N, self.pooling_factor, device=ids.device)
-
-                # Preserve final partial group properly
-                if local_idx.numel() == 0 or local_idx[-1].item() != N - 1:
-                    local_idx = torch.cat([local_idx, torch.tensor([N - 1], device=ids.device, dtype=torch.long,)])
-                keep_mask[start + local_idx] = True
-
-            # Update sequence boundaries before slicing.
-            # Each old boundary b maps to number of retained tokens before b
-            old_boundaries = seq_boundaries
-            # Count how many tokens survive before each original sequence position.
-            num_kept_before_position = torch.cat([torch.zeros(1, device=ids.device, dtype=torch.long), keep_mask.long().cumsum(0),])
-            seq_boundaries = num_kept_before_position[old_boundaries.long()]
-
-            # Slice every sequence-aligned tensor
-            input_ids = input_ids[:, keep_mask]
-            if labels is not None:
-                labels = labels[keep_mask] if labels.dim() == 1 else labels[:, keep_mask]
-            if indexes is not None:
-                indexes = indexes[keep_mask]
-            if loss_weight is not None:
-                if isinstance(loss_weight, list):
-                    loss_weight = torch.as_tensor(loss_weight, device=keep_mask.device)
-                loss_weight = loss_weight[keep_mask] if loss_weight.dim() == 1 else loss_weight[:, keep_mask]
-            return input_ids, labels, indexes, loss_weight, seq_boundaries
+        # Slice every sequence-aligned tensor
+        input_ids = input_ids[:, keep_mask]
+        if labels is not None:
+            labels = labels[keep_mask] if labels.dim() == 1 else labels[:, keep_mask]
+        if indexes is not None:
+            indexes = indexes[keep_mask]
+        if loss_weight is not None:
+            if isinstance(loss_weight, list):
+                loss_weight = torch.as_tensor(loss_weight, device=keep_mask.device)
+            loss_weight = loss_weight[keep_mask] if loss_weight.dim() == 1 else loss_weight[:, keep_mask]
+        return input_ids, labels, indexes, loss_weight, seq_boundaries
 
     def forward(
         self,
@@ -336,7 +304,8 @@ class NEOChatModel(PreTrainedModel):
                 labels=labels,
                 indexes=indexes,
                 loss_weight=loss_weight,
-                seq_boundaries=seq_boundaries)
+                seq_boundaries=seq_boundaries,
+                grid_hw=grid_hw)
         hidden_states = self.language_model.get_input_embeddings()(input_ids)
         selected = input_ids == self.img_context_token_id
         vit_embeds = vit_embeds.reshape((-1, vit_embeds.shape[-1]))

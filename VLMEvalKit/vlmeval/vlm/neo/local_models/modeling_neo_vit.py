@@ -7,7 +7,7 @@ from transformers.modeling_outputs import BaseModelOutputWithPooling
 from transformers.modeling_utils import PreTrainedModel
 
 from .configuration_neo_vit import NEOVisionConfig
-from .compressor import BaseVTCCompressor, FixedPoolingCompressor
+from .compressors import build_compressor
 
 
 def precompute_rope_freqs_sincos(
@@ -146,12 +146,7 @@ class NEOVisionEmbeddings(nn.Module):
 
         self.vtc_method = getattr(config, "vtc_method", "none")
         self.compression_ratio = getattr(config, "compression_ratio", 1.0)
-        if self.vtc_method == "fixed":
-            self.compressor = FixedPoolingCompressor(compression_ratio=self.compression_ratio)
-        elif self.vtc_method == "none":
-            self.compressor = None
-        else:
-            raise ValueError(f"Unknown VTC method: {self.vtc_method}")
+        self.compressor = build_compressor(self.vtc_method, compression_ratio=self.compression_ratio)
 
     def _apply_2d_rotary_pos_emb(self, patch_embeds, grid_hw):
         """
@@ -194,8 +189,7 @@ class NEOVisionEmbeddings(nn.Module):
             patches_per_img = patches_per_img.permute(0, 2, 3, 1) # [1, H/2, W/2, D_llm]
 
             # ⭐⭐⭐ VTC modules (after 2x2 downsample + projection to LLM space)
-            if self.compressor is not None:
-                patches_per_img = self.compressor(patches_per_img)
+            patches_per_img = self.compressor(patches_per_img)
 
             patches_list.append(patches_per_img.view(-1, patches_per_img.shape[-1]))
             cur_position += h * w

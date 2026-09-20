@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from typing import Optional
-
 from transformers import TrainingArguments as HfTrainingArguments
 
 
@@ -24,6 +23,10 @@ class ModelArguments:
     use_cache: bool = field(default=False)
     # Training control flags
     train_buffer: bool = field(default=False)
+
+    # Visual Token Compression (VTC) settings
+    vtc_method: str = field(default="none")
+    compression_ratio: float = field(default=1.0)
 
 
 @dataclass
@@ -54,7 +57,7 @@ class TrainingArguments(HfTrainingArguments):
     min_lr_ratio: float = field(default=0.0)
     warmup_ratio: float = field(default=0.0)
     warmup_steps: int = field(default=0)
-    max_steps: int = field(default=200000)
+    max_steps: int = field(default=-1)
     gradient_accumulation_steps: int = field(default=1)
     max_grad_norm: float = field(default=1.0)
     save_steps: int = field(default=5000)

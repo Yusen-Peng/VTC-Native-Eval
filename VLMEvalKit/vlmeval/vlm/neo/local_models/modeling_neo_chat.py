@@ -1,8 +1,13 @@
 from typing import List, Optional, Tuple, Union
 
-import torch.utils.checkpoint
-import transformers
+import torch
+import torch.nn.functional as F
 from torch.nn import CrossEntropyLoss
+from torch.nn.attention.flex_attention import and_masks, create_block_mask, or_masks
+
+
+
+import transformers
 from transformers import GenerationConfig
 from transformers.modeling_outputs import CausalLMOutputWithPast
 from transformers.modeling_utils import PreTrainedModel
@@ -60,6 +65,97 @@ def build_abs_positions_from_grid_hw(grid_hw: torch.Tensor, device=None):
     return abs_x, abs_y
 
 
+
+
+
+def _offsets_to_doc_ids_tensor(offsets, has_pad, split_size=1024):
+    device = offsets.device
+    counts = offsets[1:] - offsets[:-1]
+
+    if has_pad:
+        tmp_counts = counts[:-1]
+        last_counts = counts[-1]
+
+        num_split = last_counts // split_size
+        remainder = last_counts % split_size
+
+        split_counts = [split_size] * num_split
+        if remainder > 0:
+            split_counts.append(remainder)
+
+        counts = torch.cat(
+            [
+                tmp_counts,
+                torch.LongTensor(split_counts).to(
+                    dtype=tmp_counts.dtype, device=tmp_counts.device
+                ),
+            ],
+            dim=-1,
+        )
+
+    return torch.repeat_interleave(
+        torch.arange(len(counts), device=device, dtype=torch.int32), counts
+    )
+
+def calculate_pad_length(seqlen, div_num):
+    """
+    calculate the min padding_length,  make (seqlen + padding_length) can be divisible by div_num
+
+    :param seqlen: int, 序列长度
+    :param div_num: int, 整数
+    :return: int, 最小填充长度
+    """
+    if seqlen % div_num == 0:
+        return 0
+    else:
+        padding_length = div_num - (seqlen % div_num)
+        return padding_length
+
+
+def create_flex_mask_padding(document_ids, modality_indicators, div_num):
+    """
+    Current version:
+    1. document attention
+    2. within each document, causal attention. Within a same image, full attention
+    seqlen padded to divisable by some number
+    """
+    slen = document_ids.size(-1)
+    padding_length = calculate_pad_length(seqlen=slen, div_num=div_num)
+    if padding_length > 0:
+        pad_doc_id = document_ids.max() + 1
+        document_ids = F.pad(document_ids, (0, padding_length), value=pad_doc_id)
+        modality_indicators = F.pad(modality_indicators, (0, padding_length), value=-1)
+
+    def causal_mask(b, h, q_idx, kv_idx):
+        return q_idx >= kv_idx
+
+    def samedoc_mask(b, h, q_idx, kv_idx):
+        return document_ids[q_idx] == document_ids[kv_idx]
+
+    def sameimg_mask(b, h, q_idx, kv_idx):
+        is_image = modality_indicators[q_idx] > 0
+        same_doc = document_ids[q_idx] == document_ids[kv_idx]
+        return (
+            is_image
+            & (modality_indicators[q_idx] == modality_indicators[kv_idx])
+            & same_doc
+        )
+
+    samedoc_causal_mask = and_masks(causal_mask, samedoc_mask)
+    mask_mod = or_masks(samedoc_causal_mask, sameimg_mask)
+    
+    block_mask = create_block_mask(
+        mask_mod,
+        B=None,
+        H=None,
+        Q_LEN=slen + padding_length,
+        KV_LEN=slen + padding_length,
+        BLOCK_SIZE=128,
+        # disable torch compile in debugging mode to avoid potential issues
+        _compile=False,
+    )
+    return block_mask, padding_length
+
 class NEOChatModel(PreTrainedModel):
     config_class = NEOChatConfig
     main_input_name = 'pixel_values'
@@ -82,6 +178,16 @@ class NEOChatModel(PreTrainedModel):
         self.patch_size = patch_size
         self.template = config.template
         self.downsample_ratio = config.downsample_ratio
+        self.vtc_method = getattr(config.vision_config, "vtc_method", "none")
+        self.compression_ratio = getattr(config.vision_config, "compression_ratio", 1.0)
+
+        if self.vtc_method == "none":
+            self.pooling_factor = 1
+        elif self.vtc_method == "fixed":
+            self.pooling_factor = int(round(1.0 / self.compression_ratio))
+        else:
+            raise ValueError(f"Unsupported vtc_method: {self.vtc_method}")
+
         config.llm_config._attn_implementation = 'eager'
 
         if vision_model is not None:
@@ -98,84 +204,186 @@ class NEOChatModel(PreTrainedModel):
         self.conv_template = get_conv_template(self.template)
         self.system_message = self.conv_template.system_message
 
+    def _get_num_visual_tokens(self, h, w):
+        h_native = int(h) // int(1 / self.downsample_ratio)
+        w_native = int(w) // int(1 / self.downsample_ratio)
+        num_tokens = h_native * w_native
+
+        if self.vtc_method == "fixed":
+            num_tokens = (num_tokens + self.pooling_factor - 1) // self.pooling_factor
+        return num_tokens
+
+    def _get_compressed_visual_positions(self, grid_hw, device):
+        """Build h/w position indices matching the visual tokens."""
+        downsample_factor = int(1 / self.downsample_ratio)
+        all_h = []
+        all_w = []
+        for i in range(grid_hw.shape[0]):
+            h = int(grid_hw[i, 0].item()) // downsample_factor
+            w = int(grid_hw[i, 1].item()) // downsample_factor
+
+            # Native NEO positions in row-major order
+            y, x = torch.meshgrid(
+                torch.arange(h, device=device),
+                torch.arange(w, device=device),
+                indexing="ij",
+            )
+
+            pos_h = y.reshape(-1)
+            pos_w = x.reshape(-1)
+
+            if self.vtc_method == "fixed":
+                # For fixed 1D pooling: 
+                # use the final token in each pooling segment as the representative position.
+                N = pos_h.numel()
+                # Last token of every full pooling group
+                idx = torch.arange(self.pooling_factor - 1, N, self.pooling_factor, device=device)
+                # If there is an incomplete final group, its final token is also a representative.
+                if idx.numel() == 0 or idx[-1].item() != N - 1:
+                    idx = torch.cat([idx, torch.tensor([N - 1], device=device, dtype=idx.dtype)])
+                pos_h = pos_h[idx]
+                pos_w = pos_w[idx]
+            all_h.append(pos_h)
+            all_w.append(pos_w)
+
+        return torch.cat(all_w), torch.cat(all_h)
+
+    def _compress_training_sequence(self, input_ids, labels, indexes, loss_weight, seq_boundaries):
+        """
+            Remove unused IMG_CONTEXT positions from the training sequence 
+            such that the LLM sequence matches the compressed visual tokens.
+        """
+        if self.vtc_method == "none":
+            return input_ids, labels, indexes, loss_weight, seq_boundaries
+        elif self.vtc_method == "fixed":
+            ids = input_ids[0]
+            S = ids.shape[0]
+            keep_mask = torch.ones(S, dtype=torch.bool, device=ids.device)
+            is_img = ids == self.img_context_token_id
+
+            # Find contiguous IMG_CONTEXT runs, where each run corresponds to one image.
+            padded = F.pad(is_img.long(), (1, 1), value=0)
+            diff = padded[1:] - padded[:-1]
+            starts = torch.where(diff == 1)[0]
+            ends = torch.where(diff == -1)[0]  # exclusive
+            assert len(starts) == len(ends)
+            for start, end in zip(starts.tolist(), ends.tolist()):
+                N = end - start
+                # we can start by dropping all image-token positions 
+                keep_mask[start:end] = False
+
+                # NOTE: Keep the exact representatives corresponding to fixed pooling:
+                # last token of every pooling group.
+                local_idx = torch.arange(self.pooling_factor - 1, N, self.pooling_factor, device=ids.device)
+
+                # Preserve final partial group properly
+                if local_idx.numel() == 0 or local_idx[-1].item() != N - 1:
+                    local_idx = torch.cat([local_idx, torch.tensor([N - 1], device=ids.device, dtype=torch.long,)])
+                keep_mask[start + local_idx] = True
+
+            # Update sequence boundaries before slicing.
+            # Each old boundary b maps to number of retained tokens before b
+            old_boundaries = seq_boundaries
+            # Count how many tokens survive before each original sequence position.
+            num_kept_before_position = torch.cat([torch.zeros(1, device=ids.device, dtype=torch.long), keep_mask.long().cumsum(0),])
+            seq_boundaries = num_kept_before_position[old_boundaries.long()]
+
+            # Slice every sequence-aligned tensor
+            input_ids = input_ids[:, keep_mask]
+            if labels is not None:
+                labels = labels[keep_mask] if labels.dim() == 1 else labels[:, keep_mask]
+            if indexes is not None:
+                indexes = indexes[keep_mask]
+            if loss_weight is not None:
+                if isinstance(loss_weight, list):
+                    loss_weight = torch.as_tensor(loss_weight, device=keep_mask.device)
+                loss_weight = loss_weight[keep_mask] if loss_weight.dim() == 1 else loss_weight[:, keep_mask]
+            return input_ids, labels, indexes, loss_weight, seq_boundaries
+
     def forward(
-            self,
-            pixel_values: torch.FloatTensor,
-            input_ids: torch.LongTensor = None,
-            attention_mask: Optional[torch.Tensor] = None,
-            position_ids: Optional[torch.LongTensor] = None,
-            image_flags: Optional[torch.LongTensor] = None,
-            past_key_values: Optional[List[torch.FloatTensor]] = None,
-            labels: Optional[torch.LongTensor] = None,
-            use_cache: Optional[bool] = None,
-            output_attentions: Optional[bool] = None,
-            output_hidden_states: Optional[bool] = None,
-            return_dict: Optional[bool] = None,
+        self,
+        input_ids: Optional[torch.LongTensor] = None,  # input_ids: (Seq_len,)
+        indexes: Optional[torch.LongTensor] = None,
+        labels: Optional[torch.LongTensor] = None,
+        pixel_values: Optional[List[torch.Tensor]] = None,
+        past_key_values: Optional[List[torch.FloatTensor]] = None,
+        seq_boundaries: Optional[torch.LongTensor] = None,
+        image_grid_hw: Optional[torch.LongTensor] = None,
+        loss_weight: Optional[torch.FloatTensor] = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
-        raise NotImplementedError('forward')
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        assert (
+            self.img_context_token_id is not None
+        ), "img_context_token_id should not be None."
+        assert image_grid_hw is not None, "image_grid_hw should not be None."
+        if pixel_values is None:
+            grid_size = int(1 / self.downsample_ratio)
+            pixel_values = [
+                torch.rand(
+                    grid_size**2,
+                    3 * self.patch_size * self.patch_size,
+                    device=self.device,
+                    dtype=self.dtype,
+                )
+            ]
+            grid_hw = torch.tensor([[grid_size, grid_size]], device=self.device)
+        else:
+            grid_hw = image_grid_hw[0]
 
-        image_flags = image_flags.squeeze(-1)
-        input_embeds = self.language_model.get_input_embeddings()(input_ids).clone()
+        pixel_values = pixel_values[0].to(self.dtype)
+        vit_embeds = self.extract_feature(pixel_values, grid_hw=grid_hw)
+        input_ids, labels, indexes, loss_weight, seq_boundaries = self._compress_training_sequence(
+                input_ids=input_ids,
+                labels=labels,
+                indexes=indexes,
+                loss_weight=loss_weight,
+                seq_boundaries=seq_boundaries)
+        hidden_states = self.language_model.get_input_embeddings()(input_ids)
+        selected = input_ids == self.img_context_token_id
+        vit_embeds = vit_embeds.reshape((-1, vit_embeds.shape[-1]))
 
-        vit_embeds = self.extract_feature(pixel_values)
-        vit_embeds = vit_embeds[image_flags == 1]
+        abs_pos_w, abs_pos_h = self._get_compressed_visual_positions(grid_hw=grid_hw, device=indexes.device)
+        pos_h = torch.zeros_like(indexes)
+        pos_w = torch.zeros_like(indexes)
+        pos_h[selected[0]] = abs_pos_h.to(dtype=pos_h.dtype)
+        pos_w[selected[0]] = abs_pos_w.to(dtype=pos_w.dtype)
+        indexes = torch.stack([indexes, pos_h, pos_w], dim=0)
 
-        B, N, C = input_embeds.shape
-        input_embeds = input_embeds.reshape(B * N, C)
+        img_start_flags = (input_ids[0] == self.img_start_token_id).long()
+        shifted_flags = torch.cat(
+            [
+                torch.zeros(1, dtype=torch.long, device=input_ids.device),
+                img_start_flags,
+            ],
+            dim=0,
+        )[:-1]
 
-        # if torch.distributed.is_initialized() and torch.distributed.get_rank() == 0:
-        #     print(f'dynamic ViT batch size: {vit_batch_size}, images per sample: {vit_batch_size / B}, dynamic token length: {N}')
+        hidden_states = hidden_states.clone()
+        hidden_states[selected] = vit_embeds
 
-        input_ids = input_ids.reshape(B * N)
-        selected = (input_ids == self.img_context_token_id)
-        try:
-            input_embeds[selected] = input_embeds[selected] * 0.0 + vit_embeds.reshape(-1, C)
-        except Exception as e:
-            vit_embeds = vit_embeds.reshape(-1, C)
-            print(f'warning: {e}, input_embeds[selected].shape={input_embeds[selected].shape}, '
-                  f'vit_embeds.shape={vit_embeds.shape}')
-            n_token = min(selected.sum(), vit_embeds.size(0))
-            input_embeds[selected][:n_token] = input_embeds[selected][:n_token] * 0.0 + vit_embeds[:n_token]
+        modality_indicators = shifted_flags.cumsum(0)
+        modality_indicators[input_ids[0] != self.img_context_token_id] = -1
 
-        input_embeds = input_embeds.reshape(B, N, C)
+        document_ids = _offsets_to_doc_ids_tensor(
+            seq_boundaries, has_pad=False
+        )
+        attention_mask, padding_length = create_flex_mask_padding(
+            document_ids, modality_indicators=modality_indicators, div_num=128
+        )
 
-        outputs = self.language_model(
-            inputs_embeds=input_embeds,
+        llm_outputs = self.language_model(
+            inputs_embeds=hidden_states,
+            labels=labels,
+            indexes=indexes,
+            padding_length=padding_length,
             attention_mask=attention_mask,
-            position_ids=position_ids,
-            past_key_values=past_key_values,
-            use_cache=use_cache,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
+            inference_params=None,
+            loss_weight=loss_weight,
         )
-        logits = outputs.logits
 
-        loss = None
-        if labels is not None:
-            # Shift so that tokens < n predict n
-            shift_logits = logits[..., :-1, :].contiguous()
-            shift_labels = labels[..., 1:].contiguous()
-            # Flatten the tokens
-            loss_fct = CrossEntropyLoss()
-            shift_logits = shift_logits.view(-1, self.language_model.config.vocab_size)
-            shift_labels = shift_labels.view(-1)
-            # Enable model parallelism
-            shift_labels = shift_labels.to(shift_logits.device)
-            loss = loss_fct(shift_logits, shift_labels)
+        return llm_outputs
 
-        if not return_dict:
-            output = (logits,) + outputs[1:]
-            return (loss,) + output if loss is not None else output
-
-        return CausalLMOutputWithPast(
-            loss=loss,
-            logits=logits,
-            past_key_values=outputs.past_key_values,
-            hidden_states=outputs.hidden_states,
-            attentions=outputs.attentions,
-        )
+    def floating_point_ops(self, input_dict, exclude_embeddings=True):
+        return 0
 
     def extract_feature(self, pixel_values, grid_hw=None):
 
@@ -183,56 +391,6 @@ class NEOChatModel(PreTrainedModel):
                                  output_hidden_states=False, 
                                  return_dict=True, 
                                  grid_hw=grid_hw).last_hidden_state
-
-    def batch_chat(self, tokenizer, pixel_values, questions, generation_config, num_patches_list=None,
-                   history=None, return_history=False, IMG_START_TOKEN='<img>', IMG_END_TOKEN='</img>',
-                   IMG_CONTEXT_TOKEN='<IMG_CONTEXT>', verbose=False, image_counts=None):
-        raise NotImplementedError('batch_chat')
-        if history is not None or return_history:
-            print('Now multi-turn chat is not supported in batch_chat.')
-            raise NotImplementedError
-
-        if image_counts is not None:
-            num_patches_list = image_counts
-            print('Warning: `image_counts` is deprecated. Please use `num_patches_list` instead.')
-
-        img_context_token_id = tokenizer.convert_tokens_to_ids(IMG_CONTEXT_TOKEN)
-        self.img_context_token_id = img_context_token_id
-
-        if verbose and pixel_values is not None:
-            image_bs = pixel_values.shape[0]
-            print(f'dynamic ViT batch size: {image_bs}')
-
-        queries = []
-        for idx, num_patches in enumerate(num_patches_list):
-            question = questions[idx]
-            if pixel_values is not None and '<image>' not in question:
-                question = '<image>\n' + question
-            template = get_conv_template(self.template)
-            template.system_message = self.system_message
-            template.append_message(template.roles[0], question)
-            template.append_message(template.roles[1], None)
-            query = template.get_prompt()
-
-            image_tokens = IMG_START_TOKEN + IMG_CONTEXT_TOKEN + IMG_END_TOKEN
-            query = query.replace('<image>', image_tokens, 1)
-            queries.append(query)
-
-        tokenizer.padding_side = 'left'
-        model_inputs = tokenizer(queries, return_tensors='pt', padding=True)
-        input_ids = model_inputs['input_ids'].to(self.device)
-        attention_mask = model_inputs['attention_mask'].to(self.device)
-        eos_token_id = tokenizer.convert_tokens_to_ids(template.sep.strip())
-        generation_config['eos_token_id'] = eos_token_id
-        generation_output = self.generate(
-            pixel_values=pixel_values,
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            **generation_config
-        )
-        responses = tokenizer.batch_decode(generation_output, skip_special_tokens=True)
-        responses = [response.split(template.sep.strip())[0].strip() for response in responses]
-        return responses
 
     def chat(self, tokenizer, pixel_values, question, generation_config, history=None, return_history=False, grid_hw=None, 
              IMG_START_TOKEN='<img>', IMG_END_TOKEN='</img>', IMG_CONTEXT_TOKEN='<IMG_CONTEXT>', verbose=False):
@@ -260,7 +418,8 @@ class NEOChatModel(PreTrainedModel):
             print(f'dynamic image size: {grid_hw * self.patch_size}')
 
         for i in range(grid_hw.shape[0]):
-            num_patch_token = int(grid_hw[i, 0] * grid_hw[i, 1] * self.downsample_ratio**2)
+            # num_patch_token = int(grid_hw[i, 0] * grid_hw[i, 1] * self.downsample_ratio**2)
+            num_patch_token = self._get_num_visual_tokens(grid_hw[i, 0], grid_hw[i, 1])
             image_tokens = IMG_START_TOKEN + IMG_CONTEXT_TOKEN * num_patch_token + IMG_END_TOKEN
             query = query.replace('<image>', image_tokens, 1)
 
@@ -359,8 +518,7 @@ class NEOChatModel(PreTrainedModel):
 
         selected = (input_ids == self.img_context_token_id)
         if selected.long().sum() > 0:
-            abs_pos_w, abs_pos_h = build_abs_positions_from_grid_hw(
-                grid_hw // int(1 / self.downsample_ratio), device=t_indexes.device)
+            abs_pos_w, abs_pos_h = self._get_compressed_visual_positions(grid_hw=grid_hw, device=t_indexes.device)
             h_indexes[selected] = abs_pos_h.to(t_indexes.device, t_indexes.dtype)
             w_indexes[selected] = abs_pos_w.to(t_indexes.device, t_indexes.dtype)
         return torch.stack([t_indexes, h_indexes, w_indexes], dim=0)

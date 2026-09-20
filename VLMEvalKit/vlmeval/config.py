@@ -1672,8 +1672,25 @@ qtunevl_series = {
     ),
 }
 
-# --------- deserve deserve to note --------- #
+###### NOTE: do not touch stuff above #####
+
+
+
+
+
+
 neo_series = {
+
+
+    ## training-free methods ####
+    "NEO-2B-MT": partial(
+        NEOChat, model_path="Paranioar/NEO1_0-2B-MT", 
+        patch_size=16,
+        min_pixels=1280 * 32 * 32,
+        max_pixels=4096 * 32 * 32,
+        downsample_ratio=0.5,
+    ),
+
     "NEO-2B-SFT": partial(
         NEOChat, model_path="Paranioar/NEO1_0-2B-SFT", 
         patch_size=16,
@@ -1681,13 +1698,67 @@ neo_series = {
         max_pixels=4096 * 32 * 32,
         downsample_ratio=0.5,
     ),
+    "NEO-2B-SFT-Fixed-4x": partial(
+        NEOChat,
+        model_path="Paranioar/NEO1_0-2B-SFT",
+        patch_size=16,
+        min_pixels=1280 * 32 * 32,
+        max_pixels=4096 * 32 * 32,
+        downsample_ratio=0.5,
+        vtc_method="fixed",
+        compression_ratio=0.25,
+    ),
+    "NEO-2B-SFT-Fixed-2x": partial(
+        NEOChat,
+        model_path="Paranioar/NEO1_0-2B-SFT",
+        patch_size=16,
+        min_pixels=1280 * 32 * 32,
+        max_pixels=4096 * 32 * 32,
+        downsample_ratio=0.5,
+        vtc_method="fixed",
+        compression_ratio=0.5,
+    ),
+    "NEO-2B-SFT-Fixed-8x": partial(
+        NEOChat,
+        model_path="Paranioar/NEO1_0-2B-SFT",
+        patch_size=16,
+        min_pixels=1280 * 32 * 32,
+        max_pixels=4096 * 32 * 32,
+        downsample_ratio=0.5,
+        vtc_method="fixed",
+        compression_ratio=0.125,
+    ),
     "NEO-9B-SFT": partial(
         NEOChat, model_path="Paranioar/NEO1_0-9B-SFT", 
         patch_size=16,
         min_pixels=1280 * 32 * 32,
         max_pixels=4096 * 32 * 32,
         downsample_ratio=0.5,
-    )
+    ),
+
+
+    #### training-based methods ####
+    "NEO-2B-SFT-OV-30": partial(
+        NEOChat,
+        model_path="Paranioar/NEO1_0-2B-SFT",
+        lora_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_CLEVR/checkpoint-30",
+        patch_size=16,
+        min_pixels=1280 * 32 * 32,
+        max_pixels=4096 * 32 * 32,
+        downsample_ratio=0.5,
+    ),
+    "NEO-2B-SFT-OV-Fixed-2x-30": partial(
+        NEOChat,
+        model_path="Paranioar/NEO1_0-2B-SFT",
+        lora_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_CLEVR_fixed_2x/checkpoint-30",
+        patch_size=16,
+        min_pixels=1280 * 32 * 32,
+        max_pixels=4096 * 32 * 32,
+        downsample_ratio=0.5,
+        vtc_method="fixed",
+        compression_ratio=0.5,
+    ),
+
 }
 
 supported_VLM = {}

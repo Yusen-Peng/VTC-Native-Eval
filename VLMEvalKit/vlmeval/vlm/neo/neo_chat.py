@@ -106,6 +106,7 @@ class NEOChat(BaseModel):
 
     def __init__(self,
                  model_path=None,
+                 lora_path=None,
                  load_in_8bit=False,
                  use_mpo_prompt=False,
                  screen_parse=True,
@@ -114,6 +115,9 @@ class NEOChat(BaseModel):
                  min_pixels=65536,
                  max_pixels=4194304,
                  downsample_ratio=0.5,
+                 # VTC
+                 vtc_method="none",
+                 compression_ratio=1.0,
                  # Best-of-N parameters
                  best_of_n=1,
                  reward_model_path=None,
@@ -141,6 +145,9 @@ class NEOChat(BaseModel):
         self.downsample_ratio = downsample_ratio
         self.min_pixels = min_pixels
         self.max_pixels = max_pixels
+        # VTC
+        self.vtc_method = vtc_method
+        self.compression_ratio = compression_ratio
 
         if cot_prompt_version == 'r1':
             self.system_prompt = R1_SYSTEM_PROMPT
@@ -163,7 +170,7 @@ class NEOChat(BaseModel):
             self.cot_prompt = None
 
         self.model_path = model_path
-        # self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True, use_fast=False)
+        self.lora_path = lora_path
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
 
 
@@ -203,15 +210,10 @@ class NEOChat(BaseModel):
             torch.cuda.set_device(0)
             self.device = 'cuda'
         else:
-            # self.model = AutoModel.from_pretrained(
-            #     model_path,
-            #     torch_dtype=torch.bfloat16,
-            #     load_in_8bit=load_in_8bit,
-            #     trust_remote_code=True,
-            #     low_cpu_mem_usage=True,
-            #     device_map="auto").eval()
-            
             config = NEOChatConfig.from_pretrained(model_path)
+            config.vision_config.vtc_method = self.vtc_method
+            config.vision_config.compression_ratio = self.compression_ratio
+            print(f"[NEO VTC] method={config.vision_config.vtc_method}, compression_ratio={config.vision_config.compression_ratio}", flush=True)
 
             self.model = NEOChatModel.from_pretrained(
                 model_path,
@@ -220,8 +222,18 @@ class NEOChat(BaseModel):
                 load_in_8bit=load_in_8bit,
                 low_cpu_mem_usage=True,
                 device_map="auto"
-            ).eval()
+            )
 
+            if lora_path is not None:
+                from peft import PeftModel
+                print(f"[NEO LoRA] Loading adapter from: {lora_path}", flush=True)
+                self.model.language_model = PeftModel.from_pretrained(
+                    self.model.language_model,
+                    lora_path,
+                    is_trainable=False,
+                )
+
+            self.model.eval()
             self.device = 'cuda'
 
         if best_of_n > 1:
@@ -245,7 +257,7 @@ class NEOChat(BaseModel):
             print(f'Enable Best-of-N evaluation with PRM: {reward_model_path}')
 
         self.best_of_n = best_of_n
-        kwargs_default = dict(do_sample=False, max_new_tokens=4096, top_p=None)
+        kwargs_default = dict(do_sample=False, max_new_tokens=128, top_p=None)
         kwargs_default.update(kwargs)
         self.kwargs = kwargs_default
 
@@ -274,7 +286,7 @@ class NEOChat(BaseModel):
         assert dataset is None or isinstance(dataset, str)
         tgt_path = self.dump_image(line, dataset)
         if dataset is not None and listinstr(['BMMR'], dataset):
-            self.kwargs['max_new_tokens'] = max(self.kwargs.get('max_new_tokens', 4096), 8196)
+            self.kwargs['max_new_tokens'] = max(self.kwargs.get('max_new_tokens', 128), 8196)
             print(f'[Warning] BMMR dataset requires a larger max_new_tokens, set to {self.kwargs["max_new_tokens"]}')
 
         if dataset is not None and DATASET_TYPE(dataset) == 'Y/N':

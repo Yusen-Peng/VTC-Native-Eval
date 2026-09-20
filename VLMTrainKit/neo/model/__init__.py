@@ -1,1 +1,0 @@
-# Neo model package

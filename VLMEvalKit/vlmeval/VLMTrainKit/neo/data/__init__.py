@@ -1,5 +1,42 @@
 import re
 
+
+CLEVR_LLAVA_ONEVISION = {
+    "hf_dataset": "mvp-lab/LLaVA-OneVision-1.5-Instruct-Data",
+    "hf_config": "CLEVR",
+    "hf_split": "train",
+}
+
+TEXTVQA_LLAVA_ONEVISION = {
+    "hf_dataset": "mvp-lab/LLaVA-OneVision-1.5-Instruct-Data",
+    "hf_config": "textvqa",
+    "hf_split": "train",
+}
+
+INFOGRAPHIC_VQA_LLAVA_ONEVISION = {
+    "hf_dataset": "mvp-lab/LLaVA-OneVision-1.5-Instruct-Data",
+    "hf_config": "infographic_vqa",
+    "hf_split": "train",
+}
+
+ARXIV_FIGS_LLAVA_ONEVISION = {
+    "hf_dataset": "mvp-lab/LLaVA-OneVision-1.5-Instruct-Data",
+    "hf_config": "arxiv_figs",
+    "hf_split": "train",
+}
+
+FIGUREQA_LLAVA_ONEVISION = {
+    "hf_dataset": "mvp-lab/LLaVA-OneVision-1.5-Instruct-Data",
+    "hf_config": "FigureQA",
+    "hf_split": "train",
+}
+
+
+LLAVA_665K = {
+    "annotation_path": "/fs/scratch/PAS2836/yusenpeng_dataset/LLaVA_finetuning/cleaned.json",
+    "data_path": "/fs/scratch/PAS2836/yusenpeng_dataset/LLaVA_finetuning",
+}
+
 CAMBRIAN_737K = {
     "annotation_path": "PATH_TO_CAMBRIAN_737K_ANNOTATION",
     "data_path": "",
@@ -33,7 +70,11 @@ SBU_CAPTIONS = {
 
 
 data_dict = {
-    "sbu_captions": SBU_CAPTIONS,
+    "clevr_llava_onevision": CLEVR_LLAVA_ONEVISION,
+    "textvqa_llava_onevision": TEXTVQA_LLAVA_ONEVISION,
+    "infographic_vqa_llava_onevision": INFOGRAPHIC_VQA_LLAVA_ONEVISION,
+    "arxiv_figs_llava_onevision": ARXIV_FIGS_LLAVA_ONEVISION,
+    "figureqa_llava_onevision": FIGUREQA_LLAVA_ONEVISION,
 }
 
 

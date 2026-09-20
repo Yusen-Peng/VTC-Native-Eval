@@ -1,13 +1,19 @@
 import os
 import pathlib
-
+import sys
 import torch
-from transformers import HfArgumentParser, Trainer, set_seed
+from transformers import HfArgumentParser, set_seed
 from transformers.utils import logging
+from peft import LoraConfig, get_peft_model, TaskType
 
-from neo.data.data_processor import make_supervised_data_module
-from neo.model.build import build_model_and_tokenizer
-from neo.train.argument import DataArguments, ModelArguments, TrainingArguments
+
+FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(FILE_DIR, "../../../../../"))
+sys.path.insert(0, PROJECT_ROOT)
+from VLMEvalKit.vlmeval.VLMTrainKit.neo.train.trainer import LoRATrainer as Trainer
+from VLMEvalKit.vlmeval.VLMTrainKit.neo.data.data_processor import make_supervised_data_module
+from VLMEvalKit.vlmeval.VLMTrainKit.neo.train.build import build_model_and_tokenizer
+from VLMEvalKit.vlmeval.VLMTrainKit.neo.train.argument import DataArguments, ModelArguments, TrainingArguments
 
 
 def safe_save_model_for_hf_trainer(trainer: Trainer, output_dir: str):
@@ -59,20 +65,53 @@ def train():
     model, tokenizer = build_model_and_tokenizer(model_args, data_args)
     model.config.use_cache = False
 
-    if training_args.gradient_checkpointing:
-        if hasattr(model, "enable_gradient_checkpointing"):
-            model.enable_gradient_checkpointing()
-        else:
+    # Freeze everything first
+    for param in model.parameters():
+        param.requires_grad = False
 
+    # LoRA on the Qwen3 language model
+    lora_config = LoraConfig(
+        r=64,
+        lora_alpha=128,
+        lora_dropout=0.05,
+        target_modules=[
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "o_proj",
+            "q_proj_hw",
+            "k_proj_hw",
+        ],
+        bias="none",
+        task_type=TaskType.CAUSAL_LM,
+    )
+
+    model.language_model = get_peft_model(model.language_model, lora_config)
+
+    model.language_model.print_trainable_parameters()
+
+    if training_args.gradient_checkpointing:
+        model.gradient_checkpointing_enable()
+
+        if hasattr(model, "enable_input_require_grads"):
+            model.enable_input_require_grads()
+        else:
             def make_inputs_require_grad(module, input, output):
                 output.requires_grad_(True)
 
-            model.get_input_embeddings().register_forward_hook(make_inputs_require_grad)
+            model.get_input_embeddings().register_forward_hook(
+                make_inputs_require_grad
+            )
 
-    data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
+    data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args, training_args=training_args)
     trainer = Trainer(
         model=model, tokenizer=tokenizer, args=training_args, **data_module
     )
+
+    # train the model
+    model.train()
+    torch.set_grad_enabled(True)
+
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
         logging.info("checkpoint found, resume training")
         trainer.train(resume_from_checkpoint=True)

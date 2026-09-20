@@ -1,9 +1,11 @@
 import json
 import random
+import os
 from dataclasses import dataclass
 from functools import partial
 from typing import Dict, Sequence
-
+from datasets import load_dataset
+from torch.utils.data import Dataset, ConcatDataset
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
@@ -19,6 +21,33 @@ from .utils import (build_transform, dynamic_preprocess_native_resolution,
 
 logger = logging.get_logger(__name__)
 
+
+
+
+def normalize_conversations(conversations):
+    role_map = {
+        "user": "human",
+        "assistant": "gpt",
+    }
+    normalized = []
+    for x in conversations:
+        # HF role/content format
+        if x.get("role") is not None and x.get("content") is not None:
+            normalized.append({
+                "from": role_map[x["role"]],
+                "value": x["content"],
+            })
+        # Already NEO/LLaVA from/value format
+        elif x.get("from") is not None and x.get("value") is not None:
+            normalized.append({
+                "from": x["from"],
+                "value": x["value"],
+            })
+        else:
+            raise ValueError(
+                f"Unsupported conversation message format: {x}"
+            )
+    return normalized
 
 def read_jsonl(path):
     with open(path, "r") as f:
@@ -39,6 +68,8 @@ def pad_and_cat(tensor_list):
     return stacked_tensor
 
 
+
+
 class LazySupervisedDataset(Dataset):
     def __init__(
         self,
@@ -47,36 +78,75 @@ class LazySupervisedDataset(Dataset):
         is_train: bool = False,
     ):
         super().__init__()
+
         self.tokenizer = tokenizer
         self.data_args = data_args
-        self.is_train = False
+        self.is_train = is_train
 
-        dataset_list = data_list(data_args.dataset_use.split(","))
-        list_data_dict = []
-        for data in dataset_list:
-            file_format = data["annotation_path"].split(".")[-1]
-            if file_format == "jsonl":
-                annotations = read_jsonl(data["annotation_path"])
-            else:
-                annotations = json.load(open(data["annotation_path"], "r"))
-            sampling_rate = data.get("sampling_rate", 1.0)
-            if sampling_rate < 1.0:
-                annotations = random.sample(
-                    annotations, int(len(annotations) * sampling_rate)
-                )
-                logger.info(f"sampling {len(annotations)} examples from dataset {data}")
-            else:
-                logger.info(f"dataset name: {data}")
-            for ann in annotations:
-                if isinstance(ann, list):
-                    for sub_ann in ann:
-                        sub_ann["data_path"] = data["data_path"]
-                else:
-                    ann["data_path"] = data["data_path"]
-            list_data_dict += annotations
-        logger.info(f"Total training samples: {len(list_data_dict)}")
-        self.list_data_dict = list_data_dict
+        dataset_configs = data_list(data_args.dataset_use.split(","))
+
+        datasets = [
+            self._load_dataset(config)
+            for config in dataset_configs
+        ]
+
+        self.list_data_dict = ConcatDataset(datasets)
+
+        logger.info(
+            f"Total training samples: {len(self.list_data_dict)}"
+        )
+
         self.item_fn = self._get_item
+
+    def _load_dataset(self, config):
+        """Load and optionally subsample one dataset."""
+        if "hf_dataset" in config:
+            dataset = self._load_hf_dataset(config)
+        else:
+            dataset = self._load_local_dataset(config)
+
+        sampling_rate = config.get("sampling_rate", 1.0)
+
+        if sampling_rate < 1.0:
+            num_samples = int(len(dataset) * sampling_rate)
+            indices = random.sample(range(len(dataset)), num_samples)
+            dataset = dataset.select(indices)
+
+        logger.info(
+            f"Adding {len(dataset)} examples from "
+            f"{config.get('hf_config', config.get('annotation_path'))}"
+        )
+
+        return dataset
+
+    def _load_hf_dataset(self, config):
+        """Load a Hugging Face dataset."""
+        return load_dataset(
+            config["hf_dataset"],
+            config["hf_config"],
+            split=config.get("hf_split", "train"),
+        )
+
+    def _load_local_dataset(self, config):
+        """Load a local JSON/JSONL dataset."""
+        annotation_path = config["annotation_path"]
+
+        if annotation_path.endswith(".jsonl"):
+            annotations = read_jsonl(annotation_path)
+        else:
+            with open(annotation_path, "r") as f:
+                annotations = json.load(f)
+
+        for ann in annotations:
+            if isinstance(ann, list):
+                for sub_ann in ann:
+                    sub_ann["data_path"] = config["data_path"]
+            else:
+                ann["data_path"] = config["data_path"]
+
+        # Convert the Python list into an HF Dataset so all datasets
+        # have the same interface.
+        return Dataset.from_list(annotations)
 
     def __len__(self):
         return len(self.list_data_dict)
@@ -95,9 +165,12 @@ class LazySupervisedDataset(Dataset):
                         logger.info(f"  {key}: shape={value.shape}")
                 return sample
             except Exception as e:
-                logger.warning(
-                    f"[Try #{attempt_idx}] Failed to fetch sample {i}. Exception: {e}"
-                )
+                # logger.warning(
+                #     f"[Try #{attempt_idx}] Failed to fetch sample {i}. Exception: {e}"
+                # )
+                # we can skip
+                logger.warning(f"Skipping bad sample {i}: {type(e).__name__}: {e}")
+                return self.__getitem__((i + 1) % len(self.list_data_dict)) 
 
         # If all retries failed, try a random sample
         logger.error(
@@ -124,6 +197,8 @@ class LazySupervisedDataset(Dataset):
         min_pixels = self.data_args.min_pixels
         max_pixels = self.data_args.max_pixels
         source = sources[0]
+        source["conversations"] = normalize_conversations(source["conversations"])
+
 
         if "image" in source:
             image_path_list = (
@@ -154,8 +229,28 @@ class LazySupervisedDataset(Dataset):
                 resize=False,
             )
             images, num_tiles = [], []
-            for image_path in image_path_list:
-                image = Image.open(image_path).convert("RGB")
+            for image_obj in image_path_list:
+                if isinstance(image_obj, Image.Image):
+                    image = image_obj.convert("RGB")
+
+                elif isinstance(image_obj, dict):
+                    if image_obj.get("path") is not None:
+                        image = Image.open(image_obj["path"]).convert("RGB")
+                    else:
+                        raise ValueError(
+                            f"Unsupported HF image object: {image_obj.keys()}"
+                        )
+
+                else:
+                    image_path = image_obj
+
+                    if not os.path.isabs(image_path):
+                        image_path = os.path.join(
+                            source["data_path"],
+                            image_path,
+                        )
+
+                    image = Image.open(image_path).convert("RGB")
                 patch = dynamic_preprocess_native_resolution(
                     image,
                     min_pixels=min_pixels,
@@ -406,67 +501,3 @@ def make_supervised_data_module(tokenizer, data_args, training_args):
     return dict(
         train_dataset=train_dataset, eval_dataset=None, data_collator=data_collator
     )
-
-
-if __name__ == "__main__":
-    from types import SimpleNamespace
-
-    from torch.utils.data import DataLoader
-    from transformers import AutoProcessor
-
-    data_args = SimpleNamespace(
-        dataset_use="sbu_captions%1",
-        dynamic_image_size="native_resolution",
-        patch_size=16,
-        image_size=512,
-        down_sample_ratio=0.5,
-        max_pixels=262144,
-        min_pixels=65536,
-        max_seq_length=2048,
-        data_flatten=True,
-        loss_reduction="square",
-    )
-    tokenizer_path = ""
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
-    num_new_tokens = tokenizer.add_tokens(ALL_SPECIAL_TOKEN_LIST, special_tokens=True)
-
-    data_module = make_supervised_data_module(tokenizer, data_args)
-
-    train_dataset = data_module["train_dataset"]
-    data_collator = data_module["data_collator"]
-    print(f"Dataset size: {len(train_dataset)}")
-
-    # test single sample
-    # print("\nTest getting a single sample:")
-    # sample = train_dataset[0]
-    # print(f"Sample keys: {sample.keys()}")
-    # print(f"input_ids shape: {sample['input_ids'].shape}")
-    # print(f"labels shape: {sample['labels'].shape}")
-    # if "pixel_values" in sample:
-    #     print(f"pixel_values shape: {sample['pixel_values'][0].shape}")
-
-    # ===== test data_collator =====
-    print("\nTest data_collator:")
-    batch_samples = [train_dataset[i] for i in range(min(2, len(train_dataset)))]
-    batch = data_collator(batch_samples)
-    print(f"Batch keys: {batch.keys()}")
-    # ===== test DataLoader =====
-    print("\nTest DataLoader:")
-    dataloader = DataLoader(
-        train_dataset,
-        batch_size=2,
-        collate_fn=data_collator,
-        shuffle=False,
-        num_workers=0,
-    )
-
-    for i, batch in enumerate(dataloader):
-        print(f"\nBatch {i}:")
-        print(f"  input_ids: {batch['input_ids'].shape}")
-        print(f"  labels: {batch['labels'].shape}")
-        if batch.get("pixel_values") is not None:
-            print(f"  pixel_values: {batch['pixel_values'].shape}")
-        if i >= 0:
-            break
-
-    print("\nTest completed!")

@@ -1,44 +1,14 @@
+from typing import Optional
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
-from .helpers import downsample
+from ..helpers import downsample
+from .base import BaseVTCCompressor
+from .registry import register_compressor
 
 
-class BaseVTCCompressor(nn.Module):
-    """Base class for visual token compression (VTC) methods.
-    Input:
-        x: [B, H, W, D] or [B, N, D]
-
-    Output:
-        x: [B, N', D]
-    """
-
-    def __init__(self, compression_ratio: float = 1.0):
-        super().__init__()
-        if not (0.0 < compression_ratio <= 1.0):
-            raise ValueError(f"compression_ratio must be in (0, 1], got {compression_ratio}")
-        self.compression_ratio = compression_ratio
-
-    def _flatten_tokens(self, x: torch.Tensor) -> torch.Tensor:
-        """make sure the visual features are in shape [B, N, D]."""
-        if x.ndim == 4:
-            # [B, H, W, D] -> [B, H*W, D]
-            B, H, W, D = x.shape
-            x = x.reshape(B, H * W, D)
-        elif x.ndim == 3:
-            pass
-        else:
-            raise ValueError(f"Expected input with shape [B,H,W,D] or [B,N,D], got {tuple(x.shape)}")
-        return x
-
-    def _get_target_num_tokens(self, num_tokens: int) -> int:
-        """Number of tokens retained after compression."""
-        return max(1, int(num_tokens * self.compression_ratio))
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        raise NotImplementedError
-
+@register_compressor("fixed")
 class FixedPoolingCompressor(BaseVTCCompressor):
     """Fixed 1D pooling."""
 
@@ -50,6 +20,16 @@ class FixedPoolingCompressor(BaseVTCCompressor):
         if self.pooling_factor < 1:
             raise ValueError(f"Invalid compression ratio: {compression_ratio}")
         self.null_group = nn.Parameter(torch.zeros(1, 1, 1), requires_grad=False)
+
+    def kept_indices(self, h: int, w: int, device: Optional[torch.device] = None) -> torch.Tensor:
+        # use the final token in each pooling segment as the representative;
+        # the final (possibly incomplete) segment is represented by the last token.
+        N = h * w
+        idx = (torch.arange(self.num_output_tokens(h, w), device=device) + 1) * self.pooling_factor - 1
+        return idx.clamp_(max=N - 1)
+
+    def num_output_tokens(self, h: int, w: int) -> int:
+        return (h * w + self.pooling_factor - 1) // self.pooling_factor
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # [B, H, W, D] -> [B, N, D]

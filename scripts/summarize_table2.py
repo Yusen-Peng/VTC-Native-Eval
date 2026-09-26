@@ -3,10 +3,12 @@
     python scripts/summarize_table2.py            # markdown table
     python scripts/summarize_table2.py --latex    # rows to paste into VTC-Native-Eval.tex
 
-Conventions match the existing table: MME = perception score; the others are Overall accuracy x100
-(MMBench: dev split, MMMU: validation split). Missing/failed runs show as '--'.
+Conventions match the existing table: MME = perception score; MMBench (dev split), MMMU (validation
+split) and RealWorldQA are Overall accuracy x100; TextVQA / DocVQA (ANLS) / ChartQA are Overall (already
+in percent); OCRBench is "Final Score Norm" (final score / 10). Missing/failed runs show as '--'.
 """
 import argparse
+import json
 import os.path as osp
 
 import pandas as pd
@@ -20,6 +22,10 @@ DATASETS = {
     "MME": ("MME_score.csv", None, "perception", 1),
     "MMMU": ("MMMU_DEV_VAL_acc.csv", "validation", "Overall", 100),
     "RealWorldQA": ("RealWorldQA_acc.csv", None, "Overall", 100),
+    "TextVQA": ("TextVQA_VAL_acc.csv", None, "Overall", 1),
+    "DocVQA": ("DocVQA_VAL_acc.csv", None, "Overall", 1),
+    "OCRBench": ("OCRBench_score.json", None, "Final Score Norm", 1),
+    "ChartQA": ("ChartQA_TEST_acc.csv", None, "Overall", 1),
 }
 
 
@@ -27,6 +33,9 @@ def score(root, model, suffix, split, col, scale):
     path = osp.join(root, model, f"{model}_{suffix}")
     if not osp.exists(path):
         return None
+    if path.endswith(".json"):
+        with open(path) as f:
+            return float(json.load(f)[col]) * scale
     df = pd.read_csv(path)
     if split is not None:
         df = df[df["split"] == split]
@@ -51,7 +60,7 @@ def main():
             print(f"        \\rowcolor{{green!10}}\\multicolumn{{9}}{{c}}{{{ratio} compression}} \\\\")
             for r, label, vals in rows:
                 if r == ratio:
-                    print(f"        + {label} & " + " & ".join(fmt(v) for v in vals) + " & & & & \\\\")
+                    print(f"        + {label} & " + " & ".join(fmt(v) for v in vals) + " \\\\")
     else:
         print("| model | " + " | ".join(DATASETS) + " |")
         print("|---|" + "---|" * len(DATASETS))

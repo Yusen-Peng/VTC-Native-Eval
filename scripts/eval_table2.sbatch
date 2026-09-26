@@ -11,15 +11,23 @@
 #SBATCH --array=0-23
 #SBATCH --output=logs/%x_%A_%a.log
 #
-# Table 2 (training-free): {fixed, random} x {2x, 4x, 8x} x {MMBench, MME, MMMU, RealWorldQA}.
+# Table 2 (training-free): {fixed, random} x {2x, 4x, 8x} x 4 benchmarks of one SUITE:
+#   SUITE=general (default): MMBench, MME, MMMU, RealWorldQA      (<= 25 min per task)
+#   SUITE=ocr:               TextVQA, DocVQA, OCRBench, ChartQA   (up to ~2 h per task; submit with --time=6:00:00)
 # One array task per (model, dataset) pair -> 24 tasks, each on its own GPU, all in parallel.
-# Submit via scripts/run_table2.sh (or directly: mkdir -p logs && sbatch scripts/eval_table2.sbatch).
-# Re-run one pair:  sbatch --array=<idx> scripts/eval_table2.sbatch   (idx = model_idx*4 + dataset_idx)
+# Submit via scripts/run_table2.sh [general|ocr], which sets SUITE / --time / --job-name.
+# Re-run one pair:  sbatch --array=<idx> --export=ALL,SUITE=ocr --time=6:00:00 scripts/eval_table2.sbatch
+#                   (idx = model_idx*4 + dataset_idx)
 set -uo pipefail
 
 MODELS=(NEO-2B-SFT-Fixed-2x NEO-2B-SFT-Fixed-4x NEO-2B-SFT-Fixed-8x
         NEO-2B-SFT-Random-2x NEO-2B-SFT-Random-4x NEO-2B-SFT-Random-8x)
-DATASETS=(MMBench_DEV_EN MME MMMU_DEV_VAL RealWorldQA)
+SUITE=${SUITE:-general}
+case "$SUITE" in
+    general) DATASETS=(MMBench_DEV_EN MME MMMU_DEV_VAL RealWorldQA) ;;
+    ocr)     DATASETS=(TextVQA_VAL DocVQA_VAL OCRBench ChartQA_TEST) ;;
+    *) echo "unknown SUITE=$SUITE (expected general|ocr)"; exit 2 ;;
+esac
 MODEL=${MODELS[$((SLURM_ARRAY_TASK_ID / ${#DATASETS[@]}))]}
 DATA=${DATASETS[$((SLURM_ARRAY_TASK_ID % ${#DATASETS[@]}))]}
 

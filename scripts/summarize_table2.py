@@ -14,7 +14,7 @@ import os.path as osp
 import pandas as pd
 
 ROOT = osp.join(osp.dirname(osp.abspath(__file__)), "..", "VLMEvalKit", "outputs")
-METHODS = [("Fixed", "fixed pooling"), ("Random", "random pruning")]
+METHODS = [("Fixed", "fixed pooling"), ("Random", "random pruning"), ("ToMe", "ToMe (re-implement)")]
 RATIOS = ["2x", "4x", "8x"]
 # dataset -> (file suffix, split row or None, column, scale)
 DATASETS = {

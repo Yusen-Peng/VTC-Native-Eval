@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Optional, Tuple, Union
 
 import torch
@@ -8,6 +9,16 @@ from transformers.modeling_utils import PreTrainedModel
 
 from .configuration_neo_vit import NEOVisionConfig
 from .compressors import build_compressor
+
+
+@dataclass
+class NEOVisionModelOutput(BaseModelOutputWithPooling):
+    """
+    pos_h / pos_w: (N_total,) native-grid position of each visual token in last_hidden_state,
+    as reported by the VTC compressor. None when features are passed in as pixel_embeds.
+    """
+    pos_h: Optional[torch.LongTensor] = None
+    pos_w: Optional[torch.LongTensor] = None
 
 
 def precompute_rope_freqs_sincos(
@@ -162,8 +173,8 @@ class NEOVisionEmbeddings(nn.Module):
         ).to(self.patch_embedding.weight.dtype)
         return embeddings
         
-    def forward(self, pixel_values: torch.FloatTensor, grid_hw=None) -> torch.Tensor:
-        
+    def forward(self, pixel_values: torch.FloatTensor, grid_hw=None) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+
         pixel_values = pixel_values.view(  # 
             -1,
             3,
@@ -179,6 +190,8 @@ class NEOVisionEmbeddings(nn.Module):
         assert (grid_hw[:,0] * grid_hw[:,1]).sum() == patch_embeds.shape[0]
 
         patches_list = []
+        pos_h_list = []
+        pos_w_list = []
         cur_position = 0
         # NEO model packs all image patches within a batch together;
         # we need a for loop to iterate over individual images
@@ -189,16 +202,26 @@ class NEOVisionEmbeddings(nn.Module):
             patches_per_img = patches_per_img.permute(0, 2, 3, 1) # [1, H/2, W/2, D_llm]
 
             # ⭐⭐⭐ VTC modules (after 2x2 downsample + projection to LLM space)
-            patches_per_img = self.compressor(patches_per_img)
+            w_native = patches_per_img.shape[2]
+            patches_per_img, kept_idx = self.compressor.forward_with_indices(patches_per_img)
+            patches_per_img = patches_per_img.reshape(-1, patches_per_img.shape[-1])
+            kept_idx = kept_idx.reshape(-1)
+            assert patches_per_img.shape[0] == kept_idx.shape[0], (
+                f"compressor returned {patches_per_img.shape[0]} tokens but {kept_idx.shape[0]} indices"
+            )
 
-            patches_list.append(patches_per_img.view(-1, patches_per_img.shape[-1]))
+            patches_list.append(patches_per_img)
+            pos_h_list.append(kept_idx // w_native)
+            pos_w_list.append(kept_idx % w_native)
             cur_position += h * w
 
         embeddings = torch.cat(patches_list, dim=0)  # (N_total // downsample_factor**2, C)
+        pos_h = torch.cat(pos_h_list, dim=0)
+        pos_w = torch.cat(pos_w_list, dim=0)
 
         assert cur_position == patch_embeds.shape[0]
 
-        return embeddings
+        return embeddings, pos_h, pos_w
 
 
 class NEOVisionModel(PreTrainedModel):
@@ -222,7 +245,7 @@ class NEOVisionModel(PreTrainedModel):
             return_dict: Optional[bool] = None,
             pixel_embeds: Optional[torch.FloatTensor] = None,
             grid_hw: Optional[torch.Tensor] = None
-    ) -> Union[Tuple, BaseModelOutputWithPooling]:
+    ) -> Union[Tuple, NEOVisionModelOutput]:
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
@@ -231,16 +254,19 @@ class NEOVisionModel(PreTrainedModel):
         if pixel_values is None and pixel_embeds is None:
             raise ValueError('You have to specify pixel_values or pixel_embeds')
 
+        pos_h, pos_w = None, None
         if pixel_embeds is not None:
             hidden_states = pixel_embeds
         else:
             assert pixel_values.dim() == 2, f"pixel_values must be 2D for native resolution, got: {pixel_values.dim()}"
-            hidden_states = self.embeddings(pixel_values, grid_hw=grid_hw)
+            hidden_states, pos_h, pos_w = self.embeddings(pixel_values, grid_hw=grid_hw)
             # print("🥹 🥹 🥹 image features being extracted!", flush=True)
 
-        return BaseModelOutputWithPooling(
+        return NEOVisionModelOutput(
             last_hidden_state=hidden_states,
             pooler_output=None,
             hidden_states=None,
             attentions=None,
+            pos_h=pos_h,
+            pos_w=pos_w,
         )

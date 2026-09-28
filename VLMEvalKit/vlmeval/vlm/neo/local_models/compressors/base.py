@@ -23,9 +23,13 @@ class BaseVTCCompressor(nn.Module):
     Subclasses whose output tokens each correspond to one native token (pooling, pruning)
     only implement ``kept_indices``; the other two are derived from it.
 
-    NOTE: ``num_output_tokens`` and ``kept_indices`` must depend on (h, w) only, never on
-    the features: the prompt is built and positions are assigned before/independently
-    of the vision forward pass.
+    NOTE: ``num_output_tokens`` must depend on (h, w) only, never on the features: the
+    prompt (number of IMG_CONTEXT slots) is built before the vision forward pass.
+
+    Static methods (pooling, pruning) choose their representatives from (h, w) alone and
+    only implement ``kept_indices`` + ``forward``.
+    Data-dependent methods (e.g. ToMe) choose them from the features: they override
+    ``forward_with_indices`` and leave ``kept_indices`` unimplemented.
     """
 
     def __init__(self, compression_ratio: float = 1.0):
@@ -68,3 +72,19 @@ class BaseVTCCompressor(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError
+
+    def forward_with_indices(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Compress one image and report which native token represents each output token.
+
+        Args:
+            x: [1, H, W, D]
+
+        Returns:
+            tokens: [1, N', D]
+            idx: [N'] sorted LongTensor of row-major indices into the H*W native grid,
+                aligned with ``tokens`` (tokens[:, i] sits at position idx[i]).
+        """
+        if x.ndim != 4:
+            raise ValueError(f"Expected input with shape [B,H,W,D], got {tuple(x.shape)}")
+        h, w = x.shape[1:3]
+        return self.forward(x), self.kept_indices(h, w, device=x.device)

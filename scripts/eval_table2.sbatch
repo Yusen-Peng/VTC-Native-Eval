@@ -8,20 +8,21 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --gpus-per-node=1
 #SBATCH --mem=64G
-#SBATCH --array=0-23
+#SBATCH --array=0-35
 #SBATCH --output=logs/%x_%A_%a.log
 #
-# Table 2 (training-free): {fixed, random} x {2x, 4x, 8x} x 4 benchmarks of one SUITE:
+# Table 2 (training-free): {fixed, random, tome} x {2x, 4x, 8x} x 4 benchmarks of one SUITE:
 #   SUITE=general (default): MMBench, MME, MMMU, RealWorldQA      (<= 25 min per task)
 #   SUITE=ocr:               TextVQA, DocVQA, OCRBench, ChartQA   (up to ~2 h per task; submit with --time=6:00:00)
-# One array task per (model, dataset) pair -> 24 tasks, each on its own GPU, all in parallel.
-# Submit via scripts/run_table2.sh [general|ocr], which sets SUITE / --time / --job-name.
+# One array task per (model, dataset) pair -> 36 tasks, each on its own GPU, all in parallel.
+# Submit via scripts/run_table2.sh [general|ocr] [fixed|random|tome], which sets SUITE / --time / --job-name / --array.
 # Re-run one pair:  sbatch --array=<idx> --export=ALL,SUITE=ocr --time=6:00:00 scripts/eval_table2.sbatch
-#                   (idx = model_idx*4 + dataset_idx)
+#                   (idx = model_idx*4 + dataset_idx; fixed = 0-11, random = 12-23, tome = 24-35)
 set -uo pipefail
 
 MODELS=(NEO-2B-SFT-Fixed-2x NEO-2B-SFT-Fixed-4x NEO-2B-SFT-Fixed-8x
-        NEO-2B-SFT-Random-2x NEO-2B-SFT-Random-4x NEO-2B-SFT-Random-8x)
+        NEO-2B-SFT-Random-2x NEO-2B-SFT-Random-4x NEO-2B-SFT-Random-8x
+        NEO-2B-SFT-ToMe-2x NEO-2B-SFT-ToMe-4x NEO-2B-SFT-ToMe-8x)
 SUITE=${SUITE:-general}
 case "$SUITE" in
     general) DATASETS=(MMBench_DEV_EN MME MMMU_DEV_VAL RealWorldQA) ;;

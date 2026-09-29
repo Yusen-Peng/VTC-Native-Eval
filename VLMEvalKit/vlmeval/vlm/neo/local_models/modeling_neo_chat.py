@@ -298,7 +298,7 @@ class NEOChatModel(PreTrainedModel):
             grid_hw = image_grid_hw[0]
 
         pixel_values = pixel_values[0].to(self.dtype)
-        vit_embeds = self.extract_feature(pixel_values, grid_hw=grid_hw)
+        vit_embeds, (abs_pos_h, abs_pos_w) = self.extract_feature_with_positions(pixel_values, grid_hw=grid_hw)
         input_ids, labels, indexes, loss_weight, seq_boundaries = self._compress_training_sequence(
                 input_ids=input_ids,
                 labels=labels,
@@ -310,11 +310,10 @@ class NEOChatModel(PreTrainedModel):
         selected = input_ids == self.img_context_token_id
         vit_embeds = vit_embeds.reshape((-1, vit_embeds.shape[-1]))
 
-        abs_pos_w, abs_pos_h = self._get_compressed_visual_positions(grid_hw=grid_hw, device=indexes.device)
         pos_h = torch.zeros_like(indexes)
         pos_w = torch.zeros_like(indexes)
-        pos_h[selected[0]] = abs_pos_h.to(dtype=pos_h.dtype)
-        pos_w[selected[0]] = abs_pos_w.to(dtype=pos_w.dtype)
+        pos_h[selected[0]] = abs_pos_h.to(device=pos_h.device, dtype=pos_h.dtype)
+        pos_w[selected[0]] = abs_pos_w.to(device=pos_w.device, dtype=pos_w.dtype)
         indexes = torch.stack([indexes, pos_h, pos_w], dim=0)
 
         img_start_flags = (input_ids[0] == self.img_start_token_id).long()
@@ -354,12 +353,16 @@ class NEOChatModel(PreTrainedModel):
     def floating_point_ops(self, input_dict, exclude_embeddings=True):
         return 0
 
-    def extract_feature(self, pixel_values, grid_hw=None):
+    def extract_feature_with_positions(self, pixel_values, grid_hw=None):
+        """Visual tokens plus the (pos_h, pos_w) the compressor assigned to each of them."""
+        outputs = self.vision_model(pixel_values=pixel_values,
+                                    output_hidden_states=False,
+                                    return_dict=True,
+                                    grid_hw=grid_hw)
+        return outputs.last_hidden_state, (outputs.pos_h, outputs.pos_w)
 
-        return self.vision_model(pixel_values=pixel_values, 
-                                 output_hidden_states=False, 
-                                 return_dict=True, 
-                                 grid_hw=grid_hw).last_hidden_state
+    def extract_feature(self, pixel_values, grid_hw=None):
+        return self.extract_feature_with_positions(pixel_values, grid_hw=grid_hw)[0]
 
     def chat(self, tokenizer, pixel_values, question, generation_config, history=None, return_history=False, grid_hw=None, 
              IMG_START_TOKEN='<img>', IMG_END_TOKEN='</img>', IMG_CONTEXT_TOKEN='<IMG_CONTEXT>', verbose=False):
@@ -429,13 +432,18 @@ class NEOChatModel(PreTrainedModel):
     ) -> torch.LongTensor:
         assert input_ids.shape[0] == 1
         assert self.img_context_token_id is not None
-        indexes = self.get_thw_indexes(input_ids[0], grid_hw)
+        # Features first: data-dependent compressors (e.g. ToMe) only know the token positions
+        # after the vision forward pass.
+        vit_embeds, visual_positions = None, None
         if pixel_values is not None:
             if visual_features is not None:
+                # precomputed features carry no positions -> static positions from (h, w)
                 vit_embeds = visual_features
             else:
-                vit_embeds = self.extract_feature(pixel_values, grid_hw=grid_hw)
-        
+                vit_embeds, visual_positions = self.extract_feature_with_positions(pixel_values, grid_hw=grid_hw)
+        indexes = self.get_thw_indexes(input_ids[0], grid_hw, visual_positions=visual_positions)
+
+        if pixel_values is not None:
             input_embeds = self.language_model.get_input_embeddings()(input_ids)
             B, N, C = input_embeds.shape
             input_embeds = input_embeds.reshape(B * N, C)
@@ -477,7 +485,11 @@ class NEOChatModel(PreTrainedModel):
     def set_output_embeddings(self, value):
         return self.language_model.set_output_embeddings(value)
     
-    def get_thw_indexes(self, input_ids, grid_hw):
+    def get_thw_indexes(self, input_ids, grid_hw, visual_positions=None):
+        """
+        visual_positions: optional (pos_h, pos_w) from ``extract_feature_with_positions``.
+        If None, positions are derived from (h, w) alone (static compressors only).
+        """
         img_start_shift = torch.cat([torch.zeros(1, dtype=torch.long).to(input_ids.device), 
                                      (input_ids == self.img_start_token_id).long()], dim=0)[:-1]
         not_img_token = (input_ids != self.img_context_token_id).long()
@@ -487,7 +499,10 @@ class NEOChatModel(PreTrainedModel):
 
         selected = (input_ids == self.img_context_token_id)
         if selected.long().sum() > 0:
-            abs_pos_w, abs_pos_h = self._get_compressed_visual_positions(grid_hw=grid_hw, device=t_indexes.device)
+            if visual_positions is not None:
+                abs_pos_h, abs_pos_w = visual_positions
+            else:
+                abs_pos_w, abs_pos_h = self._get_compressed_visual_positions(grid_hw=grid_hw, device=t_indexes.device)
             h_indexes[selected] = abs_pos_h.to(t_indexes.device, t_indexes.dtype)
             w_indexes[selected] = abs_pos_w.to(t_indexes.device, t_indexes.dtype)
         return torch.stack([t_indexes, h_indexes, w_indexes], dim=0)

@@ -1,9 +1,9 @@
 import re
 
 
-CLEVR_LLAVA_ONEVISION = {
+DOCMATIX_LLAVA_ONEVISION = {
     "hf_dataset": "mvp-lab/LLaVA-OneVision-1.5-Instruct-Data",
-    "hf_config": "CLEVR",
+    "hf_config": "Docmatix-part-00-of-10",
     "hf_split": "train",
 }
 
@@ -70,11 +70,11 @@ SBU_CAPTIONS = {
 
 
 data_dict = {
-    "clevr_llava_onevision": CLEVR_LLAVA_ONEVISION,
     "textvqa_llava_onevision": TEXTVQA_LLAVA_ONEVISION,
     "infographic_vqa_llava_onevision": INFOGRAPHIC_VQA_LLAVA_ONEVISION,
     "arxiv_figs_llava_onevision": ARXIV_FIGS_LLAVA_ONEVISION,
     "figureqa_llava_onevision": FIGUREQA_LLAVA_ONEVISION,
+    "docmatix_llava_onevision": DOCMATIX_LLAVA_ONEVISION,
 }
 
 

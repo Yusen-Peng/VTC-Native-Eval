@@ -68,6 +68,20 @@ class TrainingArguments(HfTrainingArguments):
     remove_unused_columns: bool = field(default=False)
     gradient_checkpointing: bool = field(default=True)
 
+    kd_lambda: float = field(
+        default=0.5,
+        metadata={
+            "help": "Weight of the knowledge distillation loss."
+        },
+    )
+
+    kd_temperature: float = field(
+        default=1.0,
+        metadata={
+            "help": "Temperature used for logit distillation."
+        },
+    )
+
     def __post_init__(self):
         super().__post_init__()
         if self.lr_scheduler_type == "cosine_with_min_lr":

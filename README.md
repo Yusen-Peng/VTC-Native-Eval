@@ -352,7 +352,10 @@ args=(
 And finally we can run the training experiment with LoRA!
 
 ```bash
+# basic SFT
 sbatch VLMEvalKit/vlmeval/VLMTrainKit/SFT.sh
+# SFT + distillation
+sbatch VLMEvalKit/vlmeval/VLMTrainKit/SFT_w_distillation.sh
 ```
 
 

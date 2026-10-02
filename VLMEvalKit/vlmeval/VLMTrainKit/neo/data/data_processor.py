@@ -8,8 +8,7 @@ from datasets import load_dataset
 from torch.utils.data import Dataset, ConcatDataset
 import torch
 from PIL import Image
-from torch.utils.data import Dataset
-from transformers import AutoTokenizer, PreTrainedTokenizer
+from transformers import PreTrainedTokenizer
 from transformers.utils import logging
 
 from ..train.argument import DataArguments, TrainingArguments
@@ -104,19 +103,17 @@ class LazySupervisedDataset(Dataset):
             dataset = self._load_hf_dataset(config)
         else:
             dataset = self._load_local_dataset(config)
-
         sampling_rate = config.get("sampling_rate", 1.0)
-
         if sampling_rate < 1.0:
             num_samples = int(len(dataset) * sampling_rate)
             indices = random.sample(range(len(dataset)), num_samples)
-            dataset = dataset.select(indices)
-
-        logger.info(
-            f"Adding {len(dataset)} examples from "
-            f"{config.get('hf_config', config.get('annotation_path'))}"
-        )
-
+            if hasattr(dataset, "select"):
+                # Hugging Face Dataset
+                dataset = dataset.select(indices)
+            else:
+                # Local Python list
+                dataset = [dataset[i] for i in indices]
+        logger.info(f"Adding {len(dataset)} examples from {config.get('hf_config', config.get('annotation_path'))}")
         return dataset
 
     def _load_hf_dataset(self, config):
@@ -130,6 +127,7 @@ class LazySupervisedDataset(Dataset):
     def _load_local_dataset(self, config):
         """Load a local JSON/JSONL dataset."""
         annotation_path = config["annotation_path"]
+        data_path = config.get("data_path", None)
 
         if annotation_path.endswith(".jsonl"):
             annotations = read_jsonl(annotation_path)
@@ -137,16 +135,21 @@ class LazySupervisedDataset(Dataset):
             with open(annotation_path, "r") as f:
                 annotations = json.load(f)
 
+        # Flatten nested annotation lists if necessary.
+        flattened = []
         for ann in annotations:
             if isinstance(ann, list):
-                for sub_ann in ann:
-                    sub_ann["data_path"] = config["data_path"]
+                flattened.extend(ann)
             else:
-                ann["data_path"] = config["data_path"]
+                flattened.append(ann)
+        # Attach the image root so _get_item() can resolve relative paths.
+        if data_path is not None:
+            for ann in flattened:
+                ann["data_path"] = data_path
+        return flattened
 
-        # Convert the Python list into an HF Dataset so all datasets
-        # have the same interface.
-        return Dataset.from_list(annotations)
+
+
 
     def __len__(self):
         return len(self.list_data_dict)

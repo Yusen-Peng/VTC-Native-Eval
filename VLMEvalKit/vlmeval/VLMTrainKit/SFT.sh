@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_OCR_76K_Fixed_2x
-#SBATCH --output=NEO_continue_SFT_LLaVA_OV_OCR_76K_Fixed_2x.log
+#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_LLaVA_65K
+#SBATCH --output=NEO_continue_SFT_LLaVA_OV_LLaVA_65K.log
 #SBATCH --account=PAS2836
 #SBATCH --partition=nextgen
 #SBATCH --nodes=1
@@ -8,7 +8,7 @@
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=128G
-#SBATCH --time=25:00:00
+#SBATCH --time=20:00:00
 
 module load miniconda3/24.1.2-py310
 conda deactivate
@@ -33,9 +33,11 @@ grad_accum_steps=128
 
 entry_file="./neo/train/train.py"
 
-datasets="docmatix_llava_onevision%50,figureqa_llava_onevision%10,arxiv_figs_llava_onevision%10,infographic_vqa_llava_onevision,textvqa_llava_onevision"
+# datasets="docmatix_llava_onevision%50,figureqa_llava_onevision%10,arxiv_figs_llava_onevision%10,infographic_vqa_llava_onevision,textvqa_llava_onevision"
+datasets="llava_665k%10"
 
-run_name="NEO_continue_SFT_LLaVA_OV_OCR_76K_Fixed_2x"
+
+run_name="NEO_continue_SFT_LLaVA_OV_LLaVA_65K"
 output_dir="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/${run_name}"
 
 args=(
@@ -68,8 +70,7 @@ args=(
     --dataloader_num_workers 4
     --run_name "${run_name}"
     --report_to none
-    --vtc_method fixed
-    --compression_ratio 0.5
+    --vtc_method none
 )
 
 torchrun \

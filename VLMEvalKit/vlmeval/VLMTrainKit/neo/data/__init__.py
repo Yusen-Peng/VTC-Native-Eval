@@ -33,8 +33,8 @@ FIGUREQA_LLAVA_ONEVISION = {
 
 
 LLAVA_665K = {
-    "annotation_path": "/fs/scratch/PAS2836/yusenpeng_dataset/LLaVA_finetuning/cleaned.json",
-    "data_path": "/fs/scratch/PAS2836/yusenpeng_dataset/LLaVA_finetuning",
+    "annotation_path": "/fs/scratch/PAS2836/yusenpeng_dataset/LLaVA_665K/cleaned.json",
+    "data_path": "/fs/scratch/PAS2836/yusenpeng_dataset/LLaVA_665K",
 }
 
 CAMBRIAN_737K = {
@@ -70,6 +70,7 @@ SBU_CAPTIONS = {
 
 
 data_dict = {
+    "llava_665k": LLAVA_665K,
     "textvqa_llava_onevision": TEXTVQA_LLAVA_ONEVISION,
     "infographic_vqa_llava_onevision": INFOGRAPHIC_VQA_LLAVA_ONEVISION,
     "arxiv_figs_llava_onevision": ARXIV_FIGS_LLAVA_ONEVISION,

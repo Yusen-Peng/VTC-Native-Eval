@@ -14,8 +14,10 @@ import os.path as osp
 import pandas as pd
 
 ROOT = osp.join(osp.dirname(osp.abspath(__file__)), "..", "VLMEvalKit", "outputs")
-METHODS = [("Fixed", "fixed pooling"), ("Random", "random pruning"), ("ToMe", "ToMe (re-implement)")]
 RATIOS = ["2x", "4x", "8x"]
+# (config key, table label, ratios run); spatial 2x (1x2 blocks) is skipped: it equals fixed 2x on even-width grids
+METHODS = [("Fixed", "fixed pooling", RATIOS), ("Random", "random pruning", RATIOS), ("ToMe", "ToMe (re-implement)", RATIOS),
+           ("PruneSID", "PruneSID", RATIOS), ("Spatial", "spatial pooling", ["4x", "8x"])]
 # dataset -> (file suffix, split row or None, column, scale)
 DATASETS = {
     "MMBench": ("MMBench_DEV_EN_acc.csv", "dev", "Overall", 100),
@@ -50,7 +52,9 @@ def main():
 
     rows = []
     for ratio in RATIOS:
-        for key, label in METHODS:
+        for key, label, ratios in METHODS:
+            if ratio not in ratios:
+                continue
             model = f"NEO-2B-SFT-{key}-{ratio}"
             rows.append((ratio, label, [score(args.root, model, *DATASETS[d]) for d in DATASETS]))
 

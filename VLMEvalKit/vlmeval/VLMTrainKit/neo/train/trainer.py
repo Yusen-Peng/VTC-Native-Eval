@@ -206,8 +206,7 @@ class DistillationLoRATrainer(LoRATrainer):
 
         # Only distill supervised response tokens.
         if kd_labels is not None:
-            # kd_mask = kd_labels.ne(-100)
-            kd_mask = kd_labels[..., 1:].ne(-100)
+            kd_mask = kd_labels.ne(-100)            
             kd_loss = (kd_loss_per_token * kd_mask).sum() / kd_mask.sum().clamp_min(1)
         else:
             kd_loss = kd_loss_per_token.mean()

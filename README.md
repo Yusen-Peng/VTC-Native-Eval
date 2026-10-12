@@ -339,13 +339,13 @@ args=(
 )
 ```
 
-Really two things need to change/update here: ``vtc_method`` and ``compression_ratio``. For fixed pooling under 4x, we can simply do:
+Really two things need to change/update here: ``vtc_method`` and ``compression_ratio``. For fixed pooling under 2x, we can simply do:
 
 ```bash
 args=(
     ...
     --vtc_method fixed
-    --compression_ratio 0.25
+    --compression_ratio 0.5
 )
 ```
 

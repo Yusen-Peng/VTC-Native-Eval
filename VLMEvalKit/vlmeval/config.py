@@ -1857,50 +1857,7 @@ neo_series = {
     ),
 
 
-    #### training-based methods ####
-    "NEO-2B-SFT-OV-30": partial(
-        NEOChat,
-        model_path="Paranioar/NEO1_0-2B-SFT",
-        lora_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_CLEVR/checkpoint-30",
-        patch_size=16,
-        min_pixels=1280 * 32 * 32,
-        max_pixels=4096 * 32 * 32,
-        downsample_ratio=0.5,
-    ),
-    "NEO-2B-SFT-OV-Fixed-2x-30": partial(
-        NEOChat,
-        model_path="Paranioar/NEO1_0-2B-SFT",
-        lora_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_CLEVR_fixed_2x/checkpoint-30",
-        patch_size=16,
-        min_pixels=1280 * 32 * 32,
-        max_pixels=4096 * 32 * 32,
-        downsample_ratio=0.5,
-        vtc_method="fixed",
-        compression_ratio=0.5,
-    ),
-
-    "NEO-2B-SFT-OV-OCR-76K": partial(
-        NEOChat,
-        model_path="Paranioar/NEO1_0-2B-SFT",
-        lora_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_OCR_76K",
-        patch_size=16,
-        min_pixels=1280 * 32 * 32,
-        max_pixels=4096 * 32 * 32,
-        downsample_ratio=0.5,
-    ),
-
-    "NEO-2B-SFT-OV-OCR-76K-Fixed-2x": partial(
-        NEOChat,
-        model_path="Paranioar/NEO1_0-2B-SFT",
-        lora_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_OCR_76K_Fixed_2x",
-        patch_size=16,
-        min_pixels=1280 * 32 * 32,
-        max_pixels=4096 * 32 * 32,
-        downsample_ratio=0.5,
-        vtc_method="fixed",
-        compression_ratio=0.5,
-    ),
-    
+    #### training-based methods ####    
     "NEO-2B-SFT-OV-LLaVA-65K": partial(
         NEOChat,
         model_path="Paranioar/NEO1_0-2B-SFT",
@@ -1921,6 +1878,16 @@ neo_series = {
         downsample_ratio=0.5,
         vtc_method="fixed",
         compression_ratio=0.5,
+    ),
+
+    "NEO-2B-SFT-OV-LLaVA-332K": partial(
+        NEOChat,
+        model_path="Paranioar/NEO1_0-2B-SFT",
+        lora_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_LLaVA_332K",
+        patch_size=16,
+        min_pixels=1280 * 32 * 32,
+        max_pixels=4096 * 32 * 32,
+        downsample_ratio=0.5,
     ),
     
 }

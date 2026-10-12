@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_LLaVA_332K
-#SBATCH --output=NEO_continue_SFT_LLaVA_OV_LLaVA_332K.log
+#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_LLaVA_332K_Fixed_2x
+#SBATCH --output=NEO_continue_SFT_LLaVA_OV_LLaVA_332K_Fixed_2x.log
 #SBATCH --account=PAS2836
 #SBATCH --partition=nextgen
 #SBATCH --nodes=1
@@ -8,7 +8,7 @@
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=128G
-#SBATCH --time=75:00:00
+#SBATCH --time=65:00:00
 
 module load miniconda3/24.1.2-py310
 conda deactivate
@@ -39,7 +39,7 @@ datasets="llava_665k%50"
 
 
 
-run_name="NEO_continue_SFT_LLaVA_OV_LLaVA_332K"
+run_name="NEO_continue_SFT_LLaVA_OV_LLaVA_332K_Fixed_2x"
 output_dir="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/${run_name}"
 
 args=(
@@ -72,7 +72,8 @@ args=(
     --dataloader_num_workers 4
     --run_name "${run_name}"
     --report_to none
-    --vtc_method none
+    --vtc_method fixed
+    --compression_ratio 0.5
 )
 
 torchrun \

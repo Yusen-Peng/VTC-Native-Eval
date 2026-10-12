@@ -121,6 +121,8 @@ def train():
     teacher_model.eval()
     teacher_model.requires_grad_(False)
 
+    teacher_model = teacher_model.to(device=training_args.device, dtype=torch.bfloat16)
+
     # Gradient checkpointing on the student model exclusively
     if training_args.gradient_checkpointing:
         model.gradient_checkpointing_enable()

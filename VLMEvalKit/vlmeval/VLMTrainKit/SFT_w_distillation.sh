@@ -1,14 +1,14 @@
 #!/bin/bash
-#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_LLaVA_65K_KD
-#SBATCH --output=NEO_continue_SFT_LLaVA_OV_LLaVA_65K_KD.log
+#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_LLaVA_332K_KD
+#SBATCH --output=NEO_continue_SFT_LLaVA_OV_LLaVA_332K_KD.log
 #SBATCH --account=PAS2836
-#SBATCH --partition=debug-nextgen
+#SBATCH --partition=nextgen
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=128G
-#SBATCH --time=01:00:00
+#SBATCH --time=18:00:00
 
 module load miniconda3/24.1.2-py310
 conda deactivate
@@ -39,9 +39,11 @@ kd_temperature=1.0
 entry_file="./neo/train/train_w_distillation.py"
 
 # Same training data as baseline
-datasets="llava_665k%10"
+# datasets="llava_665k%10"
+datasets="llava_665k%50"
 
-run_name="NEO_continue_SFT_LLaVA_OV_LLaVA_65K_KD"
+
+run_name="NEO_continue_SFT_LLaVA_OV_LLaVA_332K_KD"
 
 output_dir="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/${run_name}"
 

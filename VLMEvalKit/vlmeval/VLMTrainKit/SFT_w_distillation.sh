@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_LLaVA_332K_KD
-#SBATCH --output=NEO_continue_SFT_LLaVA_OV_LLaVA_332K_KD.log
+#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_LLaVA_65K_KD_Fixed_2x
+#SBATCH --output=NEO_continue_SFT_LLaVA_OV_LLaVA_65K_KD_Fixed_2x.log
 #SBATCH --account=PAS2836
 #SBATCH --partition=nextgen
 #SBATCH --nodes=1
@@ -39,11 +39,11 @@ kd_temperature=1.0
 entry_file="./neo/train/train_w_distillation.py"
 
 # Same training data as baseline
-# datasets="llava_665k%10"
-datasets="llava_665k%50"
+datasets="llava_665k%10"
+# datasets="llava_665k%50"
 
 
-run_name="NEO_continue_SFT_LLaVA_OV_LLaVA_332K_KD"
+run_name="NEO_continue_SFT_LLaVA_OV_LLaVA_65K_KD_Fixed_2x"
 
 output_dir="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/${run_name}"
 
@@ -78,7 +78,8 @@ args=(
     --run_name "${run_name}"
     --report_to none
 
-    --vtc_method none
+    --vtc_method fixed
+    --compression_ratio 0.5
 
     --kd_lambda "${kd_lambda}"
     --kd_temperature "${kd_temperature}"

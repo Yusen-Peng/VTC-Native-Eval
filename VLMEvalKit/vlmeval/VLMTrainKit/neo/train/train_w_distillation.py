@@ -2,6 +2,7 @@ import os
 import pathlib
 import sys
 import torch
+import copy
 
 from transformers import HfArgumentParser, set_seed
 from peft import LoraConfig, get_peft_model, TaskType
@@ -116,7 +117,14 @@ def train():
     """
         Teacher model - the original NEO checkpoint.
     """
-    teacher_model, _ = build_model_and_tokenizer(model_args, data_args)
+    teacher_model_args = copy.deepcopy(model_args)
+    teacher_data_args = copy.deepcopy(data_args)
+
+    # NOTE: important! Disable VTC for teacher
+    teacher_model_args.vtc_method = "none"
+    teacher_model_args.compression_ratio = 1.0
+
+    teacher_model, _ = build_model_and_tokenizer(teacher_model_args, teacher_data_args)
     teacher_model.config.use_cache = False
     teacher_model.eval()
     teacher_model.requires_grad_(False)

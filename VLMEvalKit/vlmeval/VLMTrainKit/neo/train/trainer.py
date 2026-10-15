@@ -191,28 +191,64 @@ class DistillationLoRATrainer(LoRATrainer):
         sft_loss = loss
 
         """Knowledge distillation."""
-        # We need labels for masking even when HF popped them above.
+        # # We need labels for masking even when HF popped them above.
+        # kd_labels = labels if labels is not None else inputs.get("labels")
+        # with torch.no_grad():
+        #     teacher_outputs = self.teacher_model(**inputs)
+        # student_logits = outputs["logits"]
+        # teacher_logits = teacher_outputs["logits"]
+
+        # T = self.kd_temperature
+        # student_log_probs = F.log_softmax(student_logits / T, dim=-1)
+        # teacher_probs = F.softmax(teacher_logits / T, dim=-1)
+        # # KL per token: [B, L]
+        # kd_loss_per_token = F.kl_div(student_log_probs, teacher_probs, reduction="none").sum(dim=-1)
+
+        # # Only distill supervised response tokens.
+        # if kd_labels is not None:
+        #     kd_mask = kd_labels.ne(-100)            
+        #     kd_loss = (kd_loss_per_token * kd_mask).sum() / kd_mask.sum().clamp_min(1)
+        # else:
+        #     kd_loss = kd_loss_per_token.mean()
+
+        # # Standard temperature correction
+        # kd_loss = kd_loss * (T ** 2)
+
         kd_labels = labels if labels is not None else inputs.get("labels")
+        if kd_labels.dim() == 1:
+            kd_labels = kd_labels.unsqueeze(0)
         with torch.no_grad():
             teacher_outputs = self.teacher_model(**inputs)
         student_logits = outputs["logits"]
         teacher_logits = teacher_outputs["logits"]
 
         T = self.kd_temperature
-        student_log_probs = F.log_softmax(student_logits / T, dim=-1)
-        teacher_probs = F.softmax(teacher_logits / T, dim=-1)
-        # KL per token: [B, L]
-        kd_loss_per_token = F.kl_div(student_log_probs, teacher_probs, reduction="none").sum(dim=-1)
 
-        # Only distill supervised response tokens.
-        if kd_labels is not None:
-            kd_mask = kd_labels.ne(-100)            
-            kd_loss = (kd_loss_per_token * kd_mask).sum() / kd_mask.sum().clamp_min(1)
+        student_kd_logits = []
+        teacher_kd_logits = []
+        batch_size = kd_labels.size(0)
+        for b in range(batch_size):
+            # Number of supervised tokens in this sample.
+            num_supervised = kd_labels[b].ne(-100).sum().item()
+            if num_supervised == 0:
+                continue
+
+            # Causal LM alignment - logits[t] predicts token[t + 1]
+            student_kd_logits.append(student_logits[b, -(num_supervised + 1):-1, :])
+            teacher_kd_logits.append(teacher_logits[b, -(num_supervised + 1):-1, :])
+
+        if len(student_kd_logits) == 0:
+            # Keep graph connection to student for backward().
+            kd_loss = student_logits.sum() * 0.0
         else:
-            kd_loss = kd_loss_per_token.mean()
+            student_kd_logits = torch.cat(student_kd_logits, dim=0)
+            teacher_kd_logits = torch.cat(teacher_kd_logits, dim=0)
 
-        # Standard temperature correction
-        kd_loss = kd_loss * (T ** 2)
+            student_log_probs = F.log_softmax(student_kd_logits / T, dim=-1)
+            teacher_probs = F.softmax(teacher_kd_logits / T, dim=-1)
+            kd_loss = F.kl_div(student_log_probs, teacher_probs, reduction="batchmean")
+            # Standard temperature correction
+            kd_loss = kd_loss * (T ** 2)
 
         # Accumulate detached values so we don't keep computation graphs alive.
         self._sft_loss_sum += sft_loss.detach().float().item()

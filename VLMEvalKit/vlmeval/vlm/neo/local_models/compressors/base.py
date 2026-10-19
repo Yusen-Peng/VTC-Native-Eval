@@ -37,6 +37,7 @@ class BaseVTCCompressor(nn.Module):
         if not (0.0 < compression_ratio <= 1.0):
             raise ValueError(f"compression_ratio must be in (0, 1], got {compression_ratio}")
         self.compression_ratio = compression_ratio
+        self.pooling_factor = round(1 / self.compression_ratio)
 
     def _flatten_tokens(self, x: torch.Tensor) -> torch.Tensor:
         """make sure the visual features are in shape [B, N, D]."""

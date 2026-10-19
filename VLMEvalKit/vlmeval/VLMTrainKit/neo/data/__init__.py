@@ -37,6 +37,12 @@ LLAVA_665K = {
     "data_path": "/fs/scratch/PAS2836/yusenpeng_dataset/LLaVA_665K",
 }
 
+ASKMODELANYTHING_133K = {
+    "annotation_path": "/fs/scratch/PAS2836/yusenpeng_dataset/Pixmo/AskModelAnything/annotations.jsonl",
+    "data_path": "/fs/scratch/PAS2836/yusenpeng_dataset/Pixmo/AskModelAnything",
+}
+
+
 CAMBRIAN_737K = {
     "annotation_path": "PATH_TO_CAMBRIAN_737K_ANNOTATION",
     "data_path": "",
@@ -71,6 +77,7 @@ SBU_CAPTIONS = {
 
 data_dict = {
     "llava_665k": LLAVA_665K,
+    "askmodelanything_133k": ASKMODELANYTHING_133K,
     "textvqa_llava_onevision": TEXTVQA_LLAVA_ONEVISION,
     "infographic_vqa_llava_onevision": INFOGRAPHIC_VQA_LLAVA_ONEVISION,
     "arxiv_figs_llava_onevision": ARXIV_FIGS_LLAVA_ONEVISION,

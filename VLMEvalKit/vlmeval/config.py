@@ -1929,6 +1929,18 @@ neo_series = {
         vtc_method="fixed",
         compression_ratio=0.5,
     ),
+
+    "NEO-2B-SFT-OV-LLaVA-askmodelanything-66K-Fixed-2x": partial(
+        NEOChat,
+        model_path="Paranioar/NEO1_0-2B-SFT",
+        lora_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_askmodelanything_66k_Fixed_2x",
+        patch_size=16,
+        min_pixels=1280 * 32 * 32,
+        max_pixels=4096 * 32 * 32,
+        downsample_ratio=0.5,
+        vtc_method="fixed",
+        compression_ratio=0.5,
+    )
     
 }
 

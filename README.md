@@ -61,6 +61,13 @@ python run.py --data OCRBench --model NEO-2B-SFT --verbose
 python run.py --data ChartQA_TEST --model NEO-2B-SFT --verbose
 ```
 
+
+Or run all jobs concurrently with SLURM:
+
+```bash
+bash VTCeval_scripts/eval_all.sh <model_name>
+```
+
 We update the results on Overleaf: [VTC-Native-Eval](https://www.overleaf.com/read/wjvqxyygyjpn#73895d)
 
 ## VTC method integration guide

@@ -2,13 +2,13 @@
 #SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_llava66k_Random_2x
 #SBATCH --output=NEO_continue_SFT_LLaVA_OV_llava66k_Random_2x.log
 #SBATCH --account=PAS2836
-#SBATCH --partition=debug-nextgen
+#SBATCH --partition=nextgen
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=128G
-#SBATCH --time=01:00:00
+#SBATCH --time=15:00:00
 
 module load miniconda3/24.1.2-py310
 conda deactivate
@@ -32,7 +32,6 @@ batch_size=1
 grad_accum_steps=128
 
 entry_file="./neo/train/train.py"
-
 
 
 datasets="llava_665k%10"

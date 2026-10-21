@@ -221,4 +221,120 @@ plt.savefig(
     bbox_inches="tight",
 )
 
+
+# ============================================================
+# Prefill TFLOPs vs. compression ratio
+#
+# flops.csv comes from scripts/flops.py: fvcore count of one prefill
+# pass on a fixed reference image, so one value per (scale, method,
+# ratio). Same color per method; solid = 2B, dashed = 9B.
+# ============================================================
+
+flops_df = pd.read_csv("flops.csv")
+
+scale_styles = {
+    "2B": {"linestyle": "-"},
+    "9B": {"linestyle": "--"},
+}
+
+method_colors = dict(zip(methods, plt.rcParams["axes.prop_cycle"].by_key()["color"]))
+
+fig, ax = plt.subplots(figsize=(7, 5))
+
+for scale in scale_styles:
+
+    scale_df = flops_df[flops_df["scale"] == scale]
+
+    if len(scale_df) == 0:
+        continue
+
+    for method in methods:
+
+        method_df = (
+            scale_df[scale_df["Model"] == method]
+            .sort_values("compression")
+        )
+
+        if len(method_df) == 0:
+            continue
+
+        ax.plot(
+            method_df["compression"],
+            method_df["TFLOPs"],
+            marker=method_styles[method]["marker"],
+            markersize=8,
+            linewidth=2,
+            color=method_colors[method],
+            linestyle=scale_styles[scale]["linestyle"],
+        )
+
+    # Uncompressed model reference
+    baseline_row = scale_df[scale_df["Model"] == f"NEO-{scale}-SFT"].iloc[0]
+
+    ax.scatter(
+        [1.0],
+        [baseline_row["TFLOPs"]],
+        marker="*",
+        s=180,
+        color="black",
+        zorder=10,
+    )
+
+
+ax.set_title("Prefill Compute", fontsize=14)
+ax.set_xlabel("Token Compression Ratio", fontsize=12)
+ax.set_ylabel("Prefill TFLOPs (fvcore)", fontsize=12)
+
+ax.set_xticks([1, 2, 4, 8])
+ax.set_xticklabels(["1×", "2×", "4×", "8×"])
+
+# log scale: 2B and 9B both readable, and 1/r compute scaling is a straight line
+ax.set_yscale("log")
+
+ax.grid(
+    True,
+    which="both",
+    linestyle="--",
+    alpha=0.3,
+)
+
+
+# ------------------------------------------------------------
+# Compact legend: color/marker = method, linestyle = scale
+# ------------------------------------------------------------
+
+legend_handles = [
+    plt.Line2D([], [], color=method_colors[m], marker=method_styles[m]["marker"],
+               markersize=8, linewidth=2, label=m)
+    for m in methods
+]
+legend_handles.append(
+    plt.Line2D([], [], color="black", marker="*", markersize=12, linestyle="none", label="uncompressed")
+)
+legend_handles += [
+    plt.Line2D([], [], color="gray", linewidth=2, linestyle=s["linestyle"], label=f"NEO-{scale}-SFT")
+    for scale, s in scale_styles.items()
+    if (flops_df["scale"] == scale).any()
+]
+
+ax.legend(
+    handles=legend_handles,
+    loc="upper right",
+    frameon=False,
+    fontsize=9,
+)
+
+plt.tight_layout()
+
+plt.savefig(
+    "training_free_flops.pdf",
+    bbox_inches="tight",
+)
+
+plt.savefig(
+    "training_free_flops.png",
+    dpi=300,
+    bbox_inches="tight",
+)
+
 plt.show()

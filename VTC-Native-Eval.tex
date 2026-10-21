@@ -11,6 +11,7 @@
 % For proper rendering and hyphenation of words containing Latin characters (including in bib files)
 \usepackage[T1]{fontenc}
 \usepackage{float}
+
 % For Vietnamese characters
 % \usepackage[T5]{fontenc}
 % See https://www.latex-project.org/help/documentation/encguide.pdf for other character sets
@@ -37,7 +38,7 @@
 \usepackage[table]{xcolor}
 \usepackage{booktabs}
 \usepackage{pifont}
-\newcommand{\cmark}{\textcolor{green}{\ding{51}}}
+\newcommand{\cmark}{\ding{51}}
 \newcommand{\xmark}{\textcolor{red}{\ding{55}}}
 
 % If the title and author information does not fit in the area allocated, uncomment the following
@@ -137,10 +138,10 @@
         \midrule
         \cellcolor{green!10}Fixed pooling & training-\textbf{free} & encoder-level & \cmark & -- & \cmark \\
         \cellcolor{green!10}Fixed pooling & training-\textbf{based} & encoder-level & \cmark & -- & \cmark \\
-        \cellcolor{green!10}Random pruning & training-\textbf{free} & encoder-level & \cmark & & \\
+        \cellcolor{green!10}Random pruning & training-\textbf{free} & encoder-level & \cmark & -- & \cmark \\
         \cellcolor{green!10}Random pruning & training~\textbf{based} & encoder-level & \cmark & & \\
         \cellcolor{gray!10}PruMerge[ICCV'25] & training-\textbf{free} & encoder-level & \xmark & need attention! & NA \\
-        \cellcolor{gray!10}PruneSID[ICLR'26] & training-\textbf{free} & encoder-level & \xmark & need attention! & NA \\
+        \cellcolor{green!10}PruneSID[ICLR'26] & training-\textbf{free} & encoder-level & \cmark & skip CLS reweighting (following QwenVL setup) & \cmark \\
         \cellcolor{green!10}ToME[ICLR'23] & training-\textbf{free} & encoder-level & \cmark & \url{https://github.com/facebookresearch/ToMe/blob/main/tome/merge.py} & \\
         \cellcolor{green!10}Perceiver[ICML'21] & training-\textbf{based} & encoder-level & \cmark & \url{https://github.com/Yusen-Peng/DRIP/blob/main/src/LLaVA_wrapper/llava_local/model/multimodal_encoder/perceiver_utils.py} & \\
         \cellcolor{green!10}DRIP & training-\textbf{based} & encoder-level & \cmark & \url{https://github.com/Yusen-Peng/DRIP/blob/main/src/LLaVA_wrapper/llava_local/model/multimodal_encoder/clip_encoder.py} &  \\
@@ -155,56 +156,85 @@
 \begin{table*}[ht]
     \centering
     \adjustbox{width=1.0\textwidth}{
-    \begin{tabular}{c|cccc|cccc}
+    \begin{tabular}{c|cccc|cccc|c}
         \toprule
-         \textbf{\textcolor{cyan}{Training-free} Model} & \colorbox{yellow!20}{\textbf{MMBench}} & \colorbox{yellow!20}{\textbf{MME}} & \colorbox{yellow!20}{\textbf{MMMU}} & \colorbox{yellow!20}{\textbf{RealWorldQA}} & \colorbox{red!20}{\textbf{TextVQA}} & \colorbox{red!20}{\textbf{DocVQA}} & \colorbox{red!20}{\textbf{OCRBench}} & \colorbox{red!20}{\textbf{ChartQA}} \\
+         \textbf{\textcolor{cyan}{Training-free} Model} & \colorbox{yellow!20}{\textbf{MMBench}} & \colorbox{yellow!20}{\textbf{MME}} & \colorbox{yellow!20}{\textbf{MMMU}} & \colorbox{yellow!20}{\textbf{RealWorldQA}} & \colorbox{red!20}{\textbf{TextVQA}} & \colorbox{red!20}{\textbf{DocVQA}} & \colorbox{red!20}{\textbf{OCRBench}} & \colorbox{red!20}{\textbf{ChartQA}} & \colorbox{brown!20}{\textbf{TFLOPs}}  \\
         \midrule
         \rowcolor{gray!10}\multicolumn{9}{c}{2B scale} \\
         time estimate & 25 mins & 15 mins & 15 mins & 10 mins & 55 mins & 2 hours & 25 mins & 35 mins \\
         NEO-2B-MT & 74.74 & 1501.42 & 47.88 & 60.65 & 67.68 & 86.28 & 76.3 & 79.88 \\        
-        NEO-2B-SFT & 76.20 & \textbf{1565.7} & 48.33 & 62.74 & 73.94 & 89.86 & 77.0 & 81.0 \\
+        NEO-2B-SFT & 76.20 & 1565.7 & 48.33 & 62.74 & 73.94 & 89.86 & 77.0 & 81.0 \\
         \rowcolor{green!10}\multicolumn{9}{c}{2x compression} \\
-        + fixed pooling &  & 1444.2 & \\
-        + random pruning & \\
-        + ToMe (re-implement) & \\
-
-        
+        + fixed pooling & 70.62 & 1444.2 & 46.33 & 57.39 & 28.29 & 28.85 & 11.20 & 37.00 \\
+        + random pruning & 73.20 & 1489.2 & 46.00 & 57.12 & 32.18 & 35.33 & 18.40 & 35.12 \\
+        + ToMe & 74.57 & 1551.2 & 48.67 & 62.22 & 66.35 & 86.13 & 45.00 & 80.24 \\
+        + PruneSID & 74.74 & 1555.2 & 47.67 & 61.05 & 62.05 & 77.83 & 40.10 & 71.88 \\
         \rowcolor{green!10}\multicolumn{9}{c}{4x compression} \\
-        + fixed pooling & & 781.13 &  \\
-        + random pruning & \\
-        + ToMe (re-implement) & \\   
-
+        + fixed pooling & 41.24 & 781.1 & 42.67 & 44.18 & 11.88 & 10.59 & 2.10 & 19.12 \\
+        + spatial pooling & 55.07 & 1086.5 & 43.89 & 46.80 & 15.93 & 18.78 & 4.20 & 28.40 \\
+        + random pruning & 61.00 & 1210.4 & 44.89 & 51.11 & 17.19 & 14.44 & 4.60 & 19.08 \\
+        + ToMe & 69.67 & 1427.5 & 46.56 & 56.99 & 47.91 & 67.01 & 16.60 & 73.24 \\
+        + PruneSID & 69.76 & 1397.4 & 45.78 & 55.16 & 40.51 & 44.36 & 10.40 & 45.84 \\
         \rowcolor{green!10}\multicolumn{9}{c}{8x compression} \\
-        + fixed pooling & & 565.8 & \\
-        + random pruning & \\
-        + ToMe (re-implement) & \\        
+        + fixed pooling & 29.64 & 565.8 & 42.56 & 42.48 & 9.41 & 8.69 & 1.80 & 13.24 \\
+        + spatial pooling & 31.70 & 589.4 & 42.11 & 42.75 & 9.44 & 9.35 & 1.80 & 15.08 \\
+        + random pruning & 41.67 & 852.1 & 43.11 & 45.62 & 11.87 & 9.56 & 2.70 & 15.20 \\
+        + ToMe & 57.99 & 1151.1 & 43.78 & 51.37 & 29.90 & 38.48 & 6.80 & 48.56 \\
+        + PruneSID & 59.62 & 1145.6 & 44.56 & 51.50 & 28.17 & 37.23 & 6.40 & 42.88 \\
         \rowcolor{gray!10}\multicolumn{9}{c}{9B scale} \\
+        time estimate & \\
         NEO-9B-SFT & \\
         \bottomrule
     \end{tabular}}
-    \caption{Training-free experiments (more like a motivation table).}
+    \caption{\textbf{Training-free experiments only}.}
     \label{tab:training-free}
 \end{table*}
+%todo jack 10/13-10/19: eval tflops with fvcore and plot like fig 1: ex in other VTC; run 9B scale experiments: ensure inference fits fine on 40GB A100
 
-\begin{table*}
+\begin{figure*}[ht]
     \centering
-    \adjustbox{width=1.0\linewidth}{
-    \begin{tabular}{cccccc}
-        \toprule
-        \textbf{source} & \textbf{subset} & \textbf{domain} & \textbf{\#samples} & \textcolor{red}{\textbf{\%downsample}} & \textcolor{red}{\textbf{final \#samples}} \\
-        \midrule
-        % LLaVA-OV1.5 & CLEVR & visual reasoning & 514K & 1\% & 5.14K \\
-        LLaVA-OV1.5 & textvqa & text recognition & 8.45K & 100\% & 8.45K \\
-        LLaVA-OV1.5 & infographic\_vqa & text recognition & 12.6K & 100\% & 12.6K \\
+    \includegraphics[width=1.0\linewidth]{figures/training_free_compression.pdf}
+    \caption{NEO-2B-SFT training-free results from \autoref{fig:NEO-2B-SFT-free}.}
+    \label{fig:NEO-2B-SFT-free}
+\end{figure*}
 
-        LLaVA-OV1.5 & arxiv\_figs & table understanding & 151K & 10\% & 15.1K \\ 
-        LLaVA-OV1.5 & FigureQA & chart understanding & 117K & 10\% & 11.7K \\
-        LLaVA-OV1.5 & Docmatix-part-00-of-10 & document understanding & 56.3K & 50\% & 28.2K \\
-         \bottomrule
-    \end{tabular}}
-    \caption{Continual SFT DATA archive: \textbf{OCR@76K}}
-    \label{tab:SFT_data}
-\end{table*}
+% \begin{table*}[ht]
+%     \centering
+%     \adjustbox{width=1.0\linewidth}{
+%     \begin{tabular}{cccccc}
+%         \toprule
+%         \textbf{source} & \textbf{subset} & \textbf{domain} & \textbf{\#samples} & \textbf{\%downsample} & \textbf{final \#samples} \\
+%         \midrule
+%         % LLaVA-OV1.5 & CLEVR & visual reasoning & 514K & 1\% & 5.14K \\
+%         LLaVA-OV1.5 & textvqa & text recognition & 8.45K & 100\% & 8.45K \\
+%         LLaVA-OV1.5 & infographic\_vqa & text recognition & 12.6K & 100\% & 12.6K \\
+
+%         LLaVA-OV1.5 & arxiv\_figs & table understanding & 151K & 10\% & 15.1K \\ 
+%         LLaVA-OV1.5 & FigureQA & chart understanding & 117K & 10\% & 11.7K \\
+%         LLaVA-OV1.5 & Docmatix-part-00-of-10 & document understanding & 56.3K & 50\% & 28.2K \\
+%          \bottomrule
+%     \end{tabular}}
+%     \caption{Continual SFT DATA archive: \textbf{OCR@76K}}
+%     \label{tab:OCR@76K}
+% \end{table*}
+
+\begin{figure*}[ht]
+    \centering
+    \includegraphics[width=1.0\linewidth]{figures/SFT_dynamics.pdf}
+    \caption{SFT dynamics from \autoref{tab:training-based}.}
+    \label{fig:SFT_dynamics}
+\end{figure*}
+
+
+
+\begin{figure*}[ht]
+    \centering
+    \includegraphics[width=1.0\linewidth]{figures/fixed_pooling_sft_scaling.pdf}
+    \caption{SFT scaling of fixed pooling from \autoref{tab:training-based}.}
+    \label{fig:fixed_pooling_sft_scaling}
+\end{figure*}
+
+
 
 \begin{table*}[ht]
     \centering
@@ -216,25 +246,48 @@
         \rowcolor{gray!10}\multicolumn{9}{c}{2B scale} \\
         time estimate & 25 mins & 15 mins & 15 mins & 10 mins & 55 mins & 2 hours & 25 mins & 35 mins \\
         \textcolor{gray}{NEO-2B-MT} & \textcolor{gray}{74.74} & \textcolor{gray}{1501.42} & \textcolor{gray}{47.88} & \textcolor{gray}{60.65} & \textcolor{gray}{67.68} & \textcolor{gray}{86.28} & \textcolor{gray}{76.3} & \textcolor{gray}{79.88} \\
-        \textcolor{gray}{NEO-2B-SFT} & \textcolor{gray}{76.20} & \textcolor{gray}{1565.7} & \textcolor{gray}{48.33} & \textcolor{gray}{62.74} & \textcolor{gray}{73.94} & \textcolor{gray}{89.86} & \textcolor{gray}{77.0} & \textcolor{gray}{81.0} \\
-        NEO-2B-SFT@OV (30 *128) & 76.20 & 1564.01 & 47.66 & 62.87 & 74.06 & 89.71 & 76.7 & 80.92 \\
-        NEO-2B-SFT@OV (OCR@76K) & \cellcolor{cyan!10}training! \\
+        \textcolor{gray}{NEO-2B-SFT (OCR@76K)} & \textcolor{gray}{76.03} & \textcolor{gray}{1584.11} & \textcolor{gray}{47.22} & \textcolor{gray}{63.00} & \textcolor{gray}{59.88} & \textcolor{gray}{82.76} & \textcolor{gray}{76.0} & \textcolor{gray}{44.4} \\
+        \rowcolor{yellow!10}NEO-2B-SFT & 76.20 & 1565.7 & 48.33 & 62.74 & 73.94 & 89.86 & 77.0 & 81.0 \\
+        NEO-2B-SFT \textbf{(LLaVA@66K)} & 75.68 & 1572.73 & 47.88 & 62.22 & 72.16 & 89.16 & 75.9 & 79.92  \\
+        NEO-2B-SFT \textbf{(LLaVA@332K)} & 75.43 & 1565.9 & 46.88 & 59.73 & 72.06 & 88.84 & 75.7 & 79.6 \\
+         
+        NEO-2B-SFT \textbf{(LLaVA@66K+KL)} & 76.20 & 1563.13 & 47.55 & 63.39 & 73.01 & 89.44 & 76.2 & 80.56 \\
+        NEO-2B-SFT \textbf{(LLaVA@332K+KL)} & 75.85 & 1555.44 & 48.11 & 61.83 & 72.79 & 89.14 & 76.2 & 80.4 \\
     
         \rowcolor{green!10}\multicolumn{9}{c}{2x compression} \\
-        + fixed pooling@OV (30*128) & 70.10 & 1435.62 & 46.77 & 57.65 & 28.11 & 29.01 & 11.2 & 37.44 \\
-        + fixed pooling@OV (OCR@76K) & \cellcolor{cyan!10}submitted & \\
-        + random pruning & \\
-        + Perceiver & \\
-        + DRIP & \\
-
+        % + fixed pooling (OCR@76K) & 72.42 & 1502.6 & 47.22 & 57.77 & \textcolor{red}{27.80} & \textcolor{red}{37.12} & \textcolor{red}{19.5} & \textcolor{red}{30.72} \\
+        \rowcolor{gray!10}\multicolumn{9}{c}{\textbf{training-free methods}} \\
+        ToMe & 74.57 & 1551.2 & 48.67 & 62.22 & 66.35 & 86.13 & 45.0 & 80.24 \\
+        PruneSID & 74.74 & 1555.2 & 47.67 & 61.05 & 62.05 & 77.83 & 40.1 & 71.88 \\
+        \rowcolor{gray!10}\multicolumn{9}{c}{\textbf{fixed pooling}} \\
         
+        no train & 70.62 & 1444.2 & 46.33 & 57.39 & 28.29 & 28.85 & 11.2 & 37.00 \\
+        
+        + LLaVA@66K & 74.39 & 1526.62 & 47.44 & 56.73 & 32.19 & 37.44 & 20.4 & 39.84 \\
+        + LLaVA@332K & 73.88 & 1525.03 & 45.11 & 58.69 & 35.47 & 43.08 & 22.9 & 41.12 \\
+        + LLaVA@66K+KL & 74.22 & 1517.88 & 47.22 & 59.74 & 32.48 & 36.73 & 20.2 & 40.48 \\
+        + AskModelAnything@66K & 72.94 & 1496.3 & 47.55 & 60.65 & 32.12 & 37.46 & 20.0 & 35.56 \\
+        \rowcolor{gray!10}\multicolumn{9}{c}{\textbf{random pruning}} \\
+        
+        no train & 73.20 & 1489.2 & 46.00 & 57.12 & 32.18 & 35.33 & 18.4 & 35.12\\
+        + LLaVA@66K & 72.68 & 1531.26 & 46.44 & 58.43 & 34.05 & 41.95 & 21.9 & 38.8 \\
+        \rowcolor{gray!10}\multicolumn{9}{c}{\textbf{Perceiver}} \\ + LLaVA@66K \\
+        \rowcolor{gray!10}\multicolumn{9}{c}{\textbf{DRIP}} \\
+        + LLaVA@66K \\
+
         \rowcolor{green!10}\multicolumn{9}{c}{4x compression} \\
+        \rowcolor{gray!10}\multicolumn{9}{c}{\textbf{training-free methods}} \\
+
         + fixed pooling & & &  \\
-        + random pruning & \\
+        random pruning & \\
+        
         + Perceiver & \\
         + DRIP & \\   
 
         \rowcolor{green!10}\multicolumn{9}{c}{8x compression} \\
+        \rowcolor{gray!10}\multicolumn{9}{c}{\textbf{training-free methods}} \\
+
+        
         + fixed pooling & &  & \\
         + random pruning & \\
         + Perceiver & \\
@@ -244,7 +297,7 @@
         NEO-9B-SFT & \\
         \bottomrule
     \end{tabular}}
-    \caption{Training-based experiments (this will be the main results table).}
+    \caption{\textbf{Training-based and Training-free experiments}}
     \label{tab:training-based}
 \end{table*}
 

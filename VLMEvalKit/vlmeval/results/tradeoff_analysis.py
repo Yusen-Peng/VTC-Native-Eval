@@ -290,6 +290,9 @@ ax.set_xticklabels(["1×", "2×", "4×", "8×"])
 
 # log scale: 2B and 9B both readable, and 1/r compute scaling is a straight line
 ax.set_yscale("log")
+ax.set_yticks([1, 2, 5, 10, 20, 50])
+ax.yaxis.set_major_formatter(plt.ScalarFormatter())
+ax.yaxis.set_minor_formatter(plt.NullFormatter())
 
 ax.grid(
     True,

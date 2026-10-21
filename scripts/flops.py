@@ -1,9 +1,13 @@
 """Prefill TFLOPs of every training-free VTC method, counted with fvcore on one fixed reference input.
 
 Each base model is loaded once; the compressor inside NEOVisionEmbeddings is then swapped for every
-(method, ratio), and fvcore traces one prefill pass: vision embedding + compressor + LLM, with the
-lm_head applied to the last position only (as generate() does). Decoding is not counted.
-fvcore counts one multiply-add as one FLOP; elementwise ops (softmax, RMSNorm, RoPE) are not counted.
+(method, ratio) and one prefill pass is counted, with the lm_head applied to the last position only
+(as generate() does). Decoding is not counted.
+  - LLM (>99% of the total): fvcore, via jit.trace.
+  - vision embedding + compressor: torch FlopCounterMode, run eagerly, halved to fvcore's convention.
+    The compressors use tensor shapes as Python ints (seeds, clamp bounds, merge loops), which
+    jit.trace turns into tensors, so they cannot be traced.
+Both count one multiply-add as one FLOP; elementwise ops (softmax, RMSNorm, RoPE) are not counted.
 
 The reference input is a synthetic image at the max_pixels cap (2048x2048 -> 64x64 = 4096 native
 visual tokens) plus a short fixed prompt, so the numbers are per-image and benchmark-independent.
@@ -22,6 +26,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 from fvcore.nn import FlopCountAnalysis
+from torch.utils.flop_counter import FlopCounterMode
 
 from vlmeval.config import supported_VLM
 from vlmeval.vlm.neo.local_models.compressors import build_compressor
@@ -39,23 +44,32 @@ METHODS = {
 IMG_START_TOKEN, IMG_END_TOKEN, IMG_CONTEXT_TOKEN = "<img>", "</img>", "<IMG_CONTEXT>"
 
 
-class Prefill(nn.Module):
-    """One prefill step of NEOChatModel.generate(), returning only the last-position logits."""
+class PrefillLM(nn.Module):
+    """LLM part of one NEOChatModel.generate() prefill, returning only the last-position logits."""
 
-    def __init__(self, model):
+    def __init__(self, language_model):
         super().__init__()
-        self.model = model
+        self.language_model = language_model
 
-    def forward(self, pixel_values, grid_hw, input_ids):
-        vit_embeds, visual_positions = self.model.extract_feature_with_positions(pixel_values, grid_hw=grid_hw)
-        indexes = self.model.get_thw_indexes(input_ids[0], grid_hw, visual_positions=visual_positions)
-        input_embeds = self.model.language_model.get_input_embeddings()(input_ids)
-        selected = input_ids == self.model.img_context_token_id
-        input_embeds[selected] = vit_embeds.reshape(-1, input_embeds.shape[-1]).to(input_embeds.dtype)
-        outputs = self.model.language_model(
+    def forward(self, input_embeds, indexes):
+        outputs = self.language_model(
             inputs_embeds=input_embeds, indexes=indexes, use_cache=False, logits_to_keep=1
         )
         return outputs.logits
+
+
+def vision_prefill(model, pixel_values, grid_hw, input_ids):
+    """Vision embedding + compressor, run eagerly as in NEOChatModel.generate().
+
+    Returns the LLM inputs (input_embeds, indexes) and the vision FLOPs (one multiply-add = one FLOP).
+    """
+    with FlopCounterMode(display=False) as counter:
+        vit_embeds, visual_positions = model.extract_feature_with_positions(pixel_values, grid_hw=grid_hw)
+    indexes = model.get_thw_indexes(input_ids[0], grid_hw, visual_positions=visual_positions)
+    input_embeds = model.language_model.get_input_embeddings()(input_ids)
+    selected = input_ids == model.img_context_token_id
+    input_embeds[selected] = vit_embeds.reshape(-1, input_embeds.shape[-1]).to(input_embeds.dtype)
+    return input_embeds, indexes, counter.get_total_flops() / 2
 
 
 def reference_image(kw, image_path, image_size, device):
@@ -86,13 +100,12 @@ def build_input_ids(model, tokenizer, prompt, grid_hw, device):
     return tokenizer(query, return_tensors="pt")["input_ids"].to(device), num_tokens
 
 
-def count(prefill, pixel_values, grid_hw, input_ids):
-    fca = FlopCountAnalysis(prefill, (pixel_values, grid_hw, input_ids))
+def count_llm(prefill_lm, input_embeds, indexes):
+    fca = FlopCountAnalysis(prefill_lm, (input_embeds, indexes))
     fca.unsupported_ops_warnings(False)
     fca.uncalled_modules_warnings(False)
     fca.tracer_warnings("none")
-    by_module = fca.by_module()
-    return fca.total(), by_module["model.vision_model"], by_module["model.language_model"], fca.unsupported_ops()
+    return fca.total(), fca.unsupported_ops()
 
 
 def main():
@@ -113,7 +126,7 @@ def main():
         model.system_message = vlm.system_prompt  # as NEOChat.generate_inner does
         model.img_context_token_id = tokenizer.convert_tokens_to_ids(IMG_CONTEXT_TOKEN)
         model.img_start_token_id = tokenizer.convert_tokens_to_ids(IMG_START_TOKEN)
-        prefill = Prefill(model).eval()
+        prefill_lm = PrefillLM(model.language_model).eval()
         pixel_values, grid_hw = reference_image(kw, args.image, args.image_size, vlm.device)
         embeddings = model.vision_model.embeddings
 
@@ -123,7 +136,9 @@ def main():
             embeddings.compressor = build_compressor(vtc_method, compression_ratio=1.0 / ratio).to(vlm.device)
             input_ids, num_visual = build_input_ids(model, tokenizer, args.prompt, grid_hw, vlm.device)
             with torch.no_grad():
-                total, vision, llm, unsupported = count(prefill, pixel_values, grid_hw, input_ids)
+                input_embeds, indexes, vision = vision_prefill(model, pixel_values, grid_hw, input_ids)
+                llm, unsupported = count_llm(prefill_lm, input_embeds, indexes)
+            total = vision + llm
             rows.append({
                 "Model": label, "scale": scale, "compression": float(ratio),
                 "visual_tokens": num_visual, "seq_len": input_ids.shape[1],
@@ -133,7 +148,7 @@ def main():
                   f"{total / 1e12:.3f} TFLOPs (vision {vision / 1e12:.4f}, LLM {llm / 1e12:.3f})", flush=True)
         print(f"{key}: ops not counted by fvcore: {sorted(unsupported)}", flush=True)
 
-        del prefill, model, vlm
+        del prefill_lm, model, vlm
         gc.collect()
         torch.cuda.empty_cache()
 

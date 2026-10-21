@@ -1,10 +1,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
 """
 cd VLMEvalKit/vlmeval/results
-
+python tradeoff_analysis.py
 """
 
 csv_path = "training_free.csv"
@@ -37,16 +36,6 @@ baseline = df[df["Model"] == baseline_model].iloc[0]
 
 # ============================================================
 # Compute relative aggregate performance
-#
-# For each benchmark:
-#
-#     relative = method_score / baseline_score * 100
-#
-# Then average across benchmarks.
-#
-# Thus:
-#     100% = same performance as NEO-2B-SFT
-#      80% = retains 80% of baseline performance
 # ============================================================
 
 def aggregate_relative_performance(row, benchmarks):
@@ -67,12 +56,12 @@ df["OCR"] = df.apply(
     axis=1,
 )
 
+mt_row = df[df["Model"] == "NEO-2B-MT"].iloc[0]
+
+
 
 # ============================================================
-# Keep training-free compression methods
-#
-# NEO-2B-SFT is added separately as the 1x reference point.
-# NEO-2B-MT is excluded.
+# Compression methods
 # ============================================================
 
 methods = [
@@ -84,141 +73,171 @@ methods = [
 ]
 
 method_styles = {
-    "fixed pooling":   {"marker": "o"},
-    "spatial pooling": {"marker": "s"},
-    "random pruning":  {"marker": "^"},
-    "ToMe":            {"marker": "D"},
-    "PruneSID":        {"marker": "P"},
+    "fixed pooling":   {"marker": "o", "color": "tab:blue"},
+    "spatial pooling": {"marker": "s", "color": "tab:orange"},
+    "random pruning":  {"marker": "^", "color": "tab:green"},
+    "ToMe":            {"marker": "D", "color": "tab:red"},
+    "PruneSID":        {"marker": "P", "color": "tab:purple"},
 }
 
 
 # ============================================================
-# Plot
+# Reusable plotting function
 # ============================================================
 
-fig, axes = plt.subplots(
-    1,
-    2,
-    figsize=(13, 5),
-    sharey=True,
-)
+def plot_performance(x_col, xlabel, filename):
 
-panels = [
-    (axes[0], "Coarse", "Coarse-grained Benchmarks"),
-    (axes[1], "OCR", "OCR Benchmarks"),
-]
+    fig, axes = plt.subplots(
+        1,
+        2,
+        figsize=(13, 5),
+        sharey=True,
+    )
 
-for ax, metric, title in panels:
+    panels = [
+        (axes[0], "Coarse", "Coarse-grained Benchmarks"),
+        (axes[1], "OCR", "OCR Benchmarks"),
+    ]
 
-    # --------------------------------------------------------
-    # Plot each compression method
-    # --------------------------------------------------------
-    for method in methods:
+    for ax, metric, title in panels:
 
-        method_df = (
-            df[df["Model"] == method]
-            .sort_values("compression")
+        # ----------------------------------------------------
+        # Compression methods
+        # ----------------------------------------------------
+        for method in methods:
+
+            method_df = (
+                df[df["Model"] == method]
+                .sort_values(x_col)
+            )
+
+            if method_df.empty:
+                continue
+
+            style = method_styles[method]
+
+            ax.plot(
+                method_df[x_col],
+                method_df[metric],
+                marker=style["marker"],
+                color=style["color"],
+                markersize=8,
+                linewidth=2,
+                label=method,
+            )
+
+        # ----------------------------------------------------
+        # NEO-2B-SFT reference
+        # ----------------------------------------------------
+        ax.scatter(
+            [baseline[x_col]],
+            [100.0],
+            marker="*",
+            s=180,
+            color="black",
+            label="NEO-2B-SFT",
+            zorder=10,
         )
 
-        if len(method_df) == 0:
-            continue
-
-        ax.plot(
-            method_df["compression"],
-            method_df[metric],
-            marker=method_styles[method]["marker"],
-            markersize=8,
-            linewidth=2,
-            label=method,
+        ax.axhline(
+            100,
+            linestyle="--",
+            linewidth=1.2,
+            color="gray",
+            alpha=0.7,
         )
 
+        # ----------------------------------------------------
+        # NEO-2B-MT reference
+        # ----------------------------------------------------
+        ax.scatter(
+            [mt_row[x_col]],
+            [mt_row[metric]],
+            marker="X",
+            s=120,
+            color="gray",
+            label="NEO-2B-MT",
+            zorder=9,
+        )
 
-    # --------------------------------------------------------
-    # Uncompressed model references
-    # --------------------------------------------------------
+        # ----------------------------------------------------
+        # Formatting
+        # ----------------------------------------------------
+        ax.set_title(title, fontsize=14)
+        ax.set_xlabel(xlabel, fontsize=12)
 
-    # Final SFT model
-    ax.scatter(
-        [1.0],
-        [100.0],
-        marker="*",
-        s=180,
-        color="black",
-        label="NEO-2B-SFT",
-        zorder=10,
-    )
-    ax.axhline(
-        100,
-        linestyle="--",
-        linewidth=1.2,
-        color="gray",
-        alpha=0.7,
-    )
+        ax.grid(
+            True,
+            linestyle="--",
+            alpha=0.3,
+        )
 
+        if x_col == "compression":
+            ax.set_xticks([1, 2, 4, 8])
+            ax.set_xticklabels(["1×", "2×", "4×", "8×"])
 
-    # Mid-training checkpoint
-    mt_row = df[df["Model"] == "NEO-2B-MT"].iloc[0]
+        elif x_col == "TFLOPs":
+            ax.set_xticks([0, 2, 4, 6, 8, 10, 12, 14])
+            ax.set_xlim(0, 14.5)
 
-    ax.scatter(
-        [1.0],
-        [mt_row[metric]],
-        marker="X",
-        s=120,
-        color="gray",
-        label="NEO-2B-MT",
-        zorder=9,
-    )
-
-
-    # --------------------------------------------------------
-    # Formatting
-    # --------------------------------------------------------
-    ax.set_title(title, fontsize=14)
-    ax.set_xlabel("Token Compression Ratio", fontsize=12)
-
-    ax.set_xticks([1, 2, 4, 8])
-    ax.set_xticklabels(["1×", "2×", "4×", "8×"])
-
-    ax.grid(
-        True,
-        linestyle="--",
-        alpha=0.3,
+    axes[0].set_ylabel(
+        "Relative Performance vs. NEO-2B-SFT (%)",
+        fontsize=12,
     )
 
+    # ========================================================
+    # Shared legend
+    # ========================================================
 
-axes[0].set_ylabel(
-    "Relative Performance vs. NEO-2B-SFT (%)",
-    fontsize=12,
+    handles, labels = axes[0].get_legend_handles_labels()
+
+    fig.legend(
+        handles,
+        labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.04),
+        ncol=len(methods) + 2,
+        frameon=False,
+    )
+
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.85)
+
+    # ========================================================
+    # Save figures
+    # ========================================================
+
+    plt.savefig(
+        f"{filename}.pdf",
+        bbox_inches="tight",
+    )
+
+    plt.savefig(
+        f"{filename}.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
+
+    plt.show()
+
+
+# ============================================================
+# Figure 1: Performance vs. Compression Ratio
+# ============================================================
+
+plot_performance(
+    x_col="compression",
+    xlabel="Token Compression Ratio",
+    filename="training_free_compression",
 )
 
 
 # ============================================================
-# Shared legend
+# Figure 2: Performance vs. TFLOPs
 # ============================================================
 
-handles, labels = axes[0].get_legend_handles_labels()
-
-fig.legend(
-    handles,
-    labels,
-    loc="upper center",
-    bbox_to_anchor=(0.5, 1.04),
-    ncol=len(methods)+2,
-    frameon=False,
+plot_performance(
+    x_col="TFLOPs",
+    xlabel="Computational Cost (TFLOPs)",
+    filename="training_free_tflops",
 )
-
-plt.tight_layout()
-plt.subplots_adjust(top=0.85)
-
-plt.savefig(
-    "training_free_compression.pdf",
-    bbox_inches="tight",
-)
-
-plt.savefig(
-    "training_free_compression.png",
-    dpi=300,
-    bbox_inches="tight",
-)
-
-plt.show()

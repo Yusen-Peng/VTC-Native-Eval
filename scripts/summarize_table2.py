@@ -1,11 +1,12 @@
 """Collect Table 2 scores from VLMEvalKit/outputs/<model>/<model>_<dataset>_{acc,score}.csv.
 
-    python scripts/summarize_table2.py            # markdown table
-    python scripts/summarize_table2.py --latex    # rows to paste into VTC-Native-Eval.tex
+    python scripts/summarize_table2.py                       # markdown table, NEO-2B
+    python scripts/summarize_table2.py --scale 9B --latex    # rows to paste into VTC-Native-Eval.tex
 
 Conventions match the existing table: MME = perception score; MMBench (dev split), MMMU (validation
 split) and RealWorldQA are Overall accuracy x100; TextVQA / DocVQA (ANLS) / ChartQA are Overall (already
 in percent); OCRBench is "Final Score Norm" (final score / 10). Missing/failed runs show as '--'.
+TFLOPs (prefill, one reference image) come from VLMEvalKit/vlmeval/results/flops.csv (scripts/flops.py).
 """
 import argparse
 import json
@@ -14,9 +15,10 @@ import os.path as osp
 import pandas as pd
 
 ROOT = osp.join(osp.dirname(osp.abspath(__file__)), "..", "VLMEvalKit", "outputs")
+FLOPS = osp.join(osp.dirname(osp.abspath(__file__)), "..", "VLMEvalKit", "vlmeval", "results", "flops.csv")
 RATIOS = ["2x", "4x", "8x"]
 # (config key, table label, ratios run); spatial 2x (1x2 blocks) is skipped: it equals fixed 2x on even-width grids
-METHODS = [("Fixed", "fixed pooling", RATIOS), ("Random", "random pruning", RATIOS), ("ToMe", "ToMe (re-implement)", RATIOS),
+METHODS = [("Fixed", "fixed pooling", RATIOS), ("Random", "random pruning", RATIOS), ("ToMe", "ToMe", RATIOS),
            ("PruneSID", "PruneSID", RATIOS), ("Spatial", "spatial pooling", ["4x", "8x"])]
 # dataset -> (file suffix, split row or None, column, scale)
 DATASETS = {
@@ -48,26 +50,39 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--latex", action="store_true")
     ap.add_argument("--root", default=ROOT, help="VLMEvalKit outputs dir")
+    ap.add_argument("--scale", default="2B", choices=["2B", "9B"])
     args = ap.parse_args()
 
-    rows = []
+    base = f"NEO-{args.scale}-SFT"
+    flops = pd.read_csv(FLOPS) if osp.exists(FLOPS) else None
+
+    def tflops(label, ratio):
+        if flops is None:
+            return None
+        hit = flops[(flops["scale"] == args.scale) & (flops["Model"] == label) & (flops["compression"] == ratio)]
+        return float(hit["TFLOPs"].iloc[0]) if len(hit) else None
+
+    rows = [("1x", base, [score(args.root, base, *DATASETS[d]) for d in DATASETS] + [tflops(base, 1.0)])]
     for ratio in RATIOS:
         for key, label, ratios in METHODS:
             if ratio not in ratios:
                 continue
-            model = f"NEO-2B-SFT-{key}-{ratio}"
-            rows.append((ratio, label, [score(args.root, model, *DATASETS[d]) for d in DATASETS]))
+            model = f"{base}-{key}-{ratio}"
+            rows.append((ratio, label, [score(args.root, model, *DATASETS[d]) for d in DATASETS]
+                         + [tflops(label, float(ratio[:-1]))]))
 
+    columns = list(DATASETS) + ["TFLOPs"]
     fmt = lambda v: "--" if v is None else (f"{v:.1f}" if v > 200 else f"{v:.2f}")
     if args.latex:
+        print(f"        {base} & " + " & ".join(fmt(v) for v in rows[0][2]) + " \\\\")
         for ratio in RATIOS:
-            print(f"        \\rowcolor{{green!10}}\\multicolumn{{9}}{{c}}{{{ratio} compression}} \\\\")
-            for r, label, vals in rows:
+            print(f"        \\rowcolor{{green!10}}\\multicolumn{{{len(columns) + 1}}}{{c}}{{{ratio} compression}} \\\\")
+            for r, label, vals in rows[1:]:
                 if r == ratio:
                     print(f"        + {label} & " + " & ".join(fmt(v) for v in vals) + " \\\\")
     else:
-        print("| model | " + " | ".join(DATASETS) + " |")
-        print("|---|" + "---|" * len(DATASETS))
+        print("| model | " + " | ".join(columns) + " |")
+        print("|---|" + "---|" * len(columns))
         for ratio, label, vals in rows:
             print(f"| {label} {ratio} | " + " | ".join(fmt(v) for v in vals) + " |")
 

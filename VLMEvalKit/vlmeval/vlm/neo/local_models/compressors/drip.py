@@ -15,6 +15,7 @@ class DRIPCompressor(BaseVTCCompressor):
         temperature: float = 0.1,
         threshold: float = 0.5,
         smart_init: bool = False,
+        drip_path: str = None,
     ):
         super().__init__(compression_ratio)
 
@@ -37,8 +38,39 @@ class DRIPCompressor(BaseVTCCompressor):
             torch.zeros(1, 1, hidden_size)
         )
 
+        if drip_path is not None:
+            self.load_drip_weights(drip_path)
         self.last_boundary_loss = None
         self.last_boundaries = None
+
+    def load_drip_weights(self, drip_path):
+        print(f"🌊 Loading DRIP weights from {drip_path}")
+        sd = torch.load(drip_path, map_location="cpu", weights_only=True)
+        sd = sd.get("state_dict", sd)
+        # Support Qwen, LLaVA, and standalone DRIP checkpoints.
+        bp_sd = {
+            k.split("boundary_predictor.", 1)[1]: v
+            for k, v in sd.items()
+            if "boundary_predictor." in k
+        }
+
+        self.boundary_predictor.load_state_dict(bp_sd, strict=True)
+
+        # Load null token if available and compatible.
+        null_token = next(
+            (v for k, v in sd.items() if k.endswith("null_token")),
+            None,
+        )
+
+        if null_token is not None:
+            if null_token.shape == self.null_token.shape:
+                with torch.no_grad():
+                    self.null_token.copy_(null_token)
+            else:
+                print("⚠️ Skipping null_token: shape mismatch")
+
+        print("✅ DRIP weights loaded")
+
 
     def num_output_tokens(self, h: int, w: int) -> int:
         return max(1, min(round(h * w * self.compression_ratio), h * w))

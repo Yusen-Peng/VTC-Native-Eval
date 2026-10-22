@@ -181,6 +181,9 @@ class NEOChatModel(PreTrainedModel):
         self.vtc_method = getattr(config.vision_config, "vtc_method", "none")
         self.compression_ratio = getattr(config.vision_config, "compression_ratio", 1.0)
 
+        self.boundary_loss_weight = getattr(config.vision_config, "boundary_loss_weight", 1.0)
+
+
         config.llm_config._attn_implementation = 'eager'
 
         if vision_model is not None:
@@ -222,7 +225,7 @@ class NEOChatModel(PreTrainedModel):
 
         return torch.cat(all_w), torch.cat(all_h)
 
-    def _compress_training_sequence(self, input_ids, labels, indexes, loss_weight, seq_boundaries, grid_hw):
+    def _compress_training_sequence(self, input_ids, labels, indexes, loss_weight, seq_boundaries, grid_hw, output_lengths=None):
         """Remove unused IMG_CONTEXT positions from the training sequence such that the LLM sequence matches the compressed visual tokens."""
         ids = input_ids[0]
         S = ids.shape[0]
@@ -233,15 +236,19 @@ class NEOChatModel(PreTrainedModel):
         padded = F.pad(is_img.long(), (1, 1), value=0)
         diff = padded[1:] - padded[:-1]
         starts = torch.where(diff == 1)[0]
-        ends = torch.where(diff == -1)[0]  # exclusive
+        ends = torch.where(diff == -1)[0]  # exclusive        
         assert len(starts) == len(ends)
         for i, (start, end) in enumerate(zip(starts.tolist(), ends.tolist())):
             h, w = self._get_native_hw(grid_hw[i, 0], grid_hw[i, 1])
             assert end - start == h * w, f"image {i}: {end - start} IMG_CONTEXT tokens but native grid is {h}x{w}"
             # we can start by dropping all image-token positions 
             keep_mask[start:end] = False
-            """improvement: we don't care WHICH IMG_CONTEXT positions survive."""
-            K = max(1, int((end - start) * self.compression_ratio))
+            """improvement: we don't care WHICH IMG_CONTEXT positions survive; only the number matters."""
+            if output_lengths is not None:
+                K = int(output_lengths[i])
+            else:
+                K = max(1, int((end - start) * self.compression_ratio))
+            
             keep_mask[start:start + K] = True
 
         if bool(keep_mask.all()): # the uncompressed baseline
@@ -297,13 +304,20 @@ class NEOChatModel(PreTrainedModel):
 
         pixel_values = pixel_values[0].to(self.dtype)
         vit_embeds, (abs_pos_h, abs_pos_w) = self.extract_feature_with_positions(pixel_values, grid_hw=grid_hw)
+
+        if self.vision_model.embeddings.vtc_method == "drip":
+            output_lengths = self.vision_model.embeddings.last_output_lengths
+        else: 
+            output_lengths = None
         input_ids, labels, indexes, loss_weight, seq_boundaries = self._compress_training_sequence(
                 input_ids=input_ids,
                 labels=labels,
                 indexes=indexes,
                 loss_weight=loss_weight,
                 seq_boundaries=seq_boundaries,
-                grid_hw=grid_hw)
+                grid_hw=grid_hw,
+                output_lengths=output_lengths,
+                )
         hidden_states = self.language_model.get_input_embeddings()(input_ids)
         selected = input_ids == self.img_context_token_id
         vit_embeds = vit_embeds.reshape((-1, vit_embeds.shape[-1]))
@@ -345,6 +359,11 @@ class NEOChatModel(PreTrainedModel):
             inference_params=None,
             loss_weight=loss_weight,
         )
+
+        if self.training and self.vtc_method == "drip" and labels is not None:
+            boundary_loss = self.vision_model.embeddings.last_boundary_loss
+            if boundary_loss is not None:
+                llm_outputs.loss = llm_outputs.loss + self.boundary_loss_weight * boundary_loss
 
         return llm_outputs
 

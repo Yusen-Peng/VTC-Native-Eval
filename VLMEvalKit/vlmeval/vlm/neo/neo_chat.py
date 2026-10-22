@@ -118,6 +118,7 @@ class NEOChat(BaseModel):
                  # VTC
                  vtc_method="none",
                  compression_ratio=1.0,
+                 drip_path=None,
                  # Best-of-N parameters
                  best_of_n=1,
                  reward_model_path=None,
@@ -211,8 +212,12 @@ class NEOChat(BaseModel):
             self.device = 'cuda'
         else:
             config = NEOChatConfig.from_pretrained(model_path)
-            config.vision_config.vtc_method = self.vtc_method
-            config.vision_config.compression_ratio = self.compression_ratio
+
+            config.vision_config.vtc_method = vtc_method
+            config.vision_config.compression_ratio = compression_ratio
+            if vtc_method == "drip":
+                config.vision_config.drip_path = drip_path
+
             print(f"[NEO VTC] method={config.vision_config.vtc_method}, compression_ratio={config.vision_config.compression_ratio}", flush=True)
 
             self.model = NEOChatModel.from_pretrained(

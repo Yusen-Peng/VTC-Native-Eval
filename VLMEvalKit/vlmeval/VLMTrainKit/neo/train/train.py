@@ -87,6 +87,9 @@ def train():
     )
 
     model.language_model = get_peft_model(model.language_model, lora_config)
+    
+    if model_args.vtc_method == "drip":
+        model.compressor.requires_grad_(True)
 
     model.language_model.print_trainable_parameters()
 

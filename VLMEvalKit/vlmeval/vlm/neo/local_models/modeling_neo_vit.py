@@ -157,7 +157,21 @@ class NEOVisionEmbeddings(nn.Module):
 
         self.vtc_method = getattr(config, "vtc_method", "none")
         self.compression_ratio = getattr(config, "compression_ratio", 1.0)
-        self.compressor = build_compressor(self.vtc_method, compression_ratio=self.compression_ratio)
+
+        compressor_kwargs = {}
+        if self.vtc_method == "drip":
+            compressor_kwargs = {
+                "hidden_size": self.llm_embed_dim,
+                "intermediate_size": getattr(config, "drip_intermediate_size", 4096),
+                "temperature": getattr(config, "drip_temperature", 0.1),
+                "drip_path": getattr(config, "drip_path", None),
+            }
+
+
+        self.compressor = build_compressor(self.vtc_method, compression_ratio=self.compression_ratio, **compressor_kwargs)
+
+        self.last_output_lengths = None
+        self.last_boundary_loss = None
 
     def _apply_2d_rotary_pos_emb(self, patch_embeds, grid_hw):
         """
@@ -192,6 +206,8 @@ class NEOVisionEmbeddings(nn.Module):
         patches_list = []
         pos_h_list = []
         pos_w_list = []
+        boundary_losses = []
+        output_lengths = []
         cur_position = 0
         # NEO model packs all image patches within a batch together;
         # we need a for loop to iterate over individual images
@@ -204,6 +220,10 @@ class NEOVisionEmbeddings(nn.Module):
             # ⭐⭐⭐ VTC modules (after 2x2 downsample + projection to LLM space)
             w_native = patches_per_img.shape[2]
             patches_per_img, kept_idx = self.compressor.forward_with_indices(patches_per_img)
+
+            if self.training and self.vtc_method == "drip":
+                boundary_losses.append(self.compressor.last_boundary_loss)
+
             patches_per_img = patches_per_img.reshape(-1, patches_per_img.shape[-1])
             kept_idx = kept_idx.reshape(-1)
             assert patches_per_img.shape[0] == kept_idx.shape[0], (
@@ -213,11 +233,15 @@ class NEOVisionEmbeddings(nn.Module):
             patches_list.append(patches_per_img)
             pos_h_list.append(kept_idx // w_native)
             pos_w_list.append(kept_idx % w_native)
+            output_lengths.append(patches_per_img.shape[0])
             cur_position += h * w
 
         embeddings = torch.cat(patches_list, dim=0)  # (N_total // downsample_factor**2, C)
         pos_h = torch.cat(pos_h_list, dim=0)
         pos_w = torch.cat(pos_w_list, dim=0)
+
+        self.last_boundary_loss = torch.stack(boundary_losses).mean() if boundary_losses else None
+        self.last_output_lengths = output_lengths if output_lengths else None
 
         assert cur_position == patch_embeds.shape[0]
 

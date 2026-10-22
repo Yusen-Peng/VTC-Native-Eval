@@ -1,14 +1,14 @@
 #!/bin/bash
-#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_llava66k_Random_2x
-#SBATCH --output=NEO_continue_SFT_LLaVA_OV_llava66k_Random_2x.log
+#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_DEBUG
+#SBATCH --output=NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_DEBUG.log
 #SBATCH --account=PAS2836
-#SBATCH --partition=nextgen
+#SBATCH --partition=debug-nextgen
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=128G
-#SBATCH --time=15:00:00
+#SBATCH --time=00:20:00
 
 module load miniconda3/24.1.2-py310
 conda deactivate
@@ -40,7 +40,7 @@ datasets="llava_665k%10"
 # datasets="askmodelanything_133k"
 
 
-run_name="NEO_continue_SFT_LLaVA_OV_llava66k_Random_2x"
+run_name="NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_DEBUG"
 output_dir="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/${run_name}"
 
 args=(
@@ -73,7 +73,7 @@ args=(
     --dataloader_num_workers 4
     --run_name "${run_name}"
     --report_to none
-    --vtc_method random
+    --vtc_method drip
     --compression_ratio 0.5
 )
 

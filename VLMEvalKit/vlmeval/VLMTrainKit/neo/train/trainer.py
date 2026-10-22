@@ -3,6 +3,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import sys
 from typing import Any, Optional, Union
 from transformers import Trainer
 from transformers.models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
@@ -10,8 +11,29 @@ from transformers.trainer import _is_peft_model
 from transformers.utils import logging
 logger = logging.get_logger(__name__)
 
+FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(FILE_DIR, "../../../../../"))
+sys.path.insert(0, PROJECT_ROOT)
+from VLMEvalKit.vlmeval.vlm.neo.local_models.modeling_neo_chat import NEOChatModel
+
+
 
 class LoRATrainer(Trainer):
+    def _save_drip(self, output_dir):
+        model = self.accelerator.unwrap_model(self.model)
+
+        if model.vtc_method != "drip":
+            return
+
+        if self.args.should_save:
+            torch.save(
+                {
+                    name: param.detach().cpu().clone()
+                    for name, param in model.compressor.named_parameters()
+                },
+                os.path.join(output_dir, "drip.bin"),
+            )
+
     def _save(self, output_dir: str | None = None, state_dict=None):
         output_dir = output_dir if output_dir is not None else self.args.output_dir
         os.makedirs(output_dir, exist_ok=True)
@@ -38,6 +60,8 @@ class LoRATrainer(Trainer):
             self.args,
             os.path.join(output_dir, "training_args.bin"),
         )
+
+        self._save_drip(output_dir)
 
     def _save_checkpoint(self, model, trial):
         # Let Trainer determine checkpoint-X naming
@@ -72,6 +96,18 @@ class LoRATrainer(Trainer):
                 use_mtime=False,
                 output_dir=run_dir,
             )
+
+
+    def _load_from_checkpoint(self, resume_from_checkpoint, model: NEOChatModel | None = None):
+        super()._load_from_checkpoint(resume_from_checkpoint, model=model)
+        target_model: NEOChatModel = model if model is not None else self.model
+        target_model = self.accelerator.unwrap_model(target_model)
+        if getattr(target_model, "vtc_method", None) == "drip":
+            drip_path = os.path.join(resume_from_checkpoint, "drip.bin")
+            if not os.path.isfile(drip_path):
+                raise FileNotFoundError(f"Missing DRIP checkpoint: {drip_path}")
+            target_model.compressor.load_drip_weights(drip_path)
+
 
 class DistillationLoRATrainer(LoRATrainer):
     def __init__(

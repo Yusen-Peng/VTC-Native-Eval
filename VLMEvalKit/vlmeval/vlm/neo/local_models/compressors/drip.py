@@ -40,6 +40,7 @@ class DRIPCompressor(BaseVTCCompressor):
 
         self.last_boundary_loss = None
         self.last_boundaries = None
+        self.last_soft_boundaries = None
 
     def load_drip_weights(self, drip_path):
         print(f"🌊 Loading DRIP weights from {drip_path}")
@@ -83,6 +84,8 @@ class DRIPCompressor(BaseVTCCompressor):
         else:
             soft_boundaries, hard_boundaries = self.boundary_predictor.inference(hidden)
 
+        self.last_soft_boundaries = soft_boundaries.detach()
+        
         # Force the final token to terminate the last segment.
         hard_boundaries = torch.cat(
             [

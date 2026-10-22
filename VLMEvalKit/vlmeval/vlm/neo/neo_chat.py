@@ -229,6 +229,10 @@ class NEOChat(BaseModel):
                 device_map="auto"
             )
 
+            if self.vtc_method == "drip":
+                self.model.compressor.load_drip_weights(config.vision_config.drip_path)
+
+
             if lora_path is not None:
                 from peft import PeftModel
                 print(f"[NEO LoRA] Loading adapter from: {lora_path}", flush=True)

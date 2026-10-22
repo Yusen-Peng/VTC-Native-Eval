@@ -38,8 +38,6 @@ class DRIPCompressor(BaseVTCCompressor):
             torch.zeros(1, 1, hidden_size)
         )
 
-        if drip_path is not None:
-            self.load_drip_weights(drip_path)
         self.last_boundary_loss = None
         self.last_boundaries = None
 

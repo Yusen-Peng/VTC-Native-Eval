@@ -19,6 +19,41 @@ from VLMEvalKit.vlmeval.vlm.neo.local_models.modeling_neo_chat import NEOChatMod
 
 
 class LoRATrainer(Trainer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._boundary_loss_sum = 0.0
+        self._boundary_loss_count = 0
+
+    def compute_loss(
+        self,
+        model,
+        inputs,
+        return_outputs=False,
+        num_items_in_batch=None,
+    ):
+        loss, outputs = super().compute_loss(
+            model,
+            inputs,
+            return_outputs=True,
+            num_items_in_batch=num_items_in_batch,
+        )
+
+        # Log DRIP boundary regularization.
+        if self.model.training and getattr(self.model, "vtc_method", None) == "drip":
+            boundary_loss = self.model.vision_model.embeddings.last_boundary_loss
+
+            if boundary_loss is not None:
+                self._boundary_loss_sum += boundary_loss.detach().float().item()
+                self._boundary_loss_count += 1
+        return (loss, outputs) if return_outputs else loss
+
+    def log(self, logs, start_time=None):
+        if "loss" in logs and self._boundary_loss_count > 0:
+            logs["boundary_loss"] = self._boundary_loss_sum / self._boundary_loss_count
+            self._boundary_loss_sum = 0.0
+            self._boundary_loss_count = 0
+        super().log(logs, start_time=start_time)
+
     def _save_drip(self, output_dir):
         model = self.accelerator.unwrap_model(self.model)
 

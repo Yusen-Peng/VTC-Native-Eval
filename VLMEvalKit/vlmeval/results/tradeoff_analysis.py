@@ -6,7 +6,8 @@ cd VLMEvalKit/vlmeval/results
 python tradeoff_analysis.py
 """
 
-csv_path = "training_free.csv"
+baseline_model = "NEO-9B-SFT" # NEO-2B-SFT or NEO-9B-SFT
+csv_path = "training_free_9B.csv" # training_free_2B.csv or training_free_9B.csv
 
 coarse_benchmarks = [
     "MMBench",
@@ -22,7 +23,6 @@ ocr_benchmarks = [
     "ChartQA",
 ]
 
-baseline_model = "NEO-2B-SFT"
 
 
 # ============================================================
@@ -56,7 +56,6 @@ df["OCR"] = df.apply(
     axis=1,
 )
 
-mt_row = df[df["Model"] == "NEO-2B-MT"].iloc[0]
 
 
 
@@ -127,7 +126,7 @@ def plot_performance(x_col, xlabel, filename):
             )
 
         # ----------------------------------------------------
-        # NEO-2B-SFT reference
+        # Baseline model reference
         # ----------------------------------------------------
         ax.scatter(
             [baseline[x_col]],
@@ -135,7 +134,7 @@ def plot_performance(x_col, xlabel, filename):
             marker="*",
             s=180,
             color="black",
-            label="NEO-2B-SFT",
+            label=f"{baseline_model}",
             zorder=10,
         )
 
@@ -145,19 +144,6 @@ def plot_performance(x_col, xlabel, filename):
             linewidth=1.2,
             color="gray",
             alpha=0.7,
-        )
-
-        # ----------------------------------------------------
-        # NEO-2B-MT reference
-        # ----------------------------------------------------
-        ax.scatter(
-            [mt_row[x_col]],
-            [mt_row[metric]],
-            marker="X",
-            s=120,
-            color="gray",
-            label="NEO-2B-MT",
-            zorder=9,
         )
 
         # ----------------------------------------------------
@@ -177,11 +163,15 @@ def plot_performance(x_col, xlabel, filename):
             ax.set_xticklabels(["1×", "2×", "4×", "8×"])
 
         elif x_col == "TFLOPs":
-            ax.set_xticks([0, 2, 4, 6, 8, 10, 12, 14])
-            ax.set_xlim(0, 14.5)
+            if baseline_model == "NEO-2B-SFT":
+                ax.set_xticks([0, 2, 4, 6, 8, 10, 12, 14])
+                ax.set_xlim(0, 14.5)
+            elif baseline_model == "NEO-9B-SFT":
+                ax.set_xticks([0, 5, 10, 20, 30, 40, 45])
+                ax.set_xlim(0, 50)
 
     axes[0].set_ylabel(
-        "Relative Performance vs. NEO-2B-SFT (%)",
+        f"Relative Performance vs. {baseline_model} (%)",
         fontsize=12,
     )
 
@@ -212,12 +202,6 @@ def plot_performance(x_col, xlabel, filename):
         bbox_inches="tight",
     )
 
-    plt.savefig(
-        f"{filename}.png",
-        dpi=300,
-        bbox_inches="tight",
-    )
-
     plt.show()
 
 
@@ -228,7 +212,7 @@ def plot_performance(x_col, xlabel, filename):
 plot_performance(
     x_col="compression",
     xlabel="Token Compression Ratio",
-    filename="training_free_compression",
+    filename=f"training_free_compression_{baseline_model}",
 )
 
 
@@ -239,5 +223,5 @@ plot_performance(
 plot_performance(
     x_col="TFLOPs",
     xlabel="Computational Cost (TFLOPs)",
-    filename="training_free_tflops",
+    filename=f"training_free_tflops_{baseline_model}",
 )

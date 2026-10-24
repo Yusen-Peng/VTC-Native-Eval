@@ -108,19 +108,6 @@ class BoundaryPredictor(nn.Module):
             hard_boundaries - soft_boundaries.detach() + soft_boundaries
         )
 
-        if verbose:
-            print("================================")
-            np.set_printoptions(suppress=True, precision=4)
-            print(f"raw logits:")
-            print(boundary_logits.cpu().numpy())
-            print(f"probabilities after sigmoid:")
-            print(boundary_probs.cpu().numpy())
-            print(f"probabilities after sampling:")
-            print(soft_boundaries.cpu().numpy())
-            print(f"hard boundaries after thresholding:")
-            print(hard_boundaries.cpu().numpy())
-            print("================================")
-
         return soft_boundaries, hard_boundaries
 
     def calc_loss(self, preds):

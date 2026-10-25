@@ -10,13 +10,14 @@ from vlmeval.vlm.neo.local_models.modeling_neo_chat import NEOChatModel
 from vlmeval.vlm.neo.utils import load_image_native
 
 """
-python VLMEvalKit/visualize_neo_drip.py --dataset general
-python VLMEvalKit/visualize_neo_drip.py --dataset docvqa
+python visualize_neo_drip.py --dataset general
+python visualize_neo_drip.py --dataset docvqa
 """
 
 
 MODEL_BASE = "Paranioar/NEO1_0-2B-SFT"
-DRIP_WEIGHT_PATH = "/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x/drip.bin"
+# DRIP_WEIGHT_PATH = "/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x/drip.bin"
+DRIP_WEIGHT_PATH = "/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_TopK/checkpoint-40/drip.bin"
 COMPRESSION_RATIO = 0.5
 
 

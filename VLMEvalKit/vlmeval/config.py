@@ -2095,17 +2095,17 @@ neo_series = {
     ),
 
 
-    "NEO-2B-SFT-OV-LLaVA-llava66k-DRIP-2x-TopK-checkpoint-20": partial(
+    "NEO-2B-SFT-OV-LLaVA-llava66k-DRIP-2x-TopK-checkpoint-40": partial(
         NEOChat,
         model_path="Paranioar/NEO1_0-2B-SFT",
-        lora_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_TopK/checkpoint-20",
+        lora_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_TopK/checkpoint-40",
         patch_size=16,
         min_pixels=1280 * 32 * 32,
         max_pixels=4096 * 32 * 32,
         downsample_ratio=0.5,
         vtc_method="drip",
         compression_ratio=0.5,
-        drip_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_TopK/checkpoint-20/drip.bin",
+        drip_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_TopK/checkpoint-40/drip.bin",
     ),
 
 

@@ -2,8 +2,7 @@ import torch
 import torch.nn as nn
 from .base import BaseVTCCompressor
 from .registry import register_compressor
-from .drip_modules.BP import BoundaryPredictor
-from .drip_modules.BP_alternative import new_downsample
+from .drip_modules.BP import BoundaryPredictor, downsample
 
 @register_compressor("drip")
 class DRIPCompressor(BaseVTCCompressor):
@@ -124,18 +123,24 @@ class DRIPCompressor(BaseVTCCompressor):
             return x, indices
         soft_boundaries, hard_boundaries = self._predict_boundaries(x)
 
-        # Dynamic number of segments during training.
-        indices = torch.where(hard_boundaries[0].detach() > 0.5)[0]
+        K = self.num_output_tokens(1, N)
+        # Select exactly K boundaries, always including the last token
+        scores = soft_boundaries[:, :-1]
+        indices = scores[0].topk(K - 1).indices
+        indices = torch.cat([indices, torch.tensor([N - 1], device=x.device)]).sort().values
 
-        # Cache selected indices for _compress_training_sequence()
+        # Construct hard Top-K boundaries
+        topk_boundaries = torch.zeros_like(soft_boundaries)
+        topk_boundaries[:, indices] = 1.0
+
+        # Straight-through estimator: hard forward, soft backward
+        hard_boundaries = topk_boundaries.detach() - soft_boundaries.detach() + soft_boundaries
+
+        # Cache selected indices for training sequence compression
         self.last_kept_indices = indices.detach()
 
-        compressed = new_downsample(
-            boundaries=hard_boundaries,
-            hidden=x.transpose(0, 1),
-            null_group=self.null_token,
-            leading_one=False,
-        ).transpose(0, 1)
+        compressed = downsample(boundaries=hard_boundaries, hidden=x.transpose(0, 1), null_group=self.null_token) # [S, B, D]
+        compressed = compressed.transpose(0, 1)
 
         # Original DRIP boundary regularization.
         if self.training:

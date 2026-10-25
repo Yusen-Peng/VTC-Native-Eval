@@ -41,6 +41,8 @@ class DRIPCompressor(BaseVTCCompressor):
         self.last_boundary_loss = None
         self.last_boundaries = None
         self.last_soft_boundaries = None
+        
+        self.last_kept_indices = None
 
     def load_drip_weights(self, drip_path):
         print(f"🌊 Loading DRIP weights from {drip_path}")
@@ -72,10 +74,18 @@ class DRIPCompressor(BaseVTCCompressor):
 
 
     def num_output_tokens(self, h: int, w: int) -> int:
-        return max(1, min(round(h * w * self.compression_ratio), h * w))
+        N = h * w
+        return max(1, min(int(N * self.compression_ratio), N))
 
     def kept_indices(self, h, w, device=None):
-        raise NotImplementedError("DRIP selects boundaries dynamically from visual features.")
+        if self.last_kept_indices is None:
+            raise RuntimeError("DRIP kept_indices() called before forward_with_indices().")
+
+        indices = self.last_kept_indices
+        if indices.numel() != self.num_output_tokens(h, w):
+            raise RuntimeError(f"DRIP expected {self.num_output_tokens(h, w)} tokens, but selected {indices.numel()}.")
+        return indices.to(device=device)
+    
 
     def _predict_boundaries(self, x):
         hidden = x.transpose(0, 1)
@@ -116,6 +126,9 @@ class DRIPCompressor(BaseVTCCompressor):
 
         # Dynamic number of segments during training.
         indices = torch.where(hard_boundaries[0].detach() > 0.5)[0]
+
+        # Cache selected indices for _compress_training_sequence()
+        self.last_kept_indices = indices.detach()
 
         compressed = new_downsample(
             boundaries=hard_boundaries,

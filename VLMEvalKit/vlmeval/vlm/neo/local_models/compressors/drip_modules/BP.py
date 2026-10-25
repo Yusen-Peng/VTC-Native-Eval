@@ -103,7 +103,15 @@ class BoundaryPredictor(nn.Module):
 
         soft_boundaries = bernoulli.rsample()
 
-        hard_boundaries = (soft_boundaries > self.threshold).float()
+        # previously: thresholding
+        # hard_boundaries = (soft_boundaries > self.threshold).float()
+        # now: top-K
+        hard_boundaries = torch.zeros_like(soft_boundaries)
+        B, T = soft_boundaries.shape
+        k = max(1, min(int(T * self.compression_rate), T))
+        topk_idx = soft_boundaries[:, :-1].topk(k=k - 1, dim=-1).indices
+        hard_boundaries.scatter_(1, topk_idx, 1.0)
+
         hard_boundaries = (
             hard_boundaries - soft_boundaries.detach() + soft_boundaries
         )

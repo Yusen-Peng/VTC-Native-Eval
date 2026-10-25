@@ -4,6 +4,8 @@ import torch
 import os
 import sys
 
+from VLMEvalKit.vlmeval import config
+
 from ..data.constants import (ALL_SPECIAL_TOKEN_LIST, IMG_CONTEXT_TOKEN,
                               IMG_START_TOKEN)
 
@@ -24,7 +26,10 @@ def build_model(model_args, data_args, tokenizer):
     config = NEOChatConfig.from_pretrained(model_args.model_name_or_path)
     config.vision_config.vtc_method = model_args.vtc_method
     config.vision_config.compression_ratio = model_args.compression_ratio
-    print(f"[NEO VTC] method={config.vision_config.vtc_method}, compression_ratio={config.vision_config.compression_ratio}", flush=True)
+    config.vision_config.drip_temperature = model_args.drip_temperature
+    print(f"🤟🏻🤟🏻🤟🏻 [NEO VTC] method={config.vision_config.vtc_method}, compression_ratio={config.vision_config.compression_ratio}", flush=True)
+    if config.vision_config.vtc_method == "drip":
+        print(f"🐥🐥🐥 [NEO VTC] drip_temperature={config.vision_config.drip_temperature}", flush=True)
     model = NEOChatModel.from_pretrained(
         model_args.model_name_or_path,
         config=config,

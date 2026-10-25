@@ -25,6 +25,7 @@ class NEOVisionConfig(PretrainedConfig):
             vtc_method="none",
             compression_ratio=1.0,
             drip_path=None,
+            drip_temperature=0.1,
             **kwargs,
     ):
         super().__init__(**kwargs)
@@ -43,6 +44,7 @@ class NEOVisionConfig(PretrainedConfig):
         self.vtc_method = vtc_method
         self.compression_ratio = compression_ratio
         self.drip_path = drip_path
+        self.drip_temperature = drip_temperature
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path: Union[str, os.PathLike], **kwargs) -> 'PretrainedConfig':

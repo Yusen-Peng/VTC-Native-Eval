@@ -27,6 +27,7 @@ class ModelArguments:
     # Visual Token Compression (VTC) settings
     vtc_method: str = field(default="none")
     compression_ratio: float = field(default=1.0)
+    drip_temperature: float = field(default=0.1)
 
 
 @dataclass

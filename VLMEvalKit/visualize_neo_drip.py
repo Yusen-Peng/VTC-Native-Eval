@@ -16,8 +16,7 @@ python visualize_neo_drip.py --dataset docvqa
 
 
 MODEL_BASE = "Paranioar/NEO1_0-2B-SFT"
-# DRIP_WEIGHT_PATH = "/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x/drip.bin"
-DRIP_WEIGHT_PATH = "/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_TopK/checkpoint-40/drip.bin"
+DRIP_WEIGHT_PATH = "/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_TopK/drip.bin"
 COMPRESSION_RATIO = 0.5
 
 
@@ -411,7 +410,7 @@ def visualize_neo_10_images_2x5(
 
     root, _ = os.path.splitext(save_path)
 
-    soft_save_path = root + "_soft_probs.pdf"
+    soft_save_path = root + "_soft_probs.png"
 
     visualize_neo_soft_probs(
         soft_masks=soft_masks,

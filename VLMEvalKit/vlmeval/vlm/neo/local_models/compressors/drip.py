@@ -69,7 +69,7 @@ class DRIPCompressor(BaseVTCCompressor):
             else:
                 print("⚠️ Skipping null_token: shape mismatch")
 
-        print("✅ DRIP weights loaded")
+        print(f"✅ DRIP weights loaded, trained under compression ratio {self.compression_ratio} with temperature {self.temperature}")
 
 
     def num_output_tokens(self, h: int, w: int) -> int:

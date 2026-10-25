@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_TopK
-#SBATCH --output=NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_TopK.log
+#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_TopK_temp001
+#SBATCH --output=NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_TopK_temp001.log
 #SBATCH --account=PAS2836
 #SBATCH --partition=debug-nextgen
 #SBATCH --nodes=1
@@ -8,7 +8,7 @@
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=128G
-#SBATCH --time=01:00:00
+#SBATCH --time=00:15:00
 
 module load miniconda3/24.1.2-py310
 conda deactivate
@@ -40,7 +40,7 @@ datasets="llava_665k%10"
 # datasets="askmodelanything_133k"
 
 
-run_name="NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_TopK"
+run_name="NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_TopK_temp001"
 output_dir="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/${run_name}"
 
 args=(
@@ -75,6 +75,7 @@ args=(
     --report_to none
     --vtc_method drip
     --compression_ratio 0.5
+    --drip_temperature 0.01
 )
 
 torchrun \

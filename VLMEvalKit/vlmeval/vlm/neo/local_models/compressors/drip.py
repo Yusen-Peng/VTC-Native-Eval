@@ -81,8 +81,6 @@ class DRIPCompressor(BaseVTCCompressor):
             raise RuntimeError("DRIP kept_indices() called before forward_with_indices().")
 
         indices = self.last_kept_indices
-        if indices.numel() != self.num_output_tokens(h, w):
-            raise RuntimeError(f"DRIP expected {self.num_output_tokens(h, w)} tokens, but selected {indices.numel()}.")
         return indices.to(device=device)
     
 
@@ -123,18 +121,26 @@ class DRIPCompressor(BaseVTCCompressor):
             return x, indices
         soft_boundaries, hard_boundaries = self._predict_boundaries(x)
 
-        K = self.num_output_tokens(1, N)
-        # Select exactly K boundaries, always including the last token
-        scores = soft_boundaries[:, :-1]
-        indices = scores[0].topk(K - 1).indices
-        indices = torch.cat([indices, torch.tensor([N - 1], device=x.device)]).sort().values
+    
+        # ===================== Top-K boundary selection during training =====================
+        # K = self.num_output_tokens(1, N)
+        # # Select exactly K boundaries, always including the last token
+        # scores = soft_boundaries[:, :-1]
+        # indices = scores[0].topk(K - 1).indices
+        # indices = torch.cat([indices, torch.tensor([N - 1], device=x.device)]).sort().values
 
-        # Construct hard Top-K boundaries
-        topk_boundaries = torch.zeros_like(soft_boundaries)
-        topk_boundaries[:, indices] = 1.0
+        # # Construct hard Top-K boundaries
+        # topk_boundaries = torch.zeros_like(soft_boundaries)
+        # topk_boundaries[:, indices] = 1.0
 
-        # Straight-through estimator: hard forward, soft backward
-        hard_boundaries = topk_boundaries.detach() - soft_boundaries.detach() + soft_boundaries
+        # # Straight-through estimator: hard forward, soft backward
+        # hard_boundaries = topk_boundaries.detach() - soft_boundaries.detach() + soft_boundaries
+        # ====================================================================================
+
+
+        # =========== original DRIP thresholding boundary selection during training ===========
+        indices = torch.where(hard_boundaries[0].detach() > 0.5)[0]
+        # ====================================================================================
 
         # Cache selected indices for training sequence compression
         self.last_kept_indices = indices.detach()

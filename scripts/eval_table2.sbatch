@@ -19,6 +19,8 @@
 # Submit via scripts/run_table2.sh, which sets SCALE / SUITE / --time / --job-name / --array.
 # Re-run one task, resuming its predictions (REUSE=1 passes --reuse to run.py; without it run.py starts over):
 #   sbatch --array=<idx> --time=<t> --export=ALL,SCALE=9B,SUITE=ocr,REUSE=1 scripts/eval_table2.sbatch
+# Other models (e.g. trained checkpoints): MODELS="<config.py keys>" replaces the variant list, idx = model_idx*4 + dataset_idx:
+#   sbatch --array=0-11 --time=3:00:00 --export=ALL,SUITE=general,MODELS="m1 m2 m3" scripts/eval_table2.sbatch
 # Out of GPU memory (e.g. 9B baseline on multi-image MMMU, idx 2): same, plus --gpus-per-node=2 (device_map="auto" splits layers).
 set -uo pipefail
 
@@ -31,7 +33,13 @@ case "$SUITE" in
     ocr)     DATASETS=(TextVQA_VAL DocVQA_VAL OCRBench ChartQA_TEST) ;;
     *) echo "unknown SUITE=$SUITE (expected general|ocr)"; exit 2 ;;
 esac
-MODEL=NEO-$SCALE-SFT${VARIANTS[$((SLURM_ARRAY_TASK_ID / ${#DATASETS[@]}))]}
+if [ -n "${MODELS:-}" ]; then
+    # MODELS="name1 name2 ..." (config.py keys, e.g. trained checkpoints) replaces the variant list
+    read -ra MODEL_LIST <<< "$MODELS"
+    MODEL=${MODEL_LIST[$((SLURM_ARRAY_TASK_ID / ${#DATASETS[@]}))]}
+else
+    MODEL=NEO-$SCALE-SFT${VARIANTS[$((SLURM_ARRAY_TASK_ID / ${#DATASETS[@]}))]}
+fi
 DATA=${DATASETS[$((SLURM_ARRAY_TASK_ID % ${#DATASETS[@]}))]}
 
 module reset

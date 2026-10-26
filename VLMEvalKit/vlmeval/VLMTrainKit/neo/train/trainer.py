@@ -16,6 +16,8 @@ PROJECT_ROOT = os.path.abspath(os.path.join(FILE_DIR, "../../../../../"))
 sys.path.insert(0, PROJECT_ROOT)
 from VLMEvalKit.vlmeval.vlm.neo.local_models.modeling_neo_chat import NEOChatModel
 
+# VTC methods with learned compressor weights: trained alongside the LoRA, saved as <vtc_method>.bin
+TRAINABLE_VTC_METHODS = ("drip", "perceiver")
 
 
 class LoRATrainer(Trainer):
@@ -54,10 +56,10 @@ class LoRATrainer(Trainer):
             self._boundary_loss_count = 0
         super().log(logs, start_time=start_time)
 
-    def _save_drip(self, output_dir):
+    def _save_compressor(self, output_dir):
         model = self.accelerator.unwrap_model(self.model)
 
-        if model.vtc_method != "drip":
+        if model.vtc_method not in TRAINABLE_VTC_METHODS:
             return
 
         if self.args.should_save:
@@ -66,7 +68,7 @@ class LoRATrainer(Trainer):
                     name: param.detach().cpu().clone()
                     for name, param in model.compressor.named_parameters()
                 },
-                os.path.join(output_dir, "drip.bin"),
+                os.path.join(output_dir, f"{model.vtc_method}.bin"),
             )
 
     def _save(self, output_dir: str | None = None, state_dict=None):
@@ -96,7 +98,7 @@ class LoRATrainer(Trainer):
             os.path.join(output_dir, "training_args.bin"),
         )
 
-        self._save_drip(output_dir)
+        self._save_compressor(output_dir)
 
     def _save_checkpoint(self, model, trial):
         # Let Trainer determine checkpoint-X naming
@@ -137,11 +139,13 @@ class LoRATrainer(Trainer):
         super()._load_from_checkpoint(resume_from_checkpoint, model=model)
         target_model: NEOChatModel = model if model is not None else self.model
         target_model = self.accelerator.unwrap_model(target_model)
-        if getattr(target_model, "vtc_method", None) == "drip":
-            drip_path = os.path.join(resume_from_checkpoint, "drip.bin")
-            if not os.path.isfile(drip_path):
-                raise FileNotFoundError(f"Missing DRIP checkpoint: {drip_path}")
-            target_model.compressor.load_drip_weights(drip_path)
+        vtc_method = getattr(target_model, "vtc_method", None)
+        if vtc_method in TRAINABLE_VTC_METHODS:
+            weights_path = os.path.join(resume_from_checkpoint, f"{vtc_method}.bin")
+            if not os.path.isfile(weights_path):
+                raise FileNotFoundError(f"Missing {vtc_method} checkpoint: {weights_path}")
+            # load_drip_weights / load_perceiver_weights
+            getattr(target_model.compressor, f"load_{vtc_method}_weights")(weights_path)
 
 
 class DistillationLoRATrainer(LoRATrainer):

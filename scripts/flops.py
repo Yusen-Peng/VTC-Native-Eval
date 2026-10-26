@@ -40,6 +40,7 @@ METHODS = {
     "random": ("random pruning", [2, 4, 8]),
     "tome": ("ToMe", [2, 4, 8]),
     "prunesid": ("PruneSID", [2, 4, 8]),
+    "perceiver": ("Perceiver", [2, 4, 8]),  # untrained weights: FLOPs don't depend on them
 }
 IMG_START_TOKEN, IMG_END_TOKEN, IMG_CONTEXT_TOKEN = "<img>", "</img>", "<IMG_CONTEXT>"
 
@@ -133,7 +134,9 @@ def main():
         configs = [("none", f"NEO-{scale}-SFT", 1)]
         configs += [(m, label, r) for m, (label, ratios) in METHODS.items() for r in ratios]
         for vtc_method, label, ratio in configs:
-            embeddings.compressor = build_compressor(vtc_method, compression_ratio=1.0 / ratio).to(vlm.device)
+            kwargs = {"hidden_size": embeddings.llm_embed_dim} if vtc_method == "perceiver" else {}
+            embeddings.compressor = build_compressor(vtc_method, compression_ratio=1.0 / ratio, **kwargs).to(
+                device=vlm.device, dtype=model.dtype)
             input_ids, num_visual = build_input_ids(model, tokenizer, args.prompt, grid_hw, vlm.device)
             with torch.no_grad():
                 input_embeds, indexes, vision = vision_prefill(model, pixel_values, grid_hw, input_ids)

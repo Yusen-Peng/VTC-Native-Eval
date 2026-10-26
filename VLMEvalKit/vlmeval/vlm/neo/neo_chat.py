@@ -119,6 +119,7 @@ class NEOChat(BaseModel):
                  vtc_method="none",
                  compression_ratio=1.0,
                  drip_path=None,
+                 perceiver_path=None,
                  # Best-of-N parameters
                  best_of_n=1,
                  reward_model_path=None,
@@ -231,6 +232,8 @@ class NEOChat(BaseModel):
 
             if self.vtc_method == "drip":
                 self.model.compressor.load_drip_weights(config.vision_config.drip_path)
+            elif self.vtc_method == "perceiver":
+                self.model.compressor.load_perceiver_weights(perceiver_path)
 
 
             if lora_path is not None:

@@ -36,6 +36,11 @@ def build_model(model_args, data_args, tokenizer):
         dtype=torch.bfloat16,
         low_cpu_mem_usage=True,
     )
+    if config.vision_config.vtc_method == "perceiver":
+        # from_pretrained re-initialises weights missing from the checkpoint (the whole new compressor);
+        # keep fp32 master weights: lr-sized updates vanish when rounded to bf16
+        model.compressor.reset_parameters()
+        model.compressor.float()
     logger.info("Loaded model from pretrained path.")
     return model
 

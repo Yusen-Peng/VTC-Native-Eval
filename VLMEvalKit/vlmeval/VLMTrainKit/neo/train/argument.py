@@ -28,6 +28,7 @@ class ModelArguments:
     vtc_method: str = field(default="none")
     compression_ratio: float = field(default=1.0)
     drip_temperature: float = field(default=0.1)
+    perceiver_queries: str = field(default="pooled", metadata={"help": "Perceiver queries: pooled | learned"})
 
 
 @dataclass
@@ -68,6 +69,10 @@ class TrainingArguments(HfTrainingArguments):
     per_device_eval_batch_size: int = field(default=1)
     remove_unused_columns: bool = field(default=False)
     gradient_checkpointing: bool = field(default=True)
+    compressor_learning_rate: Optional[float] = field(
+        default=None,
+        metadata={"help": "Separate learning rate for a trainable VTC compressor (default: learning_rate)."},
+    )
 
     kd_lambda: float = field(
         default=0.5,

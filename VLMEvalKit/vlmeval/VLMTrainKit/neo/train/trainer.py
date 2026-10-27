@@ -56,6 +56,25 @@ class LoRATrainer(Trainer):
             self._boundary_loss_count = 0
         super().log(logs, start_time=start_time)
 
+    def create_optimizer(self):
+        optimizer = super().create_optimizer()
+        compressor_lr = self.args.compressor_learning_rate
+        if compressor_lr is None or getattr(self, "_compressor_group_added", False):
+            return optimizer
+
+        # move the compressor's parameters into their own groups (same settings, own lr);
+        # the scheduler is created afterwards, so it scales every group's lr alike
+        compressor_params = {id(p) for p in self.model.compressor.parameters()}
+        for group in list(optimizer.param_groups):
+            moved = [p for p in group["params"] if id(p) in compressor_params]
+            if moved:
+                group["params"] = [p for p in group["params"] if id(p) not in compressor_params]
+                optimizer.add_param_group(
+                    {**{k: v for k, v in group.items() if k != "params"}, "params": moved, "lr": compressor_lr}
+                )
+        self._compressor_group_added = True
+        return optimizer
+
     def _save_compressor(self, output_dir):
         model = self.accelerator.unwrap_model(self.model)
 

@@ -41,6 +41,7 @@ METHODS = {
     "tome": ("ToMe", [2, 4, 8]),
     "prunesid": ("PruneSID", [2, 4, 8]),
     "perceiver": ("Perceiver", [2, 4, 8]),  # untrained weights: FLOPs don't depend on them
+    "perceiver_learned": ("Perceiver (learned queries)", [2, 4, 8]),
 }
 IMG_START_TOKEN, IMG_END_TOKEN, IMG_CONTEXT_TOKEN = "<img>", "</img>", "<IMG_CONTEXT>"
 
@@ -134,7 +135,11 @@ def main():
         configs = [("none", f"NEO-{scale}-SFT", 1)]
         configs += [(m, label, r) for m, (label, ratios) in METHODS.items() for r in ratios]
         for vtc_method, label, ratio in configs:
-            kwargs = {"hidden_size": embeddings.llm_embed_dim} if vtc_method == "perceiver" else {}
+            kwargs = {}
+            if vtc_method.startswith("perceiver"):
+                kwargs = {"hidden_size": embeddings.llm_embed_dim,
+                          "queries": "learned" if vtc_method == "perceiver_learned" else "pooled"}
+                vtc_method = "perceiver"
             embeddings.compressor = build_compressor(vtc_method, compression_ratio=1.0 / ratio, **kwargs).to(
                 device=vlm.device, dtype=model.dtype)
             input_ids, num_visual = build_input_ids(model, tokenizer, args.prompt, grid_hw, vlm.device)

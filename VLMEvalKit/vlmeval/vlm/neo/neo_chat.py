@@ -120,6 +120,7 @@ class NEOChat(BaseModel):
                  compression_ratio=1.0,
                  drip_path=None,
                  perceiver_path=None,
+                 perceiver_queries="pooled",
                  # Best-of-N parameters
                  best_of_n=1,
                  reward_model_path=None,
@@ -218,6 +219,7 @@ class NEOChat(BaseModel):
             config.vision_config.compression_ratio = compression_ratio
             if vtc_method == "drip":
                 config.vision_config.drip_path = drip_path
+            config.vision_config.perceiver_queries = perceiver_queries
 
             print(f"[NEO VTC] method={config.vision_config.vtc_method}, compression_ratio={config.vision_config.compression_ratio}", flush=True)
 
@@ -233,6 +235,8 @@ class NEOChat(BaseModel):
             if self.vtc_method == "drip":
                 self.model.compressor.load_drip_weights(config.vision_config.drip_path)
             elif self.vtc_method == "perceiver":
+                # trained in fp32 (see VLMTrainKit build.py); forward casts its output back to bf16
+                self.model.compressor.float()
                 self.model.compressor.load_perceiver_weights(perceiver_path)
 
 

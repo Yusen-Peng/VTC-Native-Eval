@@ -27,6 +27,7 @@ def build_model(model_args, data_args, tokenizer):
     config.vision_config.vtc_method = model_args.vtc_method
     config.vision_config.compression_ratio = model_args.compression_ratio
     config.vision_config.drip_temperature = model_args.drip_temperature
+    config.vision_config.perceiver_queries = model_args.perceiver_queries
     print(f"🤟🏻🤟🏻🤟🏻 [NEO VTC] method={config.vision_config.vtc_method}, compression_ratio={config.vision_config.compression_ratio}", flush=True)
     if config.vision_config.vtc_method == "drip":
         print(f"🐥🐥🐥 [NEO VTC] drip_temperature={config.vision_config.drip_temperature}", flush=True)
@@ -36,6 +37,11 @@ def build_model(model_args, data_args, tokenizer):
         dtype=torch.bfloat16,
         low_cpu_mem_usage=True,
     )
+    if config.vision_config.vtc_method == "perceiver":
+        # from_pretrained re-initialises weights missing from the checkpoint (the whole new compressor);
+        # keep fp32 master weights: lr-sized updates vanish when rounded to bf16
+        model.compressor.float()
+        model.compressor.reset_parameters()
 
     if config.vision_config.vtc_method == "drip":
         # verify actual DRIP temperature

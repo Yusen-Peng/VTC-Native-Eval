@@ -167,6 +167,11 @@ class NEOVisionEmbeddings(nn.Module):
                 "temperature": getattr(config, "drip_temperature", 0.1),
                 "drip_path": getattr(config, "drip_path", None),
             }
+        elif self.vtc_method == "perceiver":
+            compressor_kwargs = {
+                "hidden_size": self.llm_embed_dim,
+                "queries": getattr(config, "perceiver_queries", "pooled"),
+            }
 
 
         self.compressor = build_compressor(self.vtc_method, compression_ratio=self.compression_ratio, **compressor_kwargs)

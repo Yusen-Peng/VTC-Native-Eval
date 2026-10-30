@@ -2168,6 +2168,26 @@ neo_series = {
 
 }
 
+# Perceiver resampler + LoRA, trained by VLMTrainKit/SFT_perceiver.sh (RATIO=2|4|8, QUERIES=pooled|learned)
+PERCEIVER_CKPTS = "/fs/scratch/PAS2836/jacktaylor/VTC-Native-Eval-ckpts/output"
+neo_series.update({
+    f"NEO-2B-SFT-OV-LLaVA-llava66k-{name}-{r}x": partial(
+        NEOChat,
+        model_path="Paranioar/NEO1_0-2B-SFT",
+        lora_path=f"{PERCEIVER_CKPTS}/NEO_continue_SFT_LLaVA_OV_llava66k_{name}_{r}x",
+        patch_size=16,
+        min_pixels=1280 * 32 * 32,
+        max_pixels=4096 * 32 * 32,
+        downsample_ratio=0.5,
+        vtc_method="perceiver",
+        compression_ratio=1 / r,
+        perceiver_path=f"{PERCEIVER_CKPTS}/NEO_continue_SFT_LLaVA_OV_llava66k_{name}_{r}x/perceiver.bin",
+        perceiver_queries=queries,
+    )
+    for name, queries in (("Perceiver", "pooled"), ("PerceiverLearned", "learned"))
+    for r in (2, 4, 8)
+})
+
 supported_VLM = {}
 model_groups = [neo_series]
 

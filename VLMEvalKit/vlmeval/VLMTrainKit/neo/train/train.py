@@ -10,7 +10,7 @@ from peft import LoraConfig, get_peft_model, TaskType
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(FILE_DIR, "../../../../../"))
 sys.path.insert(0, PROJECT_ROOT)
-from VLMEvalKit.vlmeval.VLMTrainKit.neo.train.trainer import LoRATrainer as Trainer
+from VLMEvalKit.vlmeval.VLMTrainKit.neo.train.trainer import LoRATrainer as Trainer, TRAINABLE_VTC_METHODS
 from VLMEvalKit.vlmeval.VLMTrainKit.neo.data.data_processor import make_supervised_data_module
 from VLMEvalKit.vlmeval.VLMTrainKit.neo.train.build import build_model_and_tokenizer
 from VLMEvalKit.vlmeval.VLMTrainKit.neo.train.argument import DataArguments, ModelArguments, TrainingArguments
@@ -88,7 +88,7 @@ def train():
 
     model.language_model = get_peft_model(model.language_model, lora_config)
     
-    if model_args.vtc_method == "drip":
+    if model_args.vtc_method in TRAINABLE_VTC_METHODS:
         model.compressor.requires_grad_(True)
 
     model.language_model.print_trainable_parameters()

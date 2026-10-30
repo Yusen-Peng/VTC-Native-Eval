@@ -3,6 +3,7 @@ import torch.nn as nn
 from .base import BaseVTCCompressor
 from .registry import register_compressor
 from .drip_modules.BP import BoundaryPredictor, downsample
+from .drip_modules.BP_alternative import diff_downsample
 
 @register_compressor("drip")
 class DRIPCompressor(BaseVTCCompressor):
@@ -126,7 +127,8 @@ class DRIPCompressor(BaseVTCCompressor):
         # Cache selected indices for training sequence compression
         self.last_kept_indices = indices.detach()
 
-        compressed = downsample(boundaries=hard_boundaries, hidden=x.transpose(0, 1), null_group=self.null_token) # [S, B, D]
+        # compressed = downsample(boundaries=hard_boundaries, hidden=x.transpose(0, 1), null_group=self.null_token) # [S, B, D]
+        compressed = diff_downsample(boundaries=hard_boundaries, hidden=x.transpose(0, 1), null_group=self.null_token) # [S, B, D]
         compressed = compressed.transpose(0, 1)
 
         # Original DRIP boundary regularization.

@@ -36,6 +36,11 @@ def build_model(model_args, data_args, tokenizer):
         dtype=torch.bfloat16,
         low_cpu_mem_usage=True,
     )
+
+    if config.vision_config.vtc_method == "drip":
+        # verify actual DRIP temperature
+        print("🔥🔥🔥 [NEO VTC] Actual DRIP temperature:", model.vision_model.embeddings.compressor.temperature, flush=True)
+
     logger.info("Loaded model from pretrained path.")
     return model
 

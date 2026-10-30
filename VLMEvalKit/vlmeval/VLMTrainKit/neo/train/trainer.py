@@ -9,6 +9,7 @@ from transformers import Trainer
 from transformers.models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
 from transformers.trainer import _is_peft_model
 from transformers.utils import logging
+from transformers.trainer import is_sagemaker_mp_enabled
 logger = logging.get_logger(__name__)
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -19,12 +20,112 @@ from VLMEvalKit.vlmeval.vlm.neo.local_models.modeling_neo_chat import NEOChatMod
 # VTC methods with learned compressor weights: trained alongside the LoRA, saved as <vtc_method>.bin
 TRAINABLE_VTC_METHODS = ("drip", "perceiver")
 
+DRIP_LR = 1e-4
 
 class LoRATrainer(Trainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._boundary_loss_sum = 0.0
         self._boundary_loss_count = 0
+
+    def create_optimizer(self):
+        opt_model = self.model_wrapped if is_sagemaker_mp_enabled() else self.model
+
+        if self.optimizer is None:
+            decay_parameters = self.get_decay_parameter_names(opt_model)
+            drip_lr = DRIP_LR
+
+            def is_drip_param(name):
+                return "compressor.boundary_predictor." in name
+
+            optimizer_grouped_parameters = [
+                # Other trainable parameters: weight decay
+                {
+                    "params": [
+                        p for n, p in opt_model.named_parameters()
+                        if p.requires_grad
+                        and n in decay_parameters
+                        and not is_drip_param(n)
+                    ],
+                    "weight_decay": self.args.weight_decay,
+                    "lr": self.args.learning_rate,
+                },
+
+                # Other trainable parameters: no weight decay
+                {
+                    "params": [
+                        p for n, p in opt_model.named_parameters()
+                        if p.requires_grad
+                        and n not in decay_parameters
+                        and not is_drip_param(n)
+                    ],
+                    "weight_decay": 0.0,
+                    "lr": self.args.learning_rate,
+                },
+
+                # DRIP boundary predictor: weight decay
+                {
+                    "params": [
+                        p for n, p in opt_model.named_parameters()
+                        if p.requires_grad
+                        and n in decay_parameters
+                        and is_drip_param(n)
+                    ],
+                    "weight_decay": self.args.weight_decay,
+                    "lr": drip_lr,
+                },
+
+                # DRIP boundary predictor: no weight decay
+                {
+                    "params": [
+                        p for n, p in opt_model.named_parameters()
+                        if p.requires_grad
+                        and n not in decay_parameters
+                        and is_drip_param(n)
+                    ],
+                    "weight_decay": 0.0,
+                    "lr": drip_lr,
+                },
+            ]
+
+            if self.optimizer_cls_and_kwargs is not None:
+                optimizer_cls, optimizer_kwargs = self.optimizer_cls_and_kwargs
+            else:
+                optimizer_cls, optimizer_kwargs = self.get_optimizer_cls_and_kwargs(self.args, opt_model)
+
+            if "params" in optimizer_kwargs:
+                optimizer_grouped_parameters = optimizer_kwargs.pop("params")
+
+            if "model" in optimizer_kwargs:
+                optimizer_grouped_parameters = optimizer_kwargs.pop("model")
+
+            if "optimizer_dict" in optimizer_kwargs:
+                optimizer_grouped_parameters = optimizer_kwargs.pop("optimizer_dict")
+
+            self.optimizer = optimizer_cls(optimizer_grouped_parameters, **optimizer_kwargs)
+
+            if "bitsandbytes" in str(optimizer_cls) and optimizer_kwargs.get("optim_bits", None) == 8:
+                import bitsandbytes
+                manager = bitsandbytes.optim.GlobalOptimManager.get_instance()
+                skipped = 0
+                for module in opt_model.modules():
+                    if isinstance(module, nn.Embedding):
+                        skipped += sum({
+                            p.data_ptr(): p.numel()
+                            for p in module.parameters()
+                        }.values())
+                        logger.info(f"skipped {module}: {skipped / 2**20}M params")
+                        manager.register_module_override(module, "weight", {"optim_bits": 32})
+                        logger.debug(f"skipped: {skipped / 2**20}M params")
+        
+        for group in self.optimizer.param_groups:
+            if any(
+                p is bp
+                for p in group["params"]
+                for bp in self.model.compressor.boundary_predictor.parameters()
+            ):
+                print(f"✅ Boundary Predictor LR: {group['lr']:.2e}", flush=True)
+        return self.optimizer
 
     def compute_loss(
         self,

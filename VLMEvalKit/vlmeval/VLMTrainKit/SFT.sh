@@ -1,14 +1,14 @@
 #!/bin/bash
-#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_diff_downsample
-#SBATCH --output=NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_diff_downsample.log
+#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_1e4
+#SBATCH --output=NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_1e4.log
 #SBATCH --account=PAS2836
-#SBATCH --partition=debug-nextgen
+#SBATCH --partition=nextgen
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=128G
-#SBATCH --time=1:00:00
+#SBATCH --time=14:00:00
 
 module load miniconda3/24.1.2-py310
 conda deactivate
@@ -35,12 +35,8 @@ entry_file="./neo/train/train.py"
 
 
 datasets="llava_665k%10"
-# datasets="llava_665k%50"
-# datasets="askmodelanything_133k%50"
-# datasets="askmodelanything_133k"
 
-
-run_name="NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_diff_downsample"
+run_name="NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_1e4"
 output_dir="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/${run_name}"
 
 args=(

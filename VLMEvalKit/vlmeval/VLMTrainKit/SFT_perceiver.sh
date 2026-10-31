@@ -35,7 +35,8 @@ export HF_HUB_OFFLINE=1
 
 cd "$SCRATCH/VTC-Native-Eval/VLMEvalKit/vlmeval/VLMTrainKit"
 
-NGPU=$(nvidia-smi -L | wc -l)
+# Count allocated GPUs from Slurm; `nvidia-smi -L | wc -l` overcounts on MIG nodes (extra partition lines)
+NGPU=${SLURM_GPUS_ON_NODE:-$(nvidia-smi -L | grep -c '^GPU')}
 batch_size=1
 grad_accum_steps=$((128 / NGPU))
 mllm="Paranioar/NEO1_0-2B-SFT"

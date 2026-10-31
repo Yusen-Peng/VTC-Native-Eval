@@ -40,6 +40,7 @@ METHODS = {
     "random": ("random pruning", [2, 4, 8]),
     "tome": ("ToMe", [2, 4, 8]),
     "prunesid": ("PruneSID", [2, 4, 8]),
+    "cdpruner": ("CDPruner", [2, 4, 8]),
     "perceiver": ("Perceiver", [2, 4, 8]),  # untrained weights: FLOPs don't depend on them
     "perceiver_learned": ("Perceiver (learned queries)", [2, 4, 8]),
 }
@@ -66,7 +67,16 @@ def vision_prefill(model, pixel_values, grid_hw, input_ids):
     Returns the LLM inputs (input_embeds, indexes) and the vision FLOPs (one multiply-add = one FLOP).
     """
     with FlopCounterMode(display=False) as counter:
-        vit_embeds, visual_positions = model.extract_feature_with_positions(pixel_values, grid_hw=grid_hw)
+        text_embeds = None
+        if model.vision_model.embeddings.vtc_method == "cdpruner":
+            text_mask = ((input_ids != model.img_context_token_id) & (input_ids != model.img_start_token_id))
+            if hasattr(model, "img_end_token_id") and model.img_end_token_id is not None:
+                text_mask &= input_ids != model.img_end_token_id
+
+            text_input_ids = input_ids[text_mask]
+            text_embeds = model.language_model.get_input_embeddings()(text_input_ids)
+        vit_embeds, visual_positions = model.extract_feature_with_positions(pixel_values, grid_hw=grid_hw, text_embeds=text_embeds)
+
     indexes = model.get_thw_indexes(input_ids[0], grid_hw, visual_positions=visual_positions)
     input_embeds = model.language_model.get_input_embeddings()(input_ids)
     selected = input_ids == model.img_context_token_id
@@ -140,6 +150,9 @@ def main():
                 kwargs = {"hidden_size": embeddings.llm_embed_dim,
                           "queries": "learned" if vtc_method == "perceiver_learned" else "pooled"}
                 vtc_method = "perceiver"
+
+            embeddings.vtc_method = vtc_method
+            embeddings.compression_ratio = 1.0 / ratio
             embeddings.compressor = build_compressor(vtc_method, compression_ratio=1.0 / ratio, **kwargs).to(
                 device=vlm.device, dtype=model.dtype)
             input_ids, num_visual = build_input_ids(model, tokenizer, args.prompt, grid_hw, vlm.device)

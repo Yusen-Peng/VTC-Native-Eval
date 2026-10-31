@@ -124,7 +124,11 @@ class BoundaryPredictor(nn.Module):
 
     def inference(self, hidden, verbose=False):
         boundary_logits = self.boundary_predictor(hidden).squeeze(-1).transpose(0, 1)
-        boundary_probs = torch.sigmoid(boundary_logits)
+
+        # boundary_probs = torch.sigmoid(boundary_logits)
+        # FIXME: ablation
+        boundary_probs = torch.rand_like(boundary_logits)
+        
         B, T = boundary_probs.shape
         k = max(1, min(int(T * self.compression_rate), T))
         hard_boundaries = torch.zeros_like(boundary_probs)

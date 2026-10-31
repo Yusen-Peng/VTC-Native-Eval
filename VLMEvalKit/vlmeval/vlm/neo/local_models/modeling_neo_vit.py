@@ -193,7 +193,7 @@ class NEOVisionEmbeddings(nn.Module):
         ).to(self.patch_embedding.weight.dtype)
         return embeddings
         
-    def forward(self, pixel_values: torch.FloatTensor, grid_hw=None) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def forward(self, pixel_values: torch.FloatTensor, grid_hw=None, text_embeds=None) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
 
         pixel_values = pixel_values.view(  # 
             -1,
@@ -225,7 +225,11 @@ class NEOVisionEmbeddings(nn.Module):
 
             # ⭐⭐⭐ VTC modules (after 2x2 downsample + projection to LLM space)
             w_native = patches_per_img.shape[2]
-            patches_per_img, kept_idx = self.compressor.forward_with_indices(patches_per_img)
+
+            if self.vtc_method == "cdpruner":
+                patches_per_img, kept_idx = self.compressor.forward_with_indices(patches_per_img, text_embeds=text_embeds)
+            else:
+                patches_per_img, kept_idx = self.compressor.forward_with_indices(patches_per_img)
 
             if self.training and self.vtc_method == "drip":
                 boundary_losses.append(self.compressor.last_boundary_loss)
@@ -274,7 +278,8 @@ class NEOVisionModel(PreTrainedModel):
             output_hidden_states: Optional[bool] = None,
             return_dict: Optional[bool] = None,
             pixel_embeds: Optional[torch.FloatTensor] = None,
-            grid_hw: Optional[torch.Tensor] = None
+            grid_hw: Optional[torch.Tensor] = None,
+            text_embeds: Optional[torch.Tensor] = None,
     ) -> Union[Tuple, NEOVisionModelOutput]:
         output_hidden_states = (
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
@@ -289,7 +294,7 @@ class NEOVisionModel(PreTrainedModel):
             hidden_states = pixel_embeds
         else:
             assert pixel_values.dim() == 2, f"pixel_values must be 2D for native resolution, got: {pixel_values.dim()}"
-            hidden_states, pos_h, pos_w = self.embeddings(pixel_values, grid_hw=grid_hw)
+            hidden_states, pos_h, pos_w = self.embeddings(pixel_values, grid_hw=grid_hw, text_embeds=text_embeds)
             # print("🥹 🥹 🥹 image features being extracted!", flush=True)
 
         return NEOVisionModelOutput(

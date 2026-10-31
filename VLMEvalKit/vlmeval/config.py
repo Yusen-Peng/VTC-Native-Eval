@@ -1997,6 +1997,17 @@ neo_series = {
     ),
 
 
+    "NEO-2B-SFT-CDPruner-2x": partial(
+        NEOChat,
+        model_path="Paranioar/NEO1_0-2B-SFT",
+        patch_size=16,
+        min_pixels=1280 * 32 * 32,
+        max_pixels=4096 * 32 * 32,
+        downsample_ratio=0.5,
+        vtc_method="cdpruner",
+        compression_ratio=0.5,
+    ),
+
     #### training-based methods ####    
     "NEO-2B-SFT-OV-LLaVA-65K": partial(
         NEOChat,

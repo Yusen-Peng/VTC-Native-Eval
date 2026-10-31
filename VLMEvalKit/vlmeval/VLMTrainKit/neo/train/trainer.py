@@ -20,7 +20,9 @@ from VLMEvalKit.vlmeval.vlm.neo.local_models.modeling_neo_chat import NEOChatMod
 # VTC methods with learned compressor weights: trained alongside the LoRA, saved as <vtc_method>.bin
 TRAINABLE_VTC_METHODS = ("drip", "perceiver")
 
-DRIP_LR = 1e-4
+# DRIP_LR = 1e-4
+DRIP_LR = 1e-3
+    
 
 class LoRATrainer(Trainer):
     def __init__(self, *args, **kwargs):

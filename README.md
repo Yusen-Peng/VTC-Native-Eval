@@ -309,14 +309,3 @@ sbatch VLMEvalKit/vlmeval/VLMTrainKit/SFT.sh
 sbatch VLMEvalKit/vlmeval/VLMTrainKit/SFT_w_distillation.sh
 ```
 
-
-## Mid-training and SFT datasets
-
-The NEO author's suggestion: *"We do not currently have an open-source plan. Most of the data is open source. We recommend using the mid-training and SFT data from LLaVA-OneVision-1.5, which our lab has recently open-sourced."*
-
-Mid-training data from LLaVA-OV-1.5: [mvp-lab/LLaVA-OneVision-1.5-Mid-Training-85M](https://huggingface.co/datasets/mvp-lab/LLaVA-OneVision-1.5-Mid-Training-85M)
-
-SFT data from LLaVA-OV-1.5: [mvp-lab/LLaVA-OneVision-1.5-Instruct-Data](https://huggingface.co/datasets/mvp-lab/LLaVA-OneVision-1.5-Instruct-Data)
-
-
-

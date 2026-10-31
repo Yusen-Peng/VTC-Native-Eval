@@ -364,12 +364,14 @@ class NEOChatModel(PreTrainedModel):
     def floating_point_ops(self, input_dict, exclude_embeddings=True):
         return 0
 
-    def extract_feature_with_positions(self, pixel_values, grid_hw=None):
+    def extract_feature_with_positions(self, pixel_values, grid_hw=None, text_embeds=None):
         """Visual tokens plus the (pos_h, pos_w) the compressor assigned to each of them."""
         outputs = self.vision_model(pixel_values=pixel_values,
                                     output_hidden_states=False,
                                     return_dict=True,
-                                    grid_hw=grid_hw)
+                                    grid_hw=grid_hw,
+                                    text_embeds=text_embeds,
+                                    )
         return outputs.last_hidden_state, (outputs.pos_h, outputs.pos_w)
 
     def extract_feature(self, pixel_values, grid_hw=None):
@@ -451,7 +453,21 @@ class NEOChatModel(PreTrainedModel):
                 # precomputed features carry no positions -> static positions from (h, w)
                 vit_embeds = visual_features
             else:
-                vit_embeds, visual_positions = self.extract_feature_with_positions(pixel_values, grid_hw=grid_hw)
+                text_embeds = None
+
+                if self.vtc_method == "cdpruner":
+                    text_mask = ((input_ids != self.img_context_token_id) & (input_ids != self.img_start_token_id))
+                    if hasattr(self, "img_end_token_id") and self.img_end_token_id is not None:
+                        text_mask &= input_ids != self.img_end_token_id
+
+                    text_input_ids = input_ids[text_mask]
+                    if text_input_ids.numel() == 0:
+                        raise ValueError("CDPruner requires non-empty instruction tokens.")
+                    # [M, D_llm]
+                    text_embeds = self.language_model.get_input_embeddings()(text_input_ids)
+
+                vit_embeds, visual_positions = self.extract_feature_with_positions(pixel_values, grid_hw=grid_hw, text_embeds=text_embeds)
+        
         indexes = self.get_thw_indexes(input_ids[0], grid_hw, visual_positions=visual_positions)
 
         if pixel_values is not None:

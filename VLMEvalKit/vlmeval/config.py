@@ -2155,22 +2155,6 @@ neo_series = {
         compression_ratio=0.5,
     ),
 
-
-    "NEO-2B-SFT-OV-LLaVA-llava66k-DRIP-2x-TopK": partial(
-        NEOChat,
-        model_path="Paranioar/NEO1_0-2B-SFT",
-        lora_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_TopK",
-        patch_size=16,
-        min_pixels=1280 * 32 * 32,
-        max_pixels=4096 * 32 * 32,
-        downsample_ratio=0.5,
-        vtc_method="drip",
-        compression_ratio=0.5,
-        drip_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_TopK/drip.bin",
-    ),
-
-
-
     "NEO-2B-SFT-OV-LLaVA-llava66k-DRIP-2x": partial(
         NEOChat,
         model_path="Paranioar/NEO1_0-2B-SFT",
@@ -2210,20 +2194,6 @@ neo_series = {
         drip_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_temp05/drip.bin",
     ),
 
-
-    "NEO-2B-SFT-OV-LLaVA-llava66k-DRIP-2x-diff-downsample-ckpt-10": partial(
-        NEOChat,
-        model_path="Paranioar/NEO1_0-2B-SFT",
-        lora_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_diff_downsample/checkpoint-10",
-        patch_size=16,
-        min_pixels=1280 * 32 * 32,
-        max_pixels=4096 * 32 * 32,
-        downsample_ratio=0.5,
-        vtc_method="drip",
-        compression_ratio=0.5,
-        drip_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_diff_downsample/checkpoint-10/drip.bin",
-    ),
-
     "NEO-2B-SFT-OV-LLaVA-llava66k-DRIP-2x-1e4": partial(
         NEOChat,
         model_path="Paranioar/NEO1_0-2B-SFT",
@@ -2235,6 +2205,19 @@ neo_series = {
         vtc_method="drip",
         compression_ratio=0.5,
         drip_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_1e4/drip.bin",
+    ),
+
+    "NEO-2B-SFT-OV-LLaVA-llava66k-DRIP-2x-two-tailed": partial(
+        NEOChat,
+        model_path="Paranioar/NEO1_0-2B-SFT",
+        lora_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x",
+        patch_size=16,
+        min_pixels=1280 * 32 * 32,
+        max_pixels=4096 * 32 * 32,
+        downsample_ratio=0.5,
+        vtc_method="drip",
+        compression_ratio=0.5,
+        drip_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x/drip.bin",
     ),
 
 

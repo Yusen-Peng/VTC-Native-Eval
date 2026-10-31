@@ -125,17 +125,27 @@ class BoundaryPredictor(nn.Module):
     def inference(self, hidden, verbose=False):
         boundary_logits = self.boundary_predictor(hidden).squeeze(-1).transpose(0, 1)
 
-        # boundary_probs = torch.sigmoid(boundary_logits)
-        # FIXME: ablation
-        boundary_probs = torch.rand_like(boundary_logits)
+        boundary_probs = torch.sigmoid(boundary_logits)
         
         B, T = boundary_probs.shape
         k = max(1, min(int(T * self.compression_rate), T))
         hard_boundaries = torch.zeros_like(boundary_probs)
 
         if k > 1:
-            topk_idx = boundary_probs[:, :-1].topk(k=k - 1, dim=-1).indices
-            hard_boundaries.scatter_(1, topk_idx, 1.0)
+            # Naive Top-K
+            # topk_idx = boundary_probs[:, :-1].topk(k=k - 1, dim=-1).indices
+            # hard_boundaries.scatter_(1, topk_idx, 1.0)
+
+            # Two-tailed Top-K
+            n = k - 1
+            # high-probability boundaries
+            n_high = round(n * 0.5)
+            n_low = n - n_high
+            high_idx = boundary_probs[:, :-1].topk(k=n_high, dim=-1, largest=True).indices
+            low_idx = boundary_probs[:, :-1].topk(k=n_low, dim=-1, largest=False).indices
+            hard_boundaries.scatter_(1, high_idx, 1.0)
+            hard_boundaries.scatter_(1, low_idx, 1.0)
+
         hard_boundaries[:, -1] = 1.0
         return boundary_probs, hard_boundaries
 

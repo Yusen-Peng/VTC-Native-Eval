@@ -20,11 +20,11 @@ submit_eval() {
         "$MODEL"
 }
 
-submit_eval "MMBench"     "MMBench_DEV_EN"  "00:30:00"
-submit_eval "MME"         "MME"             "00:30:00"
+submit_eval "MMBench"     "MMBench_DEV_EN"  "00:45:00"
+submit_eval "MME"         "MME"             "00:40:00"
 submit_eval "MMMU"        "MMMU_DEV_VAL"    "00:30:00"
-submit_eval "RealWorldQA" "RealWorldQA"     "00:20:00"
-submit_eval "TextVQA"     "TextVQA_VAL"     "01:20:00"
-submit_eval "DocVQA"      "DocVQA_VAL"      "02:20:00"
-submit_eval "OCRBench"    "OCRBench"        "00:25:00"
-submit_eval "ChartQA"     "ChartQA_TEST"    "00:45:00"
+submit_eval "RealWorldQA" "RealWorldQA"     "00:25:00"
+submit_eval "TextVQA"     "TextVQA_VAL"     "01:30:00"
+submit_eval "DocVQA"      "DocVQA_VAL"      "03:00:00"
+submit_eval "OCRBench"    "OCRBench"        "00:35:00"
+submit_eval "ChartQA"     "ChartQA_TEST"    "00:55:00"

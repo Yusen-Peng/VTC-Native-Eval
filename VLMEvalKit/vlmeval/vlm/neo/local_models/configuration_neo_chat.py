@@ -11,11 +11,20 @@ logger = logging.get_logger(__name__)
 
 
 class NEOLLMConfig(Qwen3Config):
-    def __init__(self, rope_theta_hw=10000.0, max_position_embeddings_hw=10000, **kwargs):
+    def __init__(self, rope_theta_hw=10000.0, max_position_embeddings_hw=10000, 
+            llm_vtc_method="none",
+            compression_ratio=1.0,
+            compression_layer=16,
+            **kwargs
+        ):
         super().__init__(**kwargs)
         self.rope_theta_hw = rope_theta_hw
         self.max_position_embeddings_hw = max_position_embeddings_hw
 
+        # LLM-stage visual token compression
+        self.llm_vtc_method = llm_vtc_method
+        self.compression_ratio = compression_ratio
+        self.compression_layer = compression_layer
 
 class NEOChatConfig(PretrainedConfig):
     model_type = 'neo_chat'

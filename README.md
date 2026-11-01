@@ -19,7 +19,6 @@
 ![alt text](assets/NEO_pipeline.png)
 
 
-
 ## Environment Setup
 
 We closely follow the setup from [NEO repository](https://github.com/EvolvingLMMs-Lab/NEO/blob/main/VLMEvalKit/docs/en/Quickstart.md) to set up the environment:
@@ -68,227 +67,15 @@ Or run all jobs concurrently with SLURM:
 bash VTCeval_scripts/eval_all.sh <model_name>
 ```
 
-We update the results on Overleaf: [VTC-Native-Eval](https://www.overleaf.com/read/wjvqxyygyjpn#73895d)
-
-## VTC method integration guide
-
-This is a **very detailed** guide on how to integrate existing VTC methods into our codebase. We take ``fixed pooling`` as an example here.
-
-[difficulty: easy 🟢] First of all, we need to implement a Compressor class for every new VTC method in [VLMEvalKit/vlmeval/vlm/neo/local_models/compressor.py](VLMEvalKit/vlmeval/vlm/neo/local_models/compressor.py). Note that it should inherit the abstract class ``BaseVTCCompressor``. We need to at least implement the **init** and **forward** functions. Example of fixed pooling:
-
-```python
-class FixedPoolingCompressor(BaseVTCCompressor):
-    """Fixed 1D pooling."""
-
-    def __init__(self, compression_ratio: float = 1.0):
-        super().__init__(compression_ratio)
-
-        self.pooling_factor = int(round(1.0 / compression_ratio))
-
-        if self.pooling_factor < 1:
-            raise ValueError(f"Invalid compression ratio: {compression_ratio}")
-        self.null_group = nn.Parameter(torch.zeros(1, 1, 1), requires_grad=False)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # [B, H, W, D] -> [B, N, D]
-        x = self._flatten_tokens(x)
-        if self.pooling_factor == 1:
-            return x
-
-        B, N, D = x.shape
-        boundaries = torch.zeros(B, N, device=x.device, dtype=x.dtype) # [B, N]
-
-        boundaries[:, self.pooling_factor - 1::self.pooling_factor] = 1.0
-        # required: always close the final segment
-        boundaries[:, -1] = 1.0
-
-        hidden = x.transpose(0, 1) # [N, B, D]
-        null_group = torch.zeros(1, B, D, device=x.device, dtype=x.dtype) # [1, B, D]
-        compressed = downsample(boundaries=boundaries, hidden=hidden, null_group=null_group) # [S, B, D]
-        compressed = compressed.transpose(0, 1) # [B, S, D]
-        return compressed
-```
-
-[difficulty: easy 🟢] First, please go to [VLMEvalKit/vlmeval/vlm/neo/local_models/modeling_neo_vit.py](VLMEvalKit/vlmeval/vlm/neo/local_models/modeling_neo_vit.py). We need to make changes to the ``NEOVisionEmbeddings`` class here. In the **init** function, we need to instantiate and initialize our VTC compressor - example of fixed pooling:
-
-```python
-class NEOVisionEmbeddings(nn.Module):
-    def __init__(self, config: NEOVisionConfig):
-        super().__init__()
-        self.config = config
-        self.embed_dim = config.hidden_size
-
-        # omitted details here..
-
-        if self.vtc_method == "fixed":
-            self.compressor = FixedPoolingCompressor(compression_ratio=self.compression_ratio)
-        elif self.vtc_method == "none":
-            self.compressor = None
-        # you should add more here
-        else:
-            raise ValueError(f"Unknown VTC method: {self.vtc_method}")
-```
-
-
-The next step is to wire up the **language model** itself. Go to file [VLMEvalKit/vlmeval/vlm/neo/local_models/modeling_neo_chat.py](VLMEvalKit/vlmeval/vlm/neo/local_models/modeling_neo_chat.py). We need to update the ``NEOChatModel`` class. There are a total of three pieces to modify for training-free methods, and one additional step for training-based methods.
-
-1. [difficulty: easy 🟢] In the **init** function, we can set some handy instance variables if we want:
-
-
-```python
-class NEOChatModel(PreTrainedModel):
-    config_class = NEOChatConfig
-    main_input_name = 'pixel_values'
-
-    # omitted details here..
-
-    if self.vtc_method == "none":
-        self.pooling_factor = 1
-    elif self.vtc_method == "fixed":
-        self.pooling_factor = int(round(1.0 / self.compression_ratio))
-    else:
-        raise ValueError(f"Unsupported vtc_method: {self.vtc_method}")
-```
-
-2. [difficulty: easy 🟢] In ``_get_num_visual_tokens`` function, we need to return the correct number of compressed image tokens. Here is an example for fixed pooling:
-
-```python
-def _get_num_visual_tokens(self, h, w):
-    h_native = int(h) // int(1 / self.downsample_ratio)
-    w_native = int(w) // int(1 / self.downsample_ratio)
-    num_tokens = h_native * w_native
-
-    if self.vtc_method == "fixed":
-        num_tokens = (num_tokens + self.pooling_factor - 1) // self.pooling_factor
-    return num_tokens
-```
-
-3. [difficulty: medium 🟡] In ``_get_compressed_visual_positions`` function, we need to resolve the image position information after we compress them. Note that this is a **non-trivial function**, which requires a lot of design efforts. An example can be fixed pooling, where we can easily use the final token in each pooling segment (like the position of x4 in [x1, x2, x3, x4]) as the representative position:
-
-```python
-def _get_compressed_visual_positions(self, grid_hw, device):
-    """Build h/w position indices matching the visual tokens."""
-    downsample_factor = int(1 / self.downsample_ratio)
-    all_h = []
-    all_w = []
-    for i in range(grid_hw.shape[0]):
-        h = int(grid_hw[i, 0].item()) // downsample_factor
-        w = int(grid_hw[i, 1].item()) // downsample_factor
-
-        # Native NEO positions in row-major order
-        y, x = torch.meshgrid(
-            torch.arange(h, device=device),
-            torch.arange(w, device=device),
-            indexing="ij",
-        )
-
-        pos_h = y.reshape(-1)
-        pos_w = x.reshape(-1)
-
-        if self.vtc_method == "fixed":
-            # For fixed 1D pooling: 
-            # use the final token in each pooling segment as the representative position.
-            N = pos_h.numel()
-            # Last token of every full pooling group
-            idx = torch.arange(self.pooling_factor - 1, N, self.pooling_factor, device=device)
-            # If there is an incomplete final group, its final token is also a representative.
-            if idx.numel() == 0 or idx[-1].item() != N - 1:
-                idx = torch.cat([idx, torch.tensor([N - 1], device=device, dtype=idx.dtype)])
-            pos_h = pos_h[idx]
-            pos_w = pos_w[idx]
-        all_h.append(pos_h)
-        all_w.append(pos_w)
-
-    return torch.cat(all_w), torch.cat(all_h)
-```
-
-For now, congratulations! All the heavylifting work should be done. We simply need a final touch - register and model in our model zoo. Go to [VLMEvalKit/vlmeval/config.py](VLMEvalKit/vlmeval/config.py) and update our neo_series dictionary. For example, we can add a fixed pooling with 25% compression rate like this:
-
-```python
-neo_series = {
-    "NEO-2B-SFT": partial(
-        NEOChat, model_path="Paranioar/NEO1_0-2B-SFT", 
-        patch_size=16,
-        min_pixels=1280 * 32 * 32,
-        max_pixels=4096 * 32 * 32,
-        downsample_ratio=0.5,
-    ),
-    "NEO-2B-SFT-Fixed-4x": partial(
-        NEOChat,
-        model_path="Paranioar/NEO1_0-2B-SFT",
-        patch_size=16,
-        min_pixels=1280 * 32 * 32,
-        max_pixels=4096 * 32 * 32,
-        downsample_ratio=0.5,
-        vtc_method="fixed",
-        compression_ratio=0.25,
-    ),
-    # ... more
-}
-```
-
-Now we can finally start running evaluations and call it a day!
+Measure FLOPs:
 
 ```bash
-python run.py --data MME --model NEO-2B-SFT-Fixed-4x --verbose
+python ../scripts/flops.py
 ```
 
-## Continual SFT
+## Continued SFT
 
-mid-training checkpoint: [Paranioar/NEO1_0-2B-MT](https://huggingface.co/Paranioar/NEO1_0-2B-MT) for 2B, [Paranioar/NEO1_0-9B-MT](https://huggingface.co/Paranioar/NEO1_0-9B-MT) for 9B
-
-SFT checkpoint: [Paranioar/NEO1_0-2B-SFT](https://huggingface.co/Paranioar/NEO1_0-2B-SFT) for 2B, [Paranioar/NEO1_0-9B-SFT](https://huggingface.co/Paranioar/NEO1_0-9B-SFT) for 9B.
-
-Let's get started with training! We need to first configure [VLMEvalKit/vlmeval/VLMTrainKit/SFT.sh](VLMEvalKit/vlmeval/VLMTrainKit/SFT.sh). We obviously have to set the job names and output files in SBATCH:
-
-```bash
-#SBATCH --job-name=NEO_continue_SFT_5pa
-#SBATCH --output=NEO_continue_SFT_5pa.log
-```
-
-also update the ``runname``, since this specifies where the model checkpoints are being saved to!
-
-```bash
-run_name="NEO_continue_SFT_5pa"
-output_dir="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/${run_name}"
-```
-Finally, let's configure VTC methods and compression ratio. For original uncompressed NEO, it would look like this:
-
-```bash
-args=(
-    --model_name_or_path "${mllm}"
-    --tokenizer_name_or_path "${mllm}"
-    --dataset_use "${datasets}"
-    --data_flatten True
-    --bf16 True
-    --output_dir "${output_dir}"
-    --extra_num_layers 12
-    --num_hidden_layers 40
-    --num_train_epochs 1
-    --per_device_train_batch_size "${batch_size}"
-    --per_device_eval_batch_size "${batch_size}"
-    --gradient_accumulation_steps "${grad_accum_steps}"
-    --max_pixels 4194304
-    --min_pixels 1310720
-    --eval_strategy "no"
-    --save_strategy "steps"
-    --save_steps 100
-    --save_total_limit 6
-    --learning_rate "${lr}"
-    --weight_decay 0.0
-    --warmup_steps 10
-    --max_grad_norm 1
-    --logging_steps 1
-    --max_seq_length 18432
-    --model_max_length 18432
-    --gradient_checkpointing True
-    --dataloader_num_workers 4
-    --run_name "${run_name}"
-    --report_to none
-    --vtc_method none
-    --compression_ratio 1.0
-)
-```
+Let's get started with training! We need to first configure [VLMEvalKit/vlmeval/VLMTrainKit/SFT.sh](VLMEvalKit/vlmeval/VLMTrainKit/SFT.sh).
 
 Really two things need to change/update here: ``vtc_method`` and ``compression_ratio``. For fixed pooling under 2x, we can simply do:
 
@@ -300,7 +87,7 @@ args=(
 )
 ```
 
-And finally we can run the training experiment with LoRA!
+We can (and we should, full-parameter is expensive) run the training experiment with LoRA:
 
 ```bash
 # basic SFT
@@ -308,15 +95,4 @@ sbatch VLMEvalKit/vlmeval/VLMTrainKit/SFT.sh
 # SFT + distillation
 sbatch VLMEvalKit/vlmeval/VLMTrainKit/SFT_w_distillation.sh
 ```
-
-
-## Mid-training and SFT datasets
-
-The NEO author's suggestion: *"We do not currently have an open-source plan. Most of the data is open source. We recommend using the mid-training and SFT data from LLaVA-OneVision-1.5, which our lab has recently open-sourced."*
-
-Mid-training data from LLaVA-OV-1.5: [mvp-lab/LLaVA-OneVision-1.5-Mid-Training-85M](https://huggingface.co/datasets/mvp-lab/LLaVA-OneVision-1.5-Mid-Training-85M)
-
-SFT data from LLaVA-OV-1.5: [mvp-lab/LLaVA-OneVision-1.5-Instruct-Data](https://huggingface.co/datasets/mvp-lab/LLaVA-OneVision-1.5-Instruct-Data)
-
-
 

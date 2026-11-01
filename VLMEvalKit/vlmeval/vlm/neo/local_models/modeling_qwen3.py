@@ -26,6 +26,9 @@ from transformers.utils.generic import check_model_inputs
 from transformers import Qwen3Config
 
 
+from .compressors.llm.pyramid_drop import PyramidDrop
+
+
 def create_block_causal_mask(index: torch.Tensor):
     """
     index: (L)
@@ -397,6 +400,25 @@ class Qwen3Model(Qwen3PreTrainedModel):
         self.has_sliding_layers = "sliding_attention" in self.config.layer_types
         self.current_index = -1
 
+        self.llm_compressor = None
+        method = config.llm_vtc_method if hasattr(config, "llm_vtc_method") else "none"
+
+        if method == "pdrop":
+            self.llm_compressor = PyramidDrop(
+                compression_ratio=config.compression_ratio,
+                compression_layer=config.compression_layer,
+            )
+
+        elif method == "fastv":
+            raise NotImplementedError("FastV method is not implemented")
+
+        elif method == "sparsevlm":
+            raise NotImplementedError("SparseVLM method is not implemented")
+
+        if self.llm_compressor is not None:
+            if not 1 <= self.llm_compressor.compression_layer < config.num_hidden_layers:
+                raise ValueError("Invalid LLM compression layer")
+
         # Initialize weights and apply final processing
         self.post_init()
 
@@ -412,6 +434,7 @@ class Qwen3Model(Qwen3PreTrainedModel):
         inputs_embeds: Optional[torch.FloatTensor] = None,
         use_cache: Optional[bool] = None,
         cache_position: Optional[torch.LongTensor] = None,
+        visual_mask = None,
         **kwargs: Unpack[TransformersKwargs],
     ) -> BaseModelOutputWithPast:        
         if (input_ids is None) ^ (inputs_embeds is not None):
@@ -436,18 +459,24 @@ class Qwen3Model(Qwen3PreTrainedModel):
         if not isinstance(causal_mask_mapping := attention_mask, dict):
             # Prepare mask arguments
             if input_ids is not None:
-                mask_kwargs = {
-                    "config": self.config,
-                    "input_embeds": inputs_embeds,
-                    "attention_mask": attention_mask,
-                    "cache_position": cache_position,
-                    "past_key_values": past_key_values,
-                    "position_ids": position_ids,
-                }
-                # Create the masks
-                causal_mask_mapping = {
-                    "full_attention": create_causal_mask(**mask_kwargs),
-                }
+                
+                if self.llm_compressor is not None and input_ids.shape[1] == 1:
+                    # Single-token decoding: attend to all cached keys.
+                    causal_mask_mapping = {"full_attention": None}
+                    pass
+                else:
+                    mask_kwargs = {
+                        "config": self.config,
+                        "input_embeds": inputs_embeds,
+                        "attention_mask": attention_mask,
+                        "cache_position": cache_position,
+                        "past_key_values": past_key_values,
+                        "position_ids": position_ids,
+                    }
+                    # Create the masks
+                    causal_mask_mapping = {
+                        "full_attention": create_causal_mask(**mask_kwargs),
+                    }
                 self.current_index += 1
                 indexes = torch.LongTensor([[self.current_index], [0], [0]]).to(input_ids.device)
             else:
@@ -464,7 +493,21 @@ class Qwen3Model(Qwen3PreTrainedModel):
 
         hidden_states = inputs_embeds
 
-        for decoder_layer in self.layers[: self.config.num_hidden_layers]:
+        is_compression_prefill = self.llm_compressor is not None and visual_mask is not None and hidden_states.shape[1] > 1
+
+        # for decoder_layer in self.layers[: self.config.num_hidden_layers]:
+        #     hidden_states = decoder_layer(
+        #         hidden_states,
+        #         indexes=indexes,
+        #         attention_mask=causal_mask_mapping[decoder_layer.attention_type],
+        #         position_ids=position_ids,
+        #         past_key_values=past_key_values,
+        #         use_cache=use_cache,
+        #         cache_position=cache_position,
+        #         **kwargs,
+        #     )
+
+        for layer_idx, decoder_layer in enumerate(self.layers[:self.config.num_hidden_layers]):
             hidden_states = decoder_layer(
                 hidden_states,
                 indexes=indexes,
@@ -476,6 +519,20 @@ class Qwen3Model(Qwen3PreTrainedModel):
                 **kwargs,
             )
 
+            if (is_compression_prefill and layer_idx + 1 == self.llm_compressor.compression_layer):
+                keep_indices = self.llm_compressor.select_indices(
+                    hidden_states=hidden_states,
+                    indexes=indexes,
+                    visual_mask=visual_mask,
+                    next_layer=self.layers[layer_idx + 1]
+                )
+
+                hidden_states = hidden_states[:, keep_indices, :]
+                indexes = indexes[:, keep_indices]
+                visual_mask = visual_mask[keep_indices]
+                
+                # rebuild the attention mask for the shortened sequence.
+                causal_mask_mapping["full_attention"] = create_block_causal_mask(indexes[0])
         hidden_states = self.norm(hidden_states)
         return BaseModelOutputWithPast(
             last_hidden_state=hidden_states,
@@ -512,6 +569,7 @@ class Qwen3ForCausalLM(Qwen3PreTrainedModel, GenerationMixin):
         use_cache: Optional[bool] = None,
         cache_position: Optional[torch.LongTensor] = None,
         logits_to_keep: Union[int, torch.Tensor] = 0,
+        visual_mask=None,
         **kwargs: Unpack[TransformersKwargs],
     ) -> CausalLMOutputWithPast:
         r"""
@@ -546,6 +604,7 @@ class Qwen3ForCausalLM(Qwen3PreTrainedModel, GenerationMixin):
             inputs_embeds=inputs_embeds,
             use_cache=use_cache,
             cache_position=cache_position,
+            visual_mask=visual_mask,
             **kwargs,
         )
 

@@ -61,6 +61,7 @@ class PyramidDrop(BaseLLMVTCCompressor):
         if num_visual == 0 or self.compression_ratio == 1.0:
             return torch.arange(L, device=hidden_states.device)
 
+        num_visual = int(num_visual)
         k = max(1, min(round(num_visual * self.compression_ratio), num_visual))
         attn = next_layer.self_attn
 

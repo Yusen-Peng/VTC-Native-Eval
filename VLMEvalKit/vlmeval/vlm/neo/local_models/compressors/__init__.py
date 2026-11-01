@@ -7,9 +7,13 @@ import importlib
 import pkgutil
 
 from .base import BaseVTCCompressor
+from .llm.base import BaseLLMVTCCompressor
 from .registry import VTC_REGISTRY, build_compressor, register_compressor
 
 for _module in pkgutil.iter_modules(__path__):
     importlib.import_module(f"{__name__}.{_module.name}")
 
-__all__ = ["BaseVTCCompressor", "VTC_REGISTRY", "build_compressor", "register_compressor"]
+
+from .llm.pyramid_drop import PyramidDrop
+
+__all__ = ["BaseVTCCompressor", "BaseLLMVTCCompressor", "VTC_REGISTRY", "build_compressor", "register_compressor", "PyramidDrop"]

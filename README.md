@@ -70,7 +70,7 @@ bash VTCeval_scripts/eval_all.sh <model_name>
 Measure FLOPs:
 
 ```bash
-cd VLMEvalKit && python ../scripts/flops.py
+python ../scripts/flops.py
 ```
 
 ## Continued SFT

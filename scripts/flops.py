@@ -30,6 +30,7 @@ from torch.utils.flop_counter import FlopCounterMode
 
 from vlmeval.config import supported_VLM
 from vlmeval.vlm.neo.local_models.compressors import build_compressor
+from vlmeval.vlm.neo.local_models.compressors import PyramidDrop
 from vlmeval.vlm.neo.local_models.conversation import get_conv_template
 from vlmeval.vlm.neo.utils import load_image_native, preprocess_pixel_values, smart_resize
 
@@ -44,6 +45,12 @@ METHODS = {
     "perceiver": ("Perceiver", [2, 4, 8]),  # untrained weights: FLOPs don't depend on them
     "perceiver_learned": ("Perceiver (learned queries)", [2, 4, 8]),
 }
+
+# LLM-stage compression methods
+LLM_METHODS = {
+    "pdrop-16": ("PyramidDrop-16", [2, 4, 8]),
+}
+
 IMG_START_TOKEN, IMG_END_TOKEN, IMG_CONTEXT_TOKEN = "<img>", "</img>", "<IMG_CONTEXT>"
 
 
@@ -54,9 +61,9 @@ class PrefillLM(nn.Module):
         super().__init__()
         self.language_model = language_model
 
-    def forward(self, input_embeds, indexes):
+    def forward(self, input_embeds, indexes, visual_mask):
         outputs = self.language_model(
-            inputs_embeds=input_embeds, indexes=indexes, use_cache=False, logits_to_keep=1
+            inputs_embeds=input_embeds, indexes=indexes, visual_mask=visual_mask, use_cache=False, logits_to_keep=1
         )
         return outputs.logits
 
@@ -112,8 +119,8 @@ def build_input_ids(model, tokenizer, prompt, grid_hw, device):
     return tokenizer(query, return_tensors="pt")["input_ids"].to(device), num_tokens
 
 
-def count_llm(prefill_lm, input_embeds, indexes):
-    fca = FlopCountAnalysis(prefill_lm, (input_embeds, indexes))
+def count_llm(prefill_lm, input_embeds, indexes, visual_mask):
+    fca = FlopCountAnalysis(prefill_lm, (input_embeds, indexes, visual_mask))
     fca.unsupported_ops_warnings(False)
     fca.uncalled_modules_warnings(False)
     fca.tracer_warnings("none")
@@ -139,6 +146,7 @@ def main():
         model.img_context_token_id = tokenizer.convert_tokens_to_ids(IMG_CONTEXT_TOKEN)
         model.img_start_token_id = tokenizer.convert_tokens_to_ids(IMG_START_TOKEN)
         prefill_lm = PrefillLM(model.language_model).eval()
+        model.language_model.model.llm_compressor = None
         pixel_values, grid_hw = reference_image(kw, args.image, args.image_size, vlm.device)
         embeddings = model.vision_model.embeddings
 
@@ -158,7 +166,8 @@ def main():
             input_ids, num_visual = build_input_ids(model, tokenizer, args.prompt, grid_hw, vlm.device)
             with torch.no_grad():
                 input_embeds, indexes, vision = vision_prefill(model, pixel_values, grid_hw, input_ids)
-                llm, unsupported = count_llm(prefill_lm, input_embeds, indexes)
+                visual_mask = input_ids[0] == model.img_context_token_id
+                llm, unsupported = count_llm(prefill_lm, input_embeds, indexes, visual_mask)
             total = vision + llm
             rows.append({
                 "Model": label, "scale": scale, "compression": float(ratio),
@@ -168,6 +177,53 @@ def main():
             print(f"{key} {vtc_method} {ratio}x: {num_visual} visual / {input_ids.shape[1]} total tokens, "
                   f"{total / 1e12:.3f} TFLOPs (vision {vision / 1e12:.4f}, LLM {llm / 1e12:.3f})", flush=True)
         print(f"{key}: ops not counted by fvcore: {sorted(unsupported)}", flush=True)
+
+
+        # LLM-stage compression: restore uncompressed vision tokens
+        embeddings.vtc_method = "none"
+        embeddings.compression_ratio = 1.0
+        embeddings.compressor = build_compressor("none", compression_ratio=1.0).to(device=vlm.device, dtype=model.dtype)
+        input_ids, num_visual = build_input_ids(model, tokenizer, args.prompt, grid_hw, vlm.device)
+        with torch.no_grad():
+            input_embeds, indexes, vision = vision_prefill(model, pixel_values, grid_hw, input_ids)
+        visual_mask = input_ids[0] == model.img_context_token_id
+        for method, (label, ratios) in LLM_METHODS.items():
+            method_name, layer = method.rsplit("-", 1)
+            layer = int(layer)
+
+            for ratio in ratios:
+                if method_name == "pdrop":
+                    model.language_model.model.llm_compressor = PyramidDrop(
+                        compression_ratio=1.0 / ratio,
+                        compression_layer=layer,
+                    ).to(device=vlm.device, dtype=model.dtype)
+
+                elif method_name == "fastv":
+                    raise NotImplementedError("FastV is not implemented")
+                else:
+                    raise ValueError(f"Unknown LLM compressor: {method_name}")
+                with torch.no_grad():
+                    llm, unsupported = count_llm(prefill_lm, input_embeds, indexes, visual_mask)
+                total = vision + llm
+                rows.append({
+                    "Model": label,
+                    "scale": scale,
+                    "compression": float(ratio),
+                    "visual_tokens": num_visual,
+                    "seq_len": input_ids.shape[1],
+                    "TFLOPs": total / 1e12,
+                    "vision_TFLOPs": vision / 1e12,
+                    "llm_TFLOPs": llm / 1e12,
+                })
+                print(
+                    f"{key} {method} {ratio}x: "
+                    f"{num_visual} visual / {input_ids.shape[1]} total tokens, "
+                    f"{total / 1e12:.3f} TFLOPs "
+                    f"(vision {vision / 1e12:.4f}, LLM {llm / 1e12:.3f})",
+                    flush=True,
+                )
+
+        model.language_model.model.llm_compressor = None
 
         del prefill_lm, model, vlm
         gc.collect()

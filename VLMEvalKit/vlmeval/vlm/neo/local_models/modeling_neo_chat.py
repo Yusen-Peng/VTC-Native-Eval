@@ -469,6 +469,8 @@ class NEOChatModel(PreTrainedModel):
                 vit_embeds, visual_positions = self.extract_feature_with_positions(pixel_values, grid_hw=grid_hw, text_embeds=text_embeds)
         
         indexes = self.get_thw_indexes(input_ids[0], grid_hw, visual_positions=visual_positions)
+        
+        visual_mask = input_ids[0] == self.img_context_token_id
 
         if pixel_values is not None:
             input_embeds = self.language_model.get_input_embeddings()(input_ids)
@@ -487,6 +489,11 @@ class NEOChatModel(PreTrainedModel):
         outputs = self.language_model.generate(
             inputs_embeds=input_embeds,
             indexes=indexes,
+            visual_mask=(
+                visual_mask
+                if self.language_model.model.pdrop is not None
+                else None
+            ),
             attention_mask=attention_mask,
             generation_config=generation_config,
             output_hidden_states=output_hidden_states,

@@ -2058,6 +2058,18 @@ neo_series = {
         compression_ratio=0.125,
     ),
 
+    "NEO-2B-SFT-PDrop-layer16-2x": partial(
+        NEOChat,
+        model_path="Paranioar/NEO1_0-2B-SFT",
+        patch_size=16,
+        min_pixels=1280 * 32 * 32,
+        max_pixels=4096 * 32 * 32,
+        downsample_ratio=0.5,
+        llm_vtc_method="pdrop",
+        llm_compression_ratio=0.5,
+        compression_layer=16,
+    ),
+
     #### training-based methods ####    
     "NEO-2B-SFT-OV-LLaVA-65K": partial(
         NEOChat,

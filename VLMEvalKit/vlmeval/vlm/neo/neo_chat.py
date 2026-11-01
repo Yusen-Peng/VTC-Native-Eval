@@ -121,6 +121,10 @@ class NEOChat(BaseModel):
                  drip_path=None,
                  perceiver_path=None,
                  perceiver_queries="pooled",
+                 # LLM-stage VTC
+                 llm_vtc_method="none",
+                 llm_compression_ratio=1.0,
+                 compression_layer=2,
                  # Best-of-N parameters
                  best_of_n=1,
                  reward_model_path=None,
@@ -222,6 +226,12 @@ class NEOChat(BaseModel):
             config.vision_config.perceiver_queries = perceiver_queries
 
             print(f"[NEO VTC] method={config.vision_config.vtc_method}, compression_ratio={config.vision_config.compression_ratio}", flush=True)
+
+            config.llm_config.llm_vtc_method = llm_vtc_method
+            config.llm_config.compression_ratio = llm_compression_ratio
+            config.llm_config.compression_layer = compression_layer
+
+            print(f"[NEO LLM VTC] method={llm_vtc_method}, compression_ratio={llm_compression_ratio}, compression_layer={compression_layer}", flush=True)
 
             self.model = NEOChatModel.from_pretrained(
                 model_path,

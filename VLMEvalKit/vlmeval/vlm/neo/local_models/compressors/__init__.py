@@ -14,6 +14,7 @@ for _module in pkgutil.iter_modules(__path__):
     importlib.import_module(f"{__name__}.{_module.name}")
 
 
+from .llm.fastv import FastV
 from .llm.pyramid_drop import PyramidDrop
 
-__all__ = ["BaseVTCCompressor", "BaseLLMVTCCompressor", "VTC_REGISTRY", "build_compressor", "register_compressor", "PyramidDrop"]
+__all__ = ["BaseVTCCompressor", "BaseLLMVTCCompressor", "VTC_REGISTRY", "build_compressor", "register_compressor", "FastV", "PyramidDrop"]

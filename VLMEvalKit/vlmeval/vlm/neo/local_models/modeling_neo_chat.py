@@ -489,9 +489,10 @@ class NEOChatModel(PreTrainedModel):
         outputs = self.language_model.generate(
             inputs_embeds=input_embeds,
             indexes=indexes,
+            # read the config, not language_model.model: under a PeftModel that is Qwen3ForCausalLM
             visual_mask=(
                 visual_mask
-                if self.language_model.model.llm_compressor is not None
+                if getattr(self.config.llm_config, "llm_vtc_method", "none") != "none"
                 else None
             ),
             attention_mask=attention_mask,

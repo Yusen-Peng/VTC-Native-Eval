@@ -6,8 +6,8 @@ cd VLMEvalKit/vlmeval/results
 python tradeoff_analysis.py
 """
 
-baseline_model = "NEO-9B-SFT" # NEO-2B-SFT or NEO-9B-SFT
-csv_path = "training_free_9B.csv" # training_free_2B.csv or training_free_9B.csv
+baseline_model = "NEO-2B-SFT" # NEO-2B-SFT or NEO-9B-SFT
+csv_path = "training_free_2B.csv" # training_free_2B.csv or training_free_9B.csv
 
 coarse_benchmarks = [
     "MMBench",
@@ -69,6 +69,8 @@ methods = [
     "random pruning",
     "ToMe",
     "PruneSID",
+    "CDPruner",
+    "PyramidDrop-16",
 ]
 
 method_styles = {
@@ -77,6 +79,8 @@ method_styles = {
     "random pruning":  {"marker": "^", "color": "tab:green"},
     "ToMe":            {"marker": "D", "color": "tab:red"},
     "PruneSID":        {"marker": "P", "color": "tab:purple"},
+    "CDPruner":        {"marker": "H", "color": "tab:cyan"},
+    "PyramidDrop-16":  {"marker": "X", "color": "tab:brown"},
 }
 
 

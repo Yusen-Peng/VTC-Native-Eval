@@ -42,6 +42,11 @@ def build_model(model_args, data_args, tokenizer):
         # keep fp32 master weights: lr-sized updates vanish when rounded to bf16
         model.compressor.float()
         model.compressor.reset_parameters()
+
+    if config.vision_config.vtc_method == "drip":
+        # verify actual DRIP temperature
+        print("🔥🔥🔥 [NEO VTC] Actual DRIP temperature:", model.vision_model.embeddings.compressor.temperature, flush=True)
+
     logger.info("Loaded model from pretrained path.")
     return model
 

@@ -491,7 +491,7 @@ class NEOChatModel(PreTrainedModel):
             indexes=indexes,
             visual_mask=(
                 visual_mask
-                if self.language_model.model.pdrop is not None
+                if self.language_model.model.llm_compressor is not None
                 else None
             ),
             attention_mask=attention_mask,

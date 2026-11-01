@@ -400,14 +400,24 @@ class Qwen3Model(Qwen3PreTrainedModel):
         self.has_sliding_layers = "sliding_attention" in self.config.layer_types
         self.current_index = -1
 
-        self.pdrop = None
-        if getattr(config, "llm_vtc_method", "none") == "pdrop":
-            self.pdrop = PyramidDrop(
-                compression_ratio=getattr(config, "compression_ratio", 0.5),
-                compression_layer=getattr(config, "compression_layer", 2))
-            
-            if self.pdrop.compression_layer >= config.num_hidden_layers:
-                raise ValueError("PDrop compression_layer must be smaller than num_hidden_layers")
+        self.llm_compressor = None
+        method = config.llm_vtc_method if hasattr(config, "llm_vtc_method") else "none"
+
+        if method == "pdrop":
+            self.llm_compressor = PyramidDrop(
+                compression_ratio=config.compression_ratio,
+                compression_layer=config.compression_layer,
+            )
+
+        elif method == "fastv":
+            raise NotImplementedError("FastV method is not implemented")
+
+        elif method == "sparsevlm":
+            raise NotImplementedError("SparseVLM method is not implemented")
+
+        if self.llm_compressor is not None:
+            if not 1 <= self.llm_compressor.compression_layer < config.num_hidden_layers:
+                raise ValueError("Invalid LLM compression layer")
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -450,7 +460,7 @@ class Qwen3Model(Qwen3PreTrainedModel):
             # Prepare mask arguments
             if input_ids is not None:
                 
-                if self.pdrop is not None and input_ids.shape[1] == 1:
+                if self.llm_compressor is not None and input_ids.shape[1] == 1:
                     # Single-token decoding: attend to all cached keys.
                     causal_mask_mapping = {"full_attention": None}
                     pass
@@ -483,7 +493,7 @@ class Qwen3Model(Qwen3PreTrainedModel):
 
         hidden_states = inputs_embeds
 
-        is_pdrop_prefill = self.pdrop is not None and visual_mask is not None and hidden_states.shape[1] > 1
+        is_compression_prefill = self.llm_compressor is not None and visual_mask is not None and hidden_states.shape[1] > 1
 
         # for decoder_layer in self.layers[: self.config.num_hidden_layers]:
         #     hidden_states = decoder_layer(
@@ -509,8 +519,8 @@ class Qwen3Model(Qwen3PreTrainedModel):
                 **kwargs,
             )
 
-            if (is_pdrop_prefill and layer_idx + 1 == self.pdrop.compression_layer):
-                keep_indices = self.pdrop.select_indices(
+            if (is_compression_prefill and layer_idx + 1 == self.llm_compressor.compression_layer):
+                keep_indices = self.llm_compressor.select_indices(
                     hidden_states=hidden_states,
                     indexes=indexes,
                     visual_mask=visual_mask,

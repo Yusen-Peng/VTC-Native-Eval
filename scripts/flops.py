@@ -43,6 +43,7 @@ METHODS = {
     "prunesid": ("PruneSID", [2, 4, 8]),
     "cdpruner": ("CDPruner", [2, 4, 8]),
     "perceiver": ("Perceiver", [2, 4, 8]),  # untrained weights: FLOPs don't depend on them
+    "drip": ("VLVLM", [2, 4, 8]),
     "perceiver_learned": ("Perceiver (learned queries)", [2, 4, 8]),
 }
 
@@ -142,6 +143,7 @@ def main():
         scale = key.split("-")[1]  # NEO-2B-SFT -> 2B
         vlm = supported_VLM[key]()
         model, tokenizer = vlm.model, vlm.tokenizer
+        model.eval()
         model.system_message = vlm.system_prompt  # as NEOChat.generate_inner does
         model.img_context_token_id = tokenizer.convert_tokens_to_ids(IMG_CONTEXT_TOKEN)
         model.img_start_token_id = tokenizer.convert_tokens_to_ids(IMG_START_TOKEN)
@@ -162,7 +164,7 @@ def main():
             embeddings.vtc_method = vtc_method
             embeddings.compression_ratio = 1.0 / ratio
             embeddings.compressor = build_compressor(vtc_method, compression_ratio=1.0 / ratio, **kwargs).to(
-                device=vlm.device, dtype=model.dtype)
+                device=vlm.device, dtype=model.dtype).eval()
             input_ids, num_visual = build_input_ids(model, tokenizer, args.prompt, grid_hw, vlm.device)
             with torch.no_grad():
                 input_embeds, indexes, vision = vision_prefill(model, pixel_values, grid_hw, input_ids)

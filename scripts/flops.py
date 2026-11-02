@@ -161,6 +161,12 @@ def main():
                 kwargs = {"hidden_size": embeddings.llm_embed_dim,
                           "queries": "learned" if vtc_method == "perceiver_learned" else "pooled"}
                 vtc_method = "perceiver"
+            
+            if vtc_method == "drip":
+                kwargs = {
+                    "hidden_size": embeddings.llm_embed_dim,
+                    "intermediate_size": embeddings.llm_embed_dim * 2,
+                }
 
             embeddings.vtc_method = vtc_method
             embeddings.compression_ratio = 1.0 / ratio

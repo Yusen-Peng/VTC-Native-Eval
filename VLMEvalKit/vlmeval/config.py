@@ -2125,6 +2125,7 @@ neo_series = {
         compression_layer=2,
     ),
     "NEO-9B-SFT-FastV-layer2-2x": partial(
+    "NEO-9B-SFT-PDrop-layer16-2x": partial(
         NEOChat,
         model_path="Paranioar/NEO1_0-9B-SFT",
         patch_size=16,
@@ -2136,6 +2137,11 @@ neo_series = {
         compression_layer=2,
     ),
     "NEO-9B-SFT-FastV-layer2-4x": partial(
+        llm_vtc_method="pdrop",
+        llm_compression_ratio=0.5,
+        compression_layer=16,
+    ),
+    "NEO-9B-SFT-PDrop-layer16-4x": partial(
         NEOChat,
         model_path="Paranioar/NEO1_0-9B-SFT",
         patch_size=16,
@@ -2147,6 +2153,11 @@ neo_series = {
         compression_layer=2,
     ),
     "NEO-9B-SFT-FastV-layer2-8x": partial(
+        llm_vtc_method="pdrop",
+        llm_compression_ratio=0.25,
+        compression_layer=16,
+    ),
+    "NEO-9B-SFT-PDrop-layer16-8x": partial(
         NEOChat,
         model_path="Paranioar/NEO1_0-9B-SFT",
         patch_size=16,
@@ -2156,6 +2167,9 @@ neo_series = {
         llm_vtc_method="fastv",
         llm_compression_ratio=0.125,
         compression_layer=2,
+        llm_vtc_method="pdrop",
+        llm_compression_ratio=0.125,
+        compression_layer=16,
     ),
 
     #### training-based methods ####    

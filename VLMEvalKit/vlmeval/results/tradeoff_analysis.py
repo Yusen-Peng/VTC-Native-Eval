@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 
 """
 cd VLMEvalKit/vlmeval/results
+module load miniconda3/24.1.2-py310
+conda activate neo
 python tradeoff_analysis.py
 """
 
@@ -69,6 +71,8 @@ methods = [
     "random pruning",
     "ToMe",
     "PruneSID",
+    "CDPruner",
+    "PyramidDrop-16",
 ]
 
 method_styles = {
@@ -77,6 +81,8 @@ method_styles = {
     "random pruning":  {"marker": "^", "color": "tab:green"},
     "ToMe":            {"marker": "D", "color": "tab:red"},
     "PruneSID":        {"marker": "P", "color": "tab:purple"},
+    "CDPruner":        {"marker": "H", "color": "tab:cyan"},
+    "PyramidDrop-16":  {"marker": "X", "color": "tab:brown"},
 }
 
 

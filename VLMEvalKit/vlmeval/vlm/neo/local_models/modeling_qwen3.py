@@ -26,6 +26,7 @@ from transformers.utils.generic import check_model_inputs
 from transformers import Qwen3Config
 
 
+from .compressors.llm.fastv import FastV
 from .compressors.llm.pyramid_drop import PyramidDrop
 
 
@@ -328,6 +329,9 @@ class Qwen3DecoderLayer(GradientCheckpointingLayer):
         self.input_layernorm = Qwen3RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = Qwen3RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.attention_type = config.layer_types[layer_idx]
+        # set by Qwen3Model on the layer whose attention an LLM-stage compressor reads
+        self.keep_attn = False
+        self.last_attn = None
 
     @deprecate_kwarg("past_key_value", new_name="past_key_values", version="4.58")
     def forward(
@@ -344,7 +348,7 @@ class Qwen3DecoderLayer(GradientCheckpointingLayer):
         residual = hidden_states
         hidden_states = self.input_layernorm(hidden_states)
         # Self Attention
-        hidden_states, _ = self.self_attn(
+        hidden_states, attn_weights = self.self_attn(
             hidden_states=hidden_states,
             indexes=indexes,
             attention_mask=attention_mask,
@@ -354,6 +358,7 @@ class Qwen3DecoderLayer(GradientCheckpointingLayer):
             cache_position=cache_position,
             **kwargs,
         )
+        self.last_attn = attn_weights if self.keep_attn else None
         hidden_states = residual + hidden_states
 
         # Fully Connected
@@ -410,7 +415,10 @@ class Qwen3Model(Qwen3PreTrainedModel):
             )
 
         elif method == "fastv":
-            raise NotImplementedError("FastV method is not implemented")
+            self.llm_compressor = FastV(
+                compression_ratio=config.compression_ratio,
+                compression_layer=config.compression_layer,
+            )
 
         elif method == "sparsevlm":
             raise NotImplementedError("SparseVLM method is not implemented")
@@ -508,6 +516,7 @@ class Qwen3Model(Qwen3PreTrainedModel):
         #     )
 
         for layer_idx, decoder_layer in enumerate(self.layers[:self.config.num_hidden_layers]):
+            decoder_layer.keep_attn = is_compression_prefill and layer_idx + 1 == self.llm_compressor.compression_layer
             hidden_states = decoder_layer(
                 hidden_states,
                 indexes=indexes,
@@ -524,8 +533,10 @@ class Qwen3Model(Qwen3PreTrainedModel):
                     hidden_states=hidden_states,
                     indexes=indexes,
                     visual_mask=visual_mask,
-                    next_layer=self.layers[layer_idx + 1]
+                    next_layer=self.layers[layer_idx + 1],
+                    attn_weights=decoder_layer.last_attn,
                 )
+                decoder_layer.last_attn = None  # [1, heads, L, L]: too large to keep around
 
                 hidden_states = hidden_states[:, keep_indices, :]
                 indexes = indexes[:, keep_indices]

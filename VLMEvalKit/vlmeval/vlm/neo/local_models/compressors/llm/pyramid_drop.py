@@ -31,6 +31,7 @@ class PyramidDrop(BaseLLMVTCCompressor):
         indexes: torch.Tensor,
         visual_mask: torch.Tensor,
         next_layer: nn.Module,
+        **kwargs,
     ) -> torch.Tensor:
         """
         Args:

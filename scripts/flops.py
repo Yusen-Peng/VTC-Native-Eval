@@ -30,7 +30,7 @@ from torch.utils.flop_counter import FlopCounterMode
 
 from vlmeval.config import supported_VLM
 from vlmeval.vlm.neo.local_models.compressors import build_compressor
-from vlmeval.vlm.neo.local_models.compressors import PyramidDrop
+from vlmeval.vlm.neo.local_models.compressors import FastV, PyramidDrop
 from vlmeval.vlm.neo.local_models.conversation import get_conv_template
 from vlmeval.vlm.neo.utils import load_image_native, preprocess_pixel_values, smart_resize
 
@@ -50,6 +50,7 @@ METHODS = {
 # LLM-stage compression methods
 LLM_METHODS = {
     "pdrop-16": ("PyramidDrop-16", [2, 4, 8]),
+    "fastv-2": ("FastV-2", [2, 4, 8]),
 }
 
 IMG_START_TOKEN, IMG_END_TOKEN, IMG_CONTEXT_TOKEN = "<img>", "</img>", "<IMG_CONTEXT>"
@@ -201,7 +202,10 @@ def main():
                     ).to(device=vlm.device, dtype=model.dtype)
 
                 elif method_name == "fastv":
-                    raise NotImplementedError("FastV is not implemented")
+                    model.language_model.model.llm_compressor = FastV(
+                        compression_ratio=1.0 / ratio,
+                        compression_layer=layer,
+                    ).to(device=vlm.device, dtype=model.dtype)
                 else:
                     raise ValueError(f"Unknown LLM compressor: {method_name}")
                 with torch.no_grad():

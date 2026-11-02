@@ -3,11 +3,13 @@ import matplotlib.pyplot as plt
 
 """
 cd VLMEvalKit/vlmeval/results
+module load miniconda3/24.1.2-py310
+conda activate neo
 python tradeoff_analysis.py
 """
 
-baseline_model = "NEO-2B-SFT" # NEO-2B-SFT or NEO-9B-SFT
-csv_path = "training_free_2B.csv" # training_free_2B.csv or training_free_9B.csv
+baseline_model = "NEO-9B-SFT" # NEO-2B-SFT or NEO-9B-SFT
+csv_path = "training_free_9B.csv" # training_free_2B.csv or training_free_9B.csv
 
 coarse_benchmarks = [
     "MMBench",

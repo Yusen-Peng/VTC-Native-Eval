@@ -32,6 +32,8 @@ MARKERS = {
     "random pruning": "^",
     "ToMe": "D",
     "PruneSID": "P",
+    "CDPruner": "H",
+    "PyramidDrop-16": "X",
     "baseline": "*",
 }
 
@@ -199,19 +201,21 @@ for ax, metric, title in zip(
 # Legends
 # ============================================================
 
+# Model sizes (colors)
 size_handles = [
     Line2D(
         [0], [0],
         marker="o",
         linestyle="none",
-        color="w",
         markerfacecolor=color,
+        markeredgecolor="none",
         markersize=9,
         label=size,
     )
     for size, color in COLORS.items()
 ]
 
+# Compression methods (shapes)
 method_handles = [
     Line2D(
         [0], [0],
@@ -224,6 +228,7 @@ method_handles = [
     for method, marker in MARKERS.items()
 ]
 
+# Pareto frontier
 frontier_handle = Line2D(
     [0], [0],
     color="black",
@@ -232,14 +237,37 @@ frontier_handle = Line2D(
     label="Pareto Frontier",
 )
 
+# ------------------------------------------------------------
+# Row 1: Model sizes + Pareto frontier
+# ------------------------------------------------------------
+
 fig.legend(
-    handles=size_handles + method_handles + [frontier_handle],
+    handles=size_handles + [frontier_handle],
     loc="lower center",
-    bbox_to_anchor=(0.5, -0.04),
-    ncol=5,
+    bbox_to_anchor=(0.5, 0.085),
+    ncol=3,
+    frameon=False,
+    fontsize=11,
+    handletextpad=0.6,
+    columnspacing=2.5,
+)
+
+# ------------------------------------------------------------
+# Row 2: Compression methods
+# ------------------------------------------------------------
+
+fig.legend(
+    handles=method_handles,
+    loc="lower center",
+    bbox_to_anchor=(0.5, 0.025),
+    ncol=len(method_handles),
     frameon=False,
     fontsize=10,
+    handletextpad=0.5,
+    columnspacing=1.8,
 )
+# Reserve space for legends
+fig.subplots_adjust(bottom=0.22)
 
 fig.suptitle(
     "Compute-Performance Pareto Frontier across 2B and 9B",

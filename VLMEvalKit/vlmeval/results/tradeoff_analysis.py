@@ -33,6 +33,23 @@ ocr_benchmarks = [
 
 df = pd.read_csv(csv_path)
 
+flops_df = pd.read_csv("flops.csv")
+
+# Select the corresponding model scale
+scale = "2B" if baseline_model == "NEO-2B-SFT" else "9B"
+
+flops_df = flops_df[flops_df["scale"] == scale]
+
+# Merge latency measurements
+df = df.merge(
+    flops_df[
+        ["Model", "compression", "total_latency_ms"]
+    ],
+    on=["Model", "compression"],
+    how="left",
+    validate="one_to_one",
+)
+
 baseline = df[df["Model"] == baseline_model].iloc[0]
 
 
@@ -72,6 +89,7 @@ methods = [
     "ToMe",
     "PruneSID",
     "CDPruner",
+    "FastV-2",
     "PyramidDrop-16",
 ]
 
@@ -82,6 +100,7 @@ method_styles = {
     "ToMe":            {"marker": "D", "color": "tab:red"},
     "PruneSID":        {"marker": "P", "color": "tab:purple"},
     "CDPruner":        {"marker": "H", "color": "tab:cyan"},
+    "FastV-2":         {"marker": "v", "color": "tab:gray"},
     "PyramidDrop-16":  {"marker": "X", "color": "tab:brown"},
 }
 
@@ -176,6 +195,9 @@ def plot_performance(x_col, xlabel, filename):
                 ax.set_xticks([0, 5, 10, 20, 30, 40, 45])
                 ax.set_xlim(0, 50)
 
+            elif x_col == "total_latency_ms":
+                ax.set_xlim(left=0)
+
     axes[0].set_ylabel(
         f"Relative Performance vs. {baseline_model} (%)",
         fontsize=12,
@@ -231,3 +253,15 @@ plot_performance(
     xlabel="Computational Cost (TFLOPs)",
     filename=f"training_free_tflops_{baseline_model}",
 )
+
+
+# ============================================================
+# Figure 3: Performance vs. Latency
+# ============================================================
+
+plot_performance(
+    x_col="total_latency_ms",
+    xlabel="Prefill Latency (ms)",
+    filename=f"training_free_latency_{baseline_model}",
+)
+

@@ -33,6 +33,7 @@ MARKERS = {
     "ToMe": "D",
     "PruneSID": "P",
     "CDPruner": "H",
+    "FastV-2": "v",
     "PyramidDrop-16": "X",
     "baseline": "*",
 }

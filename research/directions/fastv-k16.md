@@ -10,10 +10,10 @@ wake: on_jobs
 budget_gpu_hours: 30
 spent_gpu_hours: 0
 max_jobs_in_flight: 8
-jobs: []
+jobs: [8387099, 8387100, 8387101, 8387102]
 jobs_archived: []
-last_wake: null
-next_id: 1
+last_wake: 2026-11-07
+next_id: 3
 model: null
 effort: null
 ---
@@ -87,3 +87,6 @@ progressively, so FastV-16 at 8x throws away 7/8 of the tokens at once and may c
   `scaling_pareto.py`).
 
 ## Log
+- 2026-11-07: wired `NEO-{2B,9B}-SFT-FastV-layer16-{2,4,8}x` + `fastv-16` in flops.py + REPO override (83a5b05); OSC checkout cloned.
+  e001: 8387099 FLOPs/latency all 2B rows (debug-nextgen), 8387100 RWQA 2x smoke (debug-nextgen). e002: 8387101 general
+  (11 tasks) + 8387102 ocr (12 tasks) on nextgen, afterok:8387100. Est. 9-13 GPU-h for e002.

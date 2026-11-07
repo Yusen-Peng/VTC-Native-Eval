@@ -1,6 +1,7 @@
 ---
 slug: perceiver-learned
-title: "Why does the learned-query Perceiver collapse to chance under LoRA SFT, and what initialisation makes it match the pooled-query variant at 2x?"
+title: Why does the learned-query Perceiver collapse to chance under LoRA SFT, and
+  what initialisation makes it match the pooled-query variant at 2x?
 project: vtc
 type: direction
 cluster: ascend

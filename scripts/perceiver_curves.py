@@ -25,9 +25,14 @@ PREFIX = "NEO_continue_SFT_LLaVA_OV_llava66k_"
 def collect(root):
     out = {}
     for d in sorted(glob.glob(os.path.join(root, PREFIX + "Perceiver*"))):
-        p = os.path.join(d, "trainer_state.json")
+        p = os.path.join(d, "trainer_state.json")   # written at the end of training
         if not os.path.isfile(p):
-            continue
+            # in-progress or interrupted run: newest checkpoint-*/trainer_state.json
+            ckpts = sorted(glob.glob(os.path.join(d, "checkpoint-*", "trainer_state.json")),
+                           key=lambda q: int(q.split("checkpoint-")[1].split(os.sep)[0]))
+            if not ckpts:
+                continue
+            p = ckpts[-1]
         s = json.load(open(p))
         hist = [h for h in s["log_history"] if "loss" in h]
         out[os.path.basename(d)[len(PREFIX):]] = {"step": [h["step"] for h in hist],

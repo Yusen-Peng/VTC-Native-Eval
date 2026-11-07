@@ -8,10 +8,9 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 0.58
+spent_gpu_hours: 0.65
 max_jobs_in_flight: 6
 jobs:
-- 8387862
 - 8387863
 - 8387864
 - 8387865
@@ -30,6 +29,7 @@ jobs_archived:
 - 8387807
 - 8387808
 - 8387809
+- 8387862
 last_wake: '2026-11-07T15:20:00-05:00'
 next_id: 3
 model: claude-fable-5-1
@@ -174,5 +174,8 @@ result; record it as such if backlog items 2-4 all fail.
   scancelled). Fixed in 43311d8 (`trainer.py` loads the adapter via `set_peft_model_state_dict`; a deviation from the
   trainer.py constraint, recorded in e002, DRIP groups untouched). Third resume smoke 8387862 + replacement chain
   8387863 (`afterok:8387862`) -> 8387864 -> 8387865 -> 8387866 (4 h each, nextgen, about 460 pending ahead), gates
-  8387867 MMBench + 8387868 DocVQA (`afterok:8387866`). Spent 0.58 GPU-h; e002 planned total about 16. Next wake: read
-  8387862; a third resume failure of any cause = scancel chain + pause; otherwise wait for the chain.
+  8387867 MMBench + 8387868 DocVQA (`afterok:8387866`). Resume smoke 8387862 PASSED within the wake: adapter (480
+  tensors) + perceiver.bin loaded, steps 11-12 bit-identical to the uninterrupted smoke (1.0942, 0.8142); seg1 released
+  from the `afterok` (a TIMEOUT smoke would have cancelled it), smoke scancelled at 4 min. Spent 0.65 GPU-h; e002 planned
+  total about 16. Next wake: on the chain segments (check "Resumed LoRA adapter" + step at each boundary, refresh the
+  loss figure), then the gate evals.

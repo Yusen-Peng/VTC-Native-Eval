@@ -6,13 +6,13 @@ project: vtc
 type: direction
 cluster: ascend
 status: active
-wake: on_jobs
+wake: now
 budget_gpu_hours: 100
-spent_gpu_hours: 0
+spent_gpu_hours: 0.1
 max_jobs_in_flight: 6
-jobs: [8387204, 8387205]
-jobs_archived: []
-last_wake: 2026-11-07T14:05:00
+jobs: []
+jobs_archived: [8387204, 8387205]
+last_wake: 2026-11-07T14:10:00
 next_id: 2
 model: claude-fable-5-1
 effort: high
@@ -133,3 +133,9 @@ result; record it as such if backlog items 2-4 all fail.
   at 94091f4. Baseline loss-curve PNG drawn (`figures/loss_curves.png`, `scripts/perceiver_curves.py`). Note for item 2:
   `SFT_perceiver.sh` still cds into `$SCRATCH/VTC-Native-Eval` (the old checkout) and `vlmeval` is an editable install
   pointing there; training from this worktree needs the `REPO` override before any training submission.
+- 2026-11-07 14:10 e001 done (0.10 GPU-h, both jobs exit 0). Diagnosis = cause (b): the learned compressor emits S
+  copies of one vector (output pairwise cosine 0.9953 at init, 0.9999 after training; attention uniform to 1% of
+  log N) because 0.02-RMS latents are drowned by the O(1) attention residual; the LLM still reads 0.27 nats from
+  that global vector vs zeros, so cause (a) in its strong form is refuted. Pooled gates end at 0.004 (the pooled
+  Perceiver is fixed pooling + 0.4%). Next wake: item 2 (`learned_residual`), and item 3 gets the specific fix
+  (zero-init `o_proj` + last MLP linear, latents at native RMS). Nothing in flight; `wake: now`.

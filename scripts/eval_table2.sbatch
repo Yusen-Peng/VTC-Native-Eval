@@ -53,7 +53,7 @@ export HF_HUB_OFFLINE=1          # weights are pre-cached; never hit the network
 export LMUData=$SCRATCH/LMUData  # must be user-writable (VLMEvalKit decodes images into it)
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True  # long eager-attention prefills fragment memory
 
-REPO=$SCRATCH/VTC-Native-Eval
+REPO=${REPO:-$SCRATCH/VTC-Native-Eval}   # override to evaluate from another checkout (research directions)
 cd "$REPO/VLMEvalKit"
 
 echo "===== $(date) :: $MODEL / $DATA ====="

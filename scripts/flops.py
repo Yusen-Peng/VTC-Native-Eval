@@ -45,6 +45,7 @@ METHODS = {
     "perceiver": ("Perceiver", [2, 4, 8]),  # untrained weights: FLOPs don't depend on them
     "drip": ("VLVLM", [2, 4, 8]),
     "perceiver_learned": ("Perceiver (learned queries)", [2, 4, 8]),
+    "perceiver_learned_residual": ("Perceiver (pooled + learned residual queries)", [2, 4, 8]),
 }
 
 # LLM-stage compression methods
@@ -185,7 +186,7 @@ def main():
             kwargs = {}
             if vtc_method.startswith("perceiver"):
                 kwargs = {"hidden_size": embeddings.llm_embed_dim,
-                          "queries": "learned" if vtc_method == "perceiver_learned" else "pooled"}
+                          "queries": vtc_method[len("perceiver_"):] or "pooled"}
                 vtc_method = "perceiver"
             
             if vtc_method == "drip":

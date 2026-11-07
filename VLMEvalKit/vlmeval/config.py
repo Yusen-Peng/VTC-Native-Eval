@@ -2381,6 +2381,25 @@ neo_series.update({
     for r in (2, 4, 8)
 })
 
+# direction perceiver-learned: new Perceiver query modes (same recipe, QUERIES=learned_residual, COMP_LR 1e-3)
+neo_series.update({
+    f"NEO-2B-SFT-OV-LLaVA-llava66k-{name}-{r}x": partial(
+        NEOChat,
+        model_path="Paranioar/NEO1_0-2B-SFT",
+        lora_path=f"{PERCEIVER_CKPTS}/NEO_continue_SFT_LLaVA_OV_llava66k_{name}_{r}x",
+        patch_size=16,
+        min_pixels=1280 * 32 * 32,
+        max_pixels=4096 * 32 * 32,
+        downsample_ratio=0.5,
+        vtc_method="perceiver",
+        compression_ratio=1 / r,
+        perceiver_path=f"{PERCEIVER_CKPTS}/NEO_continue_SFT_LLaVA_OV_llava66k_{name}_{r}x/perceiver.bin",
+        perceiver_queries=queries,
+    )
+    for name, queries in (("PerceiverLearnedResidual", "learned_residual"),)
+    for r in (2, 4, 8)
+})
+
 supported_VLM = {}
 model_groups = [neo_series]
 

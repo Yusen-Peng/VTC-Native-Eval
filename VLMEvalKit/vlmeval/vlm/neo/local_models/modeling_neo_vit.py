@@ -163,7 +163,7 @@ class NEOVisionEmbeddings(nn.Module):
             # NOTE: we can tune some hyperparameters (e.g., temperature) for DRIP
             compressor_kwargs = {
                 "hidden_size": self.llm_embed_dim,
-                "intermediate_size": getattr(config, "drip_intermediate_size", 4096),
+                "intermediate_size": getattr(config, "drip_intermediate_size", self.llm_embed_dim * 2),
                 "temperature": getattr(config, "drip_temperature", 0.1),
                 "drip_path": getattr(config, "drip_path", None),
             }

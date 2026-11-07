@@ -10,10 +10,10 @@ wake: on_jobs
 budget_gpu_hours: 120
 spent_gpu_hours: 0
 max_jobs_in_flight: 12
-jobs: []
+jobs: [8388118, 8388119, 8388120, 8388121]
 jobs_archived: []
-last_wake: null
-next_id: 1
+last_wake: 2026-11-07
+next_id: 2
 model: null
 effort: null
 ---
@@ -103,3 +103,4 @@ collapses like fixed pooling. Strongest counter-argument: the 2x DRIP number may
   training-free fixed/random/ToMe rows from `vlmeval/results/training_free_2B.csv`).
 
 ## Log
+- 2026-11-07 wake 1: wrote SFT_vtc.sh + 4x/8x config keys (9a659cf); cloned OSC checkout; e001 smokes (fixed/random/DRIP 4x, DRIP resume test) on debug-nextgen: 8388118-8388121.

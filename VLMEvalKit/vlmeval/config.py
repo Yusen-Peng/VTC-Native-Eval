@@ -2381,6 +2381,26 @@ neo_series.update({
     for r in (2, 4, 8)
 })
 
+# Fixed / random / DRIP + LoRA at 4x and 8x, trained by VLMTrainKit/SFT_vtc.sh (VTC_METHOD=fixed|random|drip, RATIO=4|8);
+# same recipe as the 2x keys above (llava_665k%10, DRIP temperature 0.1, two-tailed 5:5 inference hardcoded in BP.py)
+neo_series.update({
+    f"NEO-2B-SFT-OV-LLaVA-llava66k-{name}-{r}x": partial(
+        NEOChat,
+        model_path="Paranioar/NEO1_0-2B-SFT",
+        lora_path=f"{PERCEIVER_CKPTS}/NEO_continue_SFT_LLaVA_OV_llava66k_{name}_{r}x",
+        patch_size=16,
+        min_pixels=1280 * 32 * 32,
+        max_pixels=4096 * 32 * 32,
+        downsample_ratio=0.5,
+        vtc_method=method,
+        compression_ratio=1 / r,
+        **({"drip_path": f"{PERCEIVER_CKPTS}/NEO_continue_SFT_LLaVA_OV_llava66k_{name}_{r}x/drip.bin"}
+           if method == "drip" else {}),
+    )
+    for name, method in (("Fixed", "fixed"), ("Random", "random"), ("DRIP", "drip"))
+    for r in (4, 8)
+})
+
 supported_VLM = {}
 model_groups = [neo_series]
 

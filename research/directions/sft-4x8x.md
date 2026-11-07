@@ -1,6 +1,7 @@
 ---
 slug: sft-4x8x
-title: "Do the training-based 2x conclusions hold at 4x and 8x? (fixed pooling, random pruning and DRIP + LLaVA@66K rows of tab:training-based)"
+title: Do the training-based 2x conclusions hold at 4x and 8x? (fixed pooling, random
+  pruning and DRIP + LLaVA@66K rows of tab:training-based)
 project: vtc
 type: direction
 cluster: ascend

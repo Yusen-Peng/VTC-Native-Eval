@@ -10,12 +10,14 @@ wake: on_jobs
 budget_gpu_hours: 100
 spent_gpu_hours: 0.1
 max_jobs_in_flight: 6
-jobs: []
+jobs:
+- 8387554
+- 8387555
 jobs_archived:
 - 8387204
 - 8387205
-last_wake: '2026-11-07T13:40:01-05:00'
-next_id: 2
+last_wake: '2026-11-07T14:32:00-05:00'
+next_id: 3
 model: claude-fable-5-1
 effort: high
 max_turns: 120
@@ -142,3 +144,10 @@ result; record it as such if backlog items 2-4 all fail.
   that global vector vs zeros, so cause (a) in its strong form is refuted. Pooled gates end at 0.004 (the pooled
   Perceiver is fixed pooling + 0.4%). Next wake: item 2 (`learned_residual`), and item 3 gets the specific fix
   (zero-init `o_proj` + last MLP linear, latents at native RMS). Nothing in flight; `wake: now`.
+- 2026-11-07 14:32 wake (manual). e002 = backlog item 2: `learned_residual` query mode (pooled queries + zero-init 32x32
+  latent grid sampled at segment centroids, tanh gates; init == fixed pooling, verified bit-identical `pooled`/`learned`
+  by `scripts/test_perceiver_modes.py` on the desktop and the login node). Compressor lr 1e-3 (recorded as a confound
+  with the pooled row's 2e-5). `SFT_perceiver.sh` and `eval_table2.sbatch` now take `REPO`; a segment that finds the
+  final perceiver.bin exits 0 (chain no-op). Submitted smoke 8387554 (25 min, to checkpoint-10) + resume smoke 8387555
+  (12 min, afterany) on debug-nextgen at 7cca724. Next wake: if steps 1-5 average in [0.9, 1.1] and the resume log
+  shows step 11, submit the 4 x 4 h `nextgen` chain + gate evals (about 16 GPU-h); else diagnose.

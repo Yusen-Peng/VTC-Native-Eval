@@ -30,13 +30,13 @@ jobs_archived:
 - 8387808
 - 8387809
 - 8387862
-last_wake: '2026-11-07T15:20:00-05:00'
+last_wake: '2026-11-07T15:25:00-05:00'
 next_id: 3
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 3
+wakes: 4
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 
@@ -179,3 +179,7 @@ result; record it as such if backlog items 2-4 all fail.
   from the `afterok` (a TIMEOUT smoke would have cancelled it), smoke scancelled at 4 min. Spent 0.65 GPU-h; e002 planned
   total about 16. Next wake: on the chain segments (check "Resumed LoRA adapter" + step at each boundary, refresh the
   loss figure), then the gate evals.
+- 2026-11-07 15:25 wake (on_jobs: 8387555 FAILED). Stale trigger: 8387555 was diagnosed, fixed (3085d93) and archived in
+  the 15:20 wake. State check: seg1 8387863 PENDING (Priority) on nextgen, 8387864-8387866 and gates 8387867/8387868
+  PENDING (Dependency); no job finished, nothing new to record, nothing submitted (2 training jobs would exceed the
+  constraint and the chain already covers the plan). RESULTS.md regenerated (unchanged). `wake: on_jobs`.

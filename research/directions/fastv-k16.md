@@ -1,6 +1,7 @@
 ---
 slug: fastv-k16
-title: "Does FastV pruning after layer 16 (PyramidDrop's layer) beat FastV-2 and match PyramidDrop-16 at equal FLOPs on NEO-2B?"
+title: Does FastV pruning after layer 16 (PyramidDrop's layer) beat FastV-2 and match
+  PyramidDrop-16 at equal FLOPs on NEO-2B?
 project: vtc
 type: direction
 cluster: ascend

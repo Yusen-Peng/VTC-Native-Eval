@@ -81,7 +81,7 @@ collapses like fixed pooling. Strongest counter-argument: the 2x DRIP number may
 - Files that may NOT change: anything under `compressors/` (DRIP two-tailed 5:5 is hardcoded in
   `drip_modules/BP.py:139` and is the protocol), `modeling_*.py`, `neo_chat.py`, `trainer.py`
   (`DRIP_LR = 1e-3`), `build.py`, `argument.py`, the existing config keys, `summarize_table2.py` row logic,
-  the tex (report rows in the record; the user pastes them).
+  the tex `VTC-Native-Eval.tex` at the repo root (read it for the table layout and the 2x rows; report new rows in the record, the user pastes them).
 - Fixed protocol (identical to the 2x rows): base `Paranioar/NEO1_0-2B-SFT`; data `llava_665k%10`
   (`/fs/scratch/PAS2836/yusenpeng_dataset/LLaVA_665K`, read-only, already used by Jack's perceiver runs);
   LoRA lr 2e-5, global batch 128 (1 GPU x grad_accum 128), 1 epoch = 488 steps, warmup 10, max_grad_norm 1,
@@ -89,9 +89,8 @@ collapses like fixed pooling. Strongest counter-argument: the 2x DRIP number may
   weights saved at the output dir root), never an intermediate one. Eval: `scripts/eval_table2.sbatch` with
   `MODELS="<keys>"`, both suites (general: MMBench_DEV_EN, MME, MMMU_DEV_VAL, RealWorldQA; ocr: TextVQA_VAL,
   DocVQA_VAL, OCRBench, ChartQA_TEST), `HF_HUB_OFFLINE=1`, metric conventions of `summarize_table2.py`.
-- Per-experiment ceiling: one training = 1 A100-40GB `nextgen`, `--time=12:00:00` (measured 1.4 min/step x 488 =
-  11.4 h; the six Perceiver runs of 2026-10-28/11-01 each finished in one such job). If a job times out, resubmit
-  the same command: the trainer resumes from the latest `checkpoint-*` (saved every 10 steps). One model's eval =
+- Per-experiment ceiling: one training = 1 A100-40GB, measured 1.4 min/step x 488 = 11.4 h. Training jobs are chains of 4 h `nextgen` segments: `--time=4:00:00`, each segment resubmitted with `--dependency=afterany:<prev>` (3 segments cover the measured 11.4 h; the trainer resumes from the latest `checkpoint-*`, saved every 10 steps = 14 min, so at most 14 min is lost per boundary). Submit the whole chain at once and record every segment id.
+  One model's eval =
   8 array tasks, 2B walltimes 23/13/13/6/46/114/26/27 min -> about 4.5 GPU-h. Whole direction: 6 x 11.4 + 6 x 4.5
   = 95 GPU-h. Do not start 9B rows.
 - OSC: run from this direction's checkout `/fs/scratch/PAS2836/jacktaylor/wt/vtc/sft-4x8x` (env from

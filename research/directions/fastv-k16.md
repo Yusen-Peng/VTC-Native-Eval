@@ -8,7 +8,7 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 30
-spent_gpu_hours: 0.78
+spent_gpu_hours: 1.65
 max_jobs_in_flight: 8
 jobs:
 - 8387101
@@ -16,11 +16,11 @@ jobs:
 jobs_archived:
 - 8387099
 - 8387100
-last_wake: '2026-11-07T14:20:01-05:00'
+last_wake: '2026-11-07T15:00:01-05:00'
 next_id: 3
 model: null
 effort: null
-wakes: 2
+wakes: 3
 ---
 # Does FastV pruning after layer 16 beat FastV-2 and match PyramidDrop-16 at equal FLOPs?
 
@@ -101,3 +101,6 @@ progressively, so FastV-16 at 8x throws away 7/8 of the tokens at once and may c
   imported vlmeval from the shared checkout (97dc1b5, only a DRIP default differs), FastV rows unaffected.
 - 2026-11-07: 8387101_2 done: 2x MMMU 47.56 (FastV-2 48.67, PDrop-16 47.77, base 48.33), 8.9 min. Other e002
   tasks running or pending. No new submission: backlog 4 waits on the e002 DocVQA cells.
+- 2026-11-07: 8387101_0/_1/_5 done (0.86 GPU-h): 2x MMBench 76.03 (FastV-2 73.80, PDrop-16 74.22, base 76.20; pred
+  74.5+/-1 missed high), 2x MME 1568.2 (PDrop 1536.4), 4x MME 1544.5 (PDrop 1439.6). General VQA: FastV-16 >= PDrop-16.
+  No new submission: backlog 4 still gated on e002 DocVQA (ocr array pending).

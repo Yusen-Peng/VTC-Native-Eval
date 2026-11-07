@@ -8,14 +8,19 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 30
-spent_gpu_hours: 0
+spent_gpu_hours: 0.23
 max_jobs_in_flight: 8
-jobs: [8387099, 8387100, 8387101, 8387102]
-jobs_archived: []
-last_wake: 2026-11-07
+jobs:
+- 8387101
+- 8387102
+jobs_archived:
+- 8387099
+- 8387100
+last_wake: '2026-11-07T14:05:00-05:00'
 next_id: 3
 model: null
 effort: null
+wakes: 1
 ---
 # Does FastV pruning after layer 16 beat FastV-2 and match PyramidDrop-16 at equal FLOPs?
 
@@ -90,3 +95,7 @@ progressively, so FastV-16 at 8x throws away 7/8 of the tokens at once and may c
 - 2026-11-07: wired `NEO-{2B,9B}-SFT-FastV-layer16-{2,4,8}x` + `fastv-16` in flops.py + REPO override (83a5b05); OSC checkout cloned.
   e001: 8387099 FLOPs/latency all 2B rows (debug-nextgen), 8387100 RWQA 2x smoke (debug-nextgen). e002: 8387101 general
   (11 tasks) + 8387102 ocr (12 tasks) on nextgen, afterok:8387100. Est. 9-13 GPU-h for e002.
+- 2026-11-07: e001 done (0.23 GPU-h). FastV-16 2B = 8.905 / 7.042 / 6.226 TF, 362.6 / 300.8 / 300.1 ms at 2x/4x/8x,
+  equal to PDrop-16 within 0.02 TF and 1 % latency; rows appended to flops.csv. RWQA 2x smoke 61.57 (base 62.74).
+  All three predictions hit. No new submission: e002 arrays now unblocked, backlog 4 waits on e002. Caveat: flops job
+  imported vlmeval from the shared checkout (97dc1b5, only a DRIP default differs), FastV rows unaffected.

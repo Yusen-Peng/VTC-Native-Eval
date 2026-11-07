@@ -43,6 +43,7 @@ METHODS = {
     "prunesid": ("PruneSID", [2, 4, 8]),
     "cdpruner": ("CDPruner", [2, 4, 8]),
     "perceiver": ("Perceiver", [2, 4, 8]),  # untrained weights: FLOPs don't depend on them
+    "drip": ("VLVLM", [2, 4, 8]),
     "perceiver_learned": ("Perceiver (learned queries)", [2, 4, 8]),
 }
 
@@ -128,6 +129,32 @@ def count_llm(prefill_lm, input_embeds, indexes, visual_mask):
     return fca.total(), fca.unsupported_ops()
 
 
+def measure_latency(fn, warmup=10, repeats=30):
+    """Measure GPU execution latency using CUDA events. Returns average latency in milliseconds."""
+    with torch.inference_mode():
+        for _ in range(warmup):
+            fn()
+
+        torch.cuda.synchronize()
+
+        times = []
+
+        for _ in range(repeats):
+            start = torch.cuda.Event(enable_timing=True)
+            end = torch.cuda.Event(enable_timing=True)
+
+            start.record()
+            fn()
+            end.record()
+
+            torch.cuda.synchronize()
+            times.append(start.elapsed_time(end))
+
+    return sum(times) / len(times)
+
+
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--models", nargs="+", default=["NEO-2B-SFT", "NEO-9B-SFT"])
@@ -143,6 +170,7 @@ def main():
         scale = key.split("-")[1]  # NEO-2B-SFT -> 2B
         vlm = supported_VLM[key]()
         model, tokenizer = vlm.model, vlm.tokenizer
+        model.eval()
         model.system_message = vlm.system_prompt  # as NEOChat.generate_inner does
         model.img_context_token_id = tokenizer.convert_tokens_to_ids(IMG_CONTEXT_TOKEN)
         model.img_start_token_id = tokenizer.convert_tokens_to_ids(IMG_START_TOKEN)
@@ -159,24 +187,49 @@ def main():
                 kwargs = {"hidden_size": embeddings.llm_embed_dim,
                           "queries": "learned" if vtc_method == "perceiver_learned" else "pooled"}
                 vtc_method = "perceiver"
+            
+            if vtc_method == "drip":
+                kwargs = {
+                    "hidden_size": embeddings.llm_embed_dim,
+                    "intermediate_size": embeddings.llm_embed_dim * 2,
+                }
 
             embeddings.vtc_method = vtc_method
             embeddings.compression_ratio = 1.0 / ratio
             embeddings.compressor = build_compressor(vtc_method, compression_ratio=1.0 / ratio, **kwargs).to(
-                device=vlm.device, dtype=model.dtype)
+                device=vlm.device, dtype=model.dtype).eval()
             input_ids, num_visual = build_input_ids(model, tokenizer, args.prompt, grid_hw, vlm.device)
             with torch.no_grad():
                 input_embeds, indexes, vision = vision_prefill(model, pixel_values, grid_hw, input_ids)
                 visual_mask = input_ids[0] == model.img_context_token_id
                 llm, unsupported = count_llm(prefill_lm, input_embeds, indexes, visual_mask)
             total = vision + llm
+
+            # Vision encoder + compression latency
+            text_embeds = None
+            if vtc_method == "cdpruner":
+                text_mask = (
+                    (input_ids != model.img_context_token_id)
+                    & (input_ids != model.img_start_token_id)
+                )
+                if hasattr(model, "img_end_token_id") and model.img_end_token_id is not None:
+                    text_mask &= input_ids != model.img_end_token_id
+                text_input_ids = input_ids[text_mask]
+                text_embeds = model.language_model.get_input_embeddings()(text_input_ids)
+            vision_latency = measure_latency(lambda: model.extract_feature_with_positions(pixel_values, grid_hw=grid_hw, text_embeds=text_embeds))
+            
+            # LLM prefill latency
+            llm_latency = measure_latency(lambda: prefill_lm(input_embeds, indexes, visual_mask))
+            total_latency = vision_latency + llm_latency
+
             rows.append({
                 "Model": label, "scale": scale, "compression": float(ratio),
                 "visual_tokens": num_visual, "seq_len": input_ids.shape[1],
                 "TFLOPs": total / 1e12, "vision_TFLOPs": vision / 1e12, "llm_TFLOPs": llm / 1e12,
+                "vision_latency_ms": vision_latency, "llm_latency_ms": llm_latency, "total_latency_ms": total_latency,
             })
             print(f"{key} {vtc_method} {ratio}x: {num_visual} visual / {input_ids.shape[1]} total tokens, "
-                  f"{total / 1e12:.3f} TFLOPs (vision {vision / 1e12:.4f}, LLM {llm / 1e12:.3f})", flush=True)
+                  f"{total / 1e12:.3f} TFLOPs (vision {vision / 1e12:.4f}, LLM {llm / 1e12:.3f}) | latency {total_latency:.3f} (vision {vision_latency:.3f}, LLM {llm_latency:.3f}) ms", flush=True)
         print(f"{key}: ops not counted by fvcore: {sorted(unsupported)}", flush=True)
 
 
@@ -209,6 +262,16 @@ def main():
                 with torch.no_grad():
                     llm, unsupported = count_llm(prefill_lm, input_embeds, indexes, visual_mask)
                 total = vision + llm
+
+                vision_latency = measure_latency(
+                    lambda: model.extract_feature_with_positions(
+                        pixel_values,
+                        grid_hw=grid_hw,
+                    )
+                )
+                llm_latency = measure_latency(lambda: prefill_lm(input_embeds, indexes, visual_mask))
+                total_latency = vision_latency + llm_latency
+
                 rows.append({
                     "Model": label,
                     "scale": scale,
@@ -218,12 +281,17 @@ def main():
                     "TFLOPs": total / 1e12,
                     "vision_TFLOPs": vision / 1e12,
                     "llm_TFLOPs": llm / 1e12,
+                    "vision_latency_ms": vision_latency,
+                    "llm_latency_ms": llm_latency,
+                    "total_latency_ms": total_latency,
                 })
                 print(
                     f"{key} {method} {ratio}x: "
                     f"{num_visual} visual / {input_ids.shape[1]} total tokens, "
                     f"{total / 1e12:.3f} TFLOPs "
-                    f"(vision {vision / 1e12:.4f}, LLM {llm / 1e12:.3f})",
+                    f"(vision {vision / 1e12:.4f}, LLM {llm / 1e12:.3f}) | "
+                    f"latency {total_latency:.3f} "
+                    f"(vision {vision_latency:.3f}, LLM {llm_latency:.3f}) ms",
                     flush=True,
                 )
 

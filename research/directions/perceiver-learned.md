@@ -10,10 +10,10 @@ wake: on_jobs
 budget_gpu_hours: 100
 spent_gpu_hours: 0
 max_jobs_in_flight: 6
-jobs: []
+jobs: [8387204, 8387205]
 jobs_archived: []
-last_wake: null
-next_id: 1
+last_wake: 2026-11-07T14:05:00
+next_id: 2
 model: claude-fable-5-1
 effort: high
 max_turns: 120
@@ -127,3 +127,9 @@ result; record it as such if backlog items 2-4 all fail.
   existing curves (from `trainer_state.json`).
 
 ## Log
+- 2026-11-07 14:05 wake (manual). Created the OSC checkout `wt/vtc/perceiver-learned` (clone of origin). e001 =
+  backlog item 1 (diagnostic probe, no training): `scripts/perceiver_probe.py` + sbatch; import/tokenizer check passed
+  on the login node from /tmp; submitted smoke 8387204 (N=4) and full probe 8387205 (N=128, afterok) on debug-nextgen
+  at 94091f4. Baseline loss-curve PNG drawn (`figures/loss_curves.png`, `scripts/perceiver_curves.py`). Note for item 2:
+  `SFT_perceiver.sh` still cds into `$SCRATCH/VTC-Native-Eval` (the old checkout) and `vlmeval` is an editable install
+  pointing there; training from this worktree needs the `REPO` override before any training submission.

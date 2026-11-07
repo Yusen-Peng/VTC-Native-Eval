@@ -8,21 +8,35 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 0.1
+spent_gpu_hours: 0.58
 max_jobs_in_flight: 6
 jobs:
-- 8387554
-- 8387555
+- 8387862
+- 8387863
+- 8387864
+- 8387865
+- 8387866
+- 8387867
+- 8387868
 jobs_archived:
 - 8387204
 - 8387205
-last_wake: '2026-11-07T14:32:00-05:00'
+- 8387554
+- 8387555
+- 8387802
+- 8387804
+- 8387805
+- 8387806
+- 8387807
+- 8387808
+- 8387809
+last_wake: '2026-11-07T15:20:00-05:00'
 next_id: 3
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 1
+wakes: 3
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 
@@ -151,3 +165,14 @@ result; record it as such if backlog items 2-4 all fail.
   final perceiver.bin exits 0 (chain no-op). Submitted smoke 8387554 (25 min, to checkpoint-10) + resume smoke 8387555
   (12 min, afterany) on debug-nextgen at 7cca724. Next wake: if steps 1-5 average in [0.9, 1.1] and the resume log
   shows step 11, submit the 4 x 4 h `nextgen` chain + gate evals (about 16 GPU-h); else diagnose.
+- 2026-11-07 15:20 wake (on_jobs: 8387554 TIMEOUT). Smoke 8387554 as planned: 16 steps, mean 1-5 = 0.979 (HIT), max 1.094,
+  checkpoint-10 complete, curve sits on the pooled 2x curve (figure regenerated). Resume smoke 8387555 FAILED at once:
+  `train.py` resume branch used `logging.info` on `transformers.utils.logging` (no such attribute); never-exercised path.
+  Fixed (3085d93), resume smoke retried as 8387802 with the chain 8387804-8387807 + gates 8387808/8387809 behind it.
+  8387802 failed in 48 s for a second, different cause: HF `_load_from_checkpoint` wants full model weights because the
+  PeftModel is nested under `language_model`; the chain died with it (8387804 DependencyNeverSatisfied, the rest
+  scancelled). Fixed in 43311d8 (`trainer.py` loads the adapter via `set_peft_model_state_dict`; a deviation from the
+  trainer.py constraint, recorded in e002, DRIP groups untouched). Third resume smoke 8387862 + replacement chain
+  8387863 (`afterok:8387862`) -> 8387864 -> 8387865 -> 8387866 (4 h each, nextgen, about 460 pending ahead), gates
+  8387867 MMBench + 8387868 DocVQA (`afterok:8387866`). Spent 0.58 GPU-h; e002 planned total about 16. Next wake: read
+  8387862; a third resume failure of any cause = scancel chain + pause; otherwise wait for the chain.

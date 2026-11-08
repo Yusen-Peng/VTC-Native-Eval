@@ -11,13 +11,17 @@ budget_gpu_hours: 30
 spent_gpu_hours: 10.25
 max_jobs_in_flight: 8
 jobs:
-- 8387101
 - 8387102
+- 8390878
+- 8390879
+- 8390880
+- 8390881
 jobs_archived:
 - 8387099
 - 8387100
-last_wake: '2026-11-07T15:40:01-05:00'
-next_id: 3
+- 8387101
+last_wake: '2026-11-07T19:50:00-05:00'
+next_id: 4
 model: null
 effort: null
 wakes: 5
@@ -107,3 +111,8 @@ progressively, so FastV-16 at 8x throws away 7/8 of the tokens at once and may c
 - 2026-11-07: 8387101_4/_6/_7 done (0.65 GPU-h): 4x MMBench 73.63 (FastV-2 65.46, PDrop-16 69.75), 4x MMMU 47.33
   (46.56 / 46.44), 4x RWQA 58.69 (55.56 / 51.50). FastV-16 leads PDrop-16 on all general cells so far. No new
   submission: backlog 4 gated on e002 DocVQA; 8387101_8 running, _9-11 and ocr array pending.
+- 2026-11-07: general array 8387101 complete (11/11); ocr 8387102 9/12 done (_5, _8, _9 running). e002 GPU-h so far 7.89.
+  2x DocVQA 85.75 (PDrop-16 81.54, FastV-2 82.00; pred 84+/-2 hit), 2x OCRBench 61.6 (51.2), TextVQA 72.58 (67.18);
+  8x MMB 69.85 (58.16). FastV-16 >= PDrop-16 on 19/20 cells at equal TF; FastV-2 only leads on ChartQA. PNG
+  figures/pareto_2b.png. Backlog 4 gate met -> e003 (f958d92): K=24 2B 2x, 8390878 flops + 8390879 RWQA smoke
+  (debug-nextgen), 8390880 general 0-2 + 8390881 ocr 0-3 (nextgen, afterok smoke). Est. 4.0-4.8 GPU-h.

@@ -8,7 +8,7 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 30
-spent_gpu_hours: 1.9
+spent_gpu_hours: 10.25
 max_jobs_in_flight: 8
 jobs:
 - 8387101
@@ -16,11 +16,11 @@ jobs:
 jobs_archived:
 - 8387099
 - 8387100
-last_wake: '2026-11-07T15:20:01-05:00'
+last_wake: '2026-11-07T15:40:01-05:00'
 next_id: 3
 model: null
 effort: null
-wakes: 4
+wakes: 5
 ---
 # Does FastV pruning after layer 16 beat FastV-2 and match PyramidDrop-16 at equal FLOPs?
 

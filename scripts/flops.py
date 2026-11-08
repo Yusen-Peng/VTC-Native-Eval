@@ -52,6 +52,7 @@ LLM_METHODS = {
     "pdrop-16": ("PyramidDrop-16", [2, 4, 8]),
     "fastv-2": ("FastV-2", [2, 4, 8]),
     "fastv-16": ("FastV-16", [2, 4, 8]),
+    "fastv-24": ("FastV-24", [2]),
 }
 
 IMG_START_TOKEN, IMG_END_TOKEN, IMG_CONTEXT_TOKEN = "<img>", "</img>", "<IMG_CONTEXT>"

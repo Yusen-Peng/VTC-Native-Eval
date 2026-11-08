@@ -2381,9 +2381,10 @@ neo_series.update({
     for r in (2, 4, 8)
 })
 
-# FastV pruning once after decoder layer 16 (PyramidDrop-16's first layer); otherwise identical to the -layer2- keys
+# FastV pruning once after decoder layer K (16 = PyramidDrop-16's first layer; 24 = 2B 2x only, saturation check);
+# otherwise identical to the -layer2- keys
 neo_series.update({
-    f"NEO-{scale}-SFT-FastV-layer16-{r}x": partial(
+    f"NEO-{scale}-SFT-FastV-layer{k}-{r}x": partial(
         NEOChat,
         model_path=f"Paranioar/NEO1_0-{scale}-SFT",
         patch_size=16,
@@ -2392,10 +2393,9 @@ neo_series.update({
         downsample_ratio=0.5,
         llm_vtc_method="fastv",
         llm_compression_ratio=1 / r,
-        compression_layer=16,
+        compression_layer=k,
     )
-    for scale in ("2B", "9B")
-    for r in (2, 4, 8)
+    for scale, k, r in [(s, 16, r) for s in ("2B", "9B") for r in (2, 4, 8)] + [("2B", 24, 2)]
 })
 
 supported_VLM = {}

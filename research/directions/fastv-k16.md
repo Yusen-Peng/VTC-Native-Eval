@@ -5,7 +5,7 @@ title: Does FastV pruning after layer 16 (PyramidDrop's layer) beat FastV-2 and 
 project: vtc
 type: direction
 cluster: ascend
-status: paused
+status: done
 wake: on_jobs
 budget_gpu_hours: 30
 spent_gpu_hours: 16.15
@@ -20,11 +20,11 @@ jobs_archived:
 - 8390879
 - 8390880
 - 8390881
-last_wake: '2026-11-09T00:00:00-05:00'
+last_wake: '2026-11-09T18:45:00-05:00'
 next_id: 4
 model: null
 effort: null
-wakes: 6
+wakes: 7
 ---
 # Does FastV pruning after layer 16 beat FastV-2 and match PyramidDrop-16 at equal FLOPs?
 
@@ -124,3 +124,21 @@ progressively, so FastV-16 at 8x throws away 7/8 of the tokens at once and may c
   **Paused**: brief settled and backlog empty (9B out of scope by user decision). User decision: (a) mark done and
   merge rows into the tex; (b) K in {8,12,20} 2B 2x sweep to locate the optimum, about 12 GPU-h, fits the remaining 13.85;
   (c) reopen 9B FastV-16 rows (about 25-35 GPU-h at 9B walltimes, needs a budget raise).
+
+2026-11-09 18:30  user decision: (a), also to log the added rows in .tex format in the log.
+2026-11-09 18:39  resumed: by user
+- 2026-11-09: user decision (a) applied: the three 2B FastV-16 rows inserted into `tab:results-2B` of `VTC-Native-Eval.tex`
+  (after each PyramidDrop-16 row; the brief's "tex may not change" constraint is overridden by this decision). No other tex
+  edits; `context/VTC-Natie-Eval.tex` (outside the worktree) not touched. FastV-24 not merged (ablation only; row below).
+  No jobs submitted. Spent 16.15 / 30 GPU-h. Direction **done**. Rows as inserted (TFLOPs and latency from flops.csv):
+```tex
+% 2x compression block, after PyramidDrop-16
+        + \textbf{FastV-16} & 76.03 & 1568.21 & 47.56 & 61.57 & 72.58 & 85.75 & 61.6 & 77.64 & 8.91 & 362.65 \\
+% 4x compression block, after PyramidDrop-16
+        + \textbf{FastV-16} & 73.63 & 1544.50 & 47.33 & 58.69 & 66.86 & 69.07 & 34.1 & 53.80 & 7.04 & 300.78 \\
+% 8x compression block, after PyramidDrop-16
+        + \textbf{FastV-16} & 69.85 & 1471.8 & 46.44 & 55.56 & 52.50 & 42.63 & 15.7 & 23.96 & 6.23 & 300.09 \\
+% not inserted: K=24 ablation, 2x only (e003)
+%       + \textbf{FastV-24} & 75.26 & 1580.2 & 48.56 & 63.92 & 70.03 & 86.92 & 44.3 & 77.68 & 10.46 & 438.63 \\
+```
+

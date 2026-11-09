@@ -8,14 +8,29 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 120
-spent_gpu_hours: 0
+spent_gpu_hours: 0.2
 max_jobs_in_flight: 12
-jobs: [8388118, 8388119, 8388120, 8388121]
-jobs_archived: []
-last_wake: 2026-11-07
-next_id: 2
+jobs:
+- 8453771
+- 8453772
+- 8453773
+- 8453774
+- 8453775
+- 8453776
+- 8453777
+- 8453778
+- 8453779
+- 8453780
+jobs_archived:
+- 8388118
+- 8388119
+- 8388120
+- 8388121
+last_wake: '2026-11-09'
+next_id: 4
 model: null
 effort: null
+wakes: 1
 ---
 # Do the training-based 2x conclusions hold at 4x and 8x?
 
@@ -104,3 +119,4 @@ collapses like fixed pooling. Strongest counter-argument: the 2x DRIP number may
 
 ## Log
 - 2026-11-07 wake 1: wrote SFT_vtc.sh + 4x/8x config keys (9a659cf); cloned OSC checkout; e001 smokes (fixed/random/DRIP 4x, DRIP resume test) on debug-nextgen: 8388118-8388121.
+- 2026-11-09 wake 2: e001 fixed/random 4x smokes pass (87-88 s/step, files written); DRIP crashed step 1 on torch Binomial validation of the soft boundary count (ratio-independent, so the 2x run had validation off); fixed in SFT_vtc.sh (drip-only wrapper, 3b0d626). Submitted e002 DRIP 4x re-smoke A/B (8453771-8453772, debug-nextgen) and e003 fixed+random 4x training chains, 4x4 h each (8453773-8453780, ~25 GPU-h).

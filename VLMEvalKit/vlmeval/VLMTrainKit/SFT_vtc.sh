@@ -99,10 +99,19 @@ args=(
 [ -n "${COMP_LR:-}" ] && args+=(--compressor_learning_rate "${COMP_LR}")
 [ -n "${MAX_STEPS:-}" ] && args+=(--max_steps "${MAX_STEPS}")
 
+# DRIP's boundary loss (compressors/drip_modules/BP.py calc_loss) calls Binomial.log_prob on the sum of
+# relaxed (soft) boundaries, a non-integer; torch's default argument validation raises on it (e001, job
+# 8388118). The 2x DRIP row could only have trained with validation off, so turn it off for drip only,
+# without touching compressors/: train.py is run through a one-line wrapper.
+entry=(./neo/train/train.py)
+if [ "$VTC_METHOD" = drip ]; then
+    entry=(--no-python python -c "import sys, runpy, torch; torch.distributions.Distribution.set_default_validate_args(False); sys.argv[0] = './neo/train/train.py'; runpy.run_path(sys.argv[0], run_name='__main__')")
+fi
+
 torchrun \
     --nproc_per_node="${NGPU}" \
     --master_addr=127.0.0.1 \
     --master_port="$(shuf -i 20001-29999 -n 1)" \
-    ./neo/train/train.py \
+    "${entry[@]}" \
     "${args[@]}"
 echo "===== $(date) :: ${run_name} segment finished, checkpoints: $(ls -d "$output_dir"/checkpoint-* 2>/dev/null | xargs -n1 basename | tr '\n' ' ') ====="

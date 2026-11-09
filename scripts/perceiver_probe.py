@@ -12,6 +12,10 @@ measures the NEO-2B training loss under several (LoRA adapter, compressor, visua
     base/fixed2x-zeros   no adapter, zeros                   (text-only floor of the base LLM)
     base/learned-init    no adapter, freshly initialised learned-query Perceiver (= step 0 of the learned run)
     base/none            no adapter, no compression          (uncompressed reference)
+    residual/trained     PerceiverLearnedResidual-2x adapter + its trained compressor (e002)
+    residual/no-latents  same, latent grid zeroed (pooled queries + the trained gated residuals)
+    residual/fixed       same adapter, plain fixed pooling (= the compressor at step 0)
+    residual/zeros       same adapter, zeros
 
 and dumps, for each Perceiver compressor, statistics of its attention and output on the first K images:
 attention entropy over keys per query relative to uniform (log N), max attention weight, mean pairwise cosine
@@ -131,7 +135,19 @@ class VisualOverride:
         orig = self.orig
 
         def patched(x):
-            out = orig(x)
+            if self.mode == "no-latents":
+                # learned_residual with its latent grid zeroed: pooled queries + the trained gated residuals
+                saved = self.c.latents.data.clone()
+                self.c.latents.data.zero_()
+                try:
+                    out = orig(x)
+                finally:
+                    self.c.latents.data.copy_(saved)
+            elif self.mode == "fixed":
+                # plain fixed pooling of the same native tokens (what the compressor emitted at step 0)
+                out = FixedPoolingCompressor.forward(self.c, self.c._flatten_tokens(x))
+            else:
+                out = orig(x)
             if self.stash is not None and len(self.stash) < self.stash_max:
                 self.stash.append(x.detach().cpu())
             if self.mode == "zeros":
@@ -172,16 +188,24 @@ def run_condition(model, batches, device, visual="real", stash=None, stash_max=0
 def perceiver_stats(comp: PerceiverCompressor, images):
     """Mirror of PerceiverCompressor.forward that also returns attention statistics. images: list of [1,h,w,D]."""
     dev = comp.q_proj.weight.device
-    ent, maxp, cos_out, cos_q, rms_ratio, cos_to_pooled = [], [], [], [], [], []
+    ent, maxp, cos_out, cos_q, rms_ratio, cos_to_pooled, dev_from_pooled, lat_ratio = [], [], [], [], [], [], [], []
     for x in images:
         x = x.to(dev)
         B, h, w, D = x.shape
         xf = x.reshape(B, h * w, D).to(comp.q_proj.weight.dtype)
         key_h = torch.arange(h, device=dev, dtype=torch.float32).repeat_interleave(w)
         key_w = torch.arange(w, device=dev, dtype=torch.float32).repeat(h)
-        if comp.queries == "pooled":
+        if comp.queries != "learned":
             queries = FixedPoolingCompressor.forward(comp, xf)
             q_h, q_w = FixedPoolingCompressor.forward(comp, torch.stack((key_h, key_w), dim=-1)[None])[0].unbind(-1)
+            if comp.queries == "learned_residual":  # mirror of PerceiverCompressor.forward
+                grid = torch.stack(((q_w + 0.5) / w * 2 - 1, (q_h + 0.5) / h * 2 - 1), dim=-1)
+                lat = F.grid_sample(comp.latents, grid[None, None], mode="bilinear",
+                                    padding_mode="border", align_corners=False)[0, :, 0].transpose(0, 1)
+                lat = lat.to(queries.dtype)
+                # size of the learned query shift relative to the pooled query it is added to
+                lat_ratio.append((lat.float().pow(2).mean().sqrt() / queries.float().pow(2).mean().sqrt()).item())
+                queries = queries + lat
         else:
             gh, gw = comp._cell_grid(h, w)
             queries = F.interpolate(comp.latents, size=(gh, gw), mode="bilinear", align_corners=False)
@@ -208,15 +232,20 @@ def perceiver_stats(comp: PerceiverCompressor, images):
         pooled = FixedPoolingCompressor.forward(comp, xf).float()[0]
         if pooled.shape == y.shape:
             cos_to_pooled.append(F.cosine_similarity(y, pooled, dim=-1).mean().item())
+            # relative RMS of the change the trained module makes to the fixed-pooling tokens
+            dev_from_pooled.append(((y - pooled).pow(2).mean().sqrt() / pooled.pow(2).mean().sqrt()).item())
     mean = lambda v: (sum(v) / len(v)) if v else None  # noqa: E731
     out = {"images": len(images), "attn_entropy_over_log_n": mean(ent), "attn_max_weight": mean(maxp),
            "output_pairwise_cosine": mean(cos_out), "query_pairwise_cosine": mean(cos_q),
-           "output_rms_over_native_rms": mean(rms_ratio), "output_cosine_to_fixed_pooling": mean(cos_to_pooled)}
-    if comp.queries == "pooled":
+           "output_rms_over_native_rms": mean(rms_ratio), "output_cosine_to_fixed_pooling": mean(cos_to_pooled),
+           "output_rel_rms_change_from_fixed_pooling": mean(dev_from_pooled)}
+    if comp.queries != "learned":
         out["attn_gate_tanh"] = comp.attn_gate.tanh().item()
         out["mlp_gate_tanh"] = comp.mlp_gate.tanh().item()
-    else:
+    if comp.queries != "pooled":
         out["latents_rms"] = comp.latents.float().pow(2).mean().sqrt().item()
+    if comp.queries == "learned_residual":
+        out["latent_term_rms_over_pooled_query_rms"] = mean(lat_ratio)
     return out
 
 
@@ -235,9 +264,11 @@ def main():
     r = args.ratio
     L = f"{args.ckpts}/NEO_continue_SFT_LLaVA_OV_llava66k_PerceiverLearned_{r}x"
     P = f"{args.ckpts}/NEO_continue_SFT_LLaVA_OV_llava66k_Perceiver_{r}x"
+    R = f"{args.ckpts}/NEO_continue_SFT_LLaVA_OV_llava66k_PerceiverLearnedResidual_{r}x"
     specs = {
         "learned": dict(lora=L, vtc="perceiver", ratio=1 / r, queries="learned", perceiver=f"{L}/perceiver.bin"),
         "pooled": dict(lora=P, vtc="perceiver", ratio=1 / r, queries="pooled", perceiver=f"{P}/perceiver.bin"),
+        "residual": dict(lora=R, vtc="perceiver", ratio=1 / r, queries="learned_residual", perceiver=f"{R}/perceiver.bin"),
         "base-fixed": dict(lora=None, vtc="fixed", ratio=1 / r, queries="pooled", perceiver=None),
         "base-learned-init": dict(lora=None, vtc="perceiver", ratio=1 / r, queries="learned", perceiver=None),
         "base-none": dict(lora=None, vtc="none", ratio=1.0, queries="pooled", perceiver=None),
@@ -247,6 +278,9 @@ def main():
         ("pooled/trained", "pooled", "real"), ("pooled/zeros", "pooled", "zeros"),
         (f"base/fixed{r}x", "base-fixed", "real"), (f"base/fixed{r}x-zeros", "base-fixed", "zeros"),
         ("base/learned-init", "base-learned-init", "real"), ("base/none", "base-none", "real"),
+        # learned_residual (e002+): trained; latents zeroed; plain fixed pooling under the same adapter; zeros
+        ("residual/trained", "residual", "real"), ("residual/no-latents", "residual", "no-latents"),
+        ("residual/fixed", "residual", "fixed"), ("residual/zeros", "residual", "zeros"),
     ]
     if args.conditions:
         conditions = [c for c in conditions if c[0] in args.conditions]
@@ -289,7 +323,9 @@ def main():
     for name, res in c.items():
         print(f"| {name} | {res['loss_mean']:.4f} | {res['loss_std']:.3f} | {res['n']} |")
     pairs = [("learned/trained", "learned/zeros"), ("learned/trained", "learned/noise"), ("pooled/trained", "pooled/zeros"),
-             ("learned/trained", "pooled/trained"), (f"base/fixed{r}x", f"base/fixed{r}x-zeros")]
+             ("learned/trained", "pooled/trained"), (f"base/fixed{r}x", f"base/fixed{r}x-zeros"),
+             ("residual/trained", "residual/no-latents"), ("residual/trained", "residual/fixed"),
+             ("residual/trained", "residual/zeros"), ("residual/trained", "pooled/trained")]
     print("\n| a | b | mean(a-b) | sd(a-b) |\n|---|---|---|---|")
     for a, b in pairs:
         if a in c and b in c:

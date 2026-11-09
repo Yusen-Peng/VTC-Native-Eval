@@ -8,15 +8,15 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 0.65
+spent_gpu_hours: 15.14
 max_jobs_in_flight: 6
 jobs:
-- 8387863
-- 8387864
-- 8387865
-- 8387866
-- 8387867
-- 8387868
+- 8453615
+- 8453616
+- 8453617
+- 8453618
+- 8453619
+- 8453620
 jobs_archived:
 - 8387204
 - 8387205
@@ -30,13 +30,20 @@ jobs_archived:
 - 8387808
 - 8387809
 - 8387862
-last_wake: '2026-11-07T15:25:00-05:00'
-next_id: 3
+- 8387863
+- 8387864
+- 8387865
+- 8387866
+- 8387867
+- 8387868
+- 8453614
+last_wake: '2026-11-09T18:20:00-05:00'
+next_id: 5
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 4
+wakes: 5
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 
@@ -183,3 +190,12 @@ result; record it as such if backlog items 2-4 all fail.
   the 15:20 wake. State check: seg1 8387863 PENDING (Priority) on nextgen, 8387864-8387866 and gates 8387867/8387868
   PENDING (Dependency); no job finished, nothing new to record, nothing submitted (2 training jobs would exceed the
   constraint and the chain already covers the plan). RESULTS.md regenerated (unchanged). `wake: on_jobs`.
+- 2026-11-09 18:20 wake (on_jobs: e002 chain + gates finished). e002 DONE: 4 x 4 h chain resumed cleanly at every boundary
+  (163 / 323 / 487 steps, seg4 finished step 488 in 13 min; 87 s/step), final MA-10 loss 0.787 vs pooled 0.795 (paired, same
+  data order), gate MMBench 73.37 / DocVQA 40.00 vs pooled 74.31 / 37.33: GATE PASSED (>= 72 / >= 30), all e002 predictions
+  hit; 14.98 GPU-h. Figure regenerated. e003 (12a1540): probe 8453614 on the trained checkpoint ran in-wake (0.06 GPU-h):
+  latents inert (0.2% of the query, 0.001 nats), attention gate 1e-4 with near one-hot attention, MLP gate 0.010; the whole
+  33%-RMS change from fixed pooling is the per-token MLP branch, worth 0.031 nats; the e002 gain over pooled is the higher
+  compressor lr, not learned queries. Remaining six 2x benchmarks submitted as one array 8453620_[0-5] (DATASETS override in
+  eval_table2.sbatch). e004 = 4x row: chain 8453615-8453618 (4 x 4 h, nextgen) + full 8-benchmark eval 8453619_[0-7]
+  (afterok seg4). In flight 6 (cap 6); 8x waits for the next wake. Spent 15.14 of 100 GPU-h; committed about 21 more.

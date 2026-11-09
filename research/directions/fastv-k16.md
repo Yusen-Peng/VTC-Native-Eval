@@ -5,26 +5,26 @@ title: Does FastV pruning after layer 16 (PyramidDrop's layer) beat FastV-2 and 
 project: vtc
 type: direction
 cluster: ascend
-status: active
+status: paused
 wake: on_jobs
 budget_gpu_hours: 30
-spent_gpu_hours: 10.25
+spent_gpu_hours: 16.15
 max_jobs_in_flight: 8
-jobs:
+jobs: []
+jobs_archived:
+- 8387099
+- 8387100
+- 8387101
 - 8387102
 - 8390878
 - 8390879
 - 8390880
 - 8390881
-jobs_archived:
-- 8387099
-- 8387100
-- 8387101
-last_wake: '2026-11-07T19:50:00-05:00'
+last_wake: '2026-11-09T00:00:00-05:00'
 next_id: 4
 model: null
 effort: null
-wakes: 5
+wakes: 6
 ---
 # Does FastV pruning after layer 16 beat FastV-2 and match PyramidDrop-16 at equal FLOPs?
 
@@ -116,3 +116,11 @@ progressively, so FastV-16 at 8x throws away 7/8 of the tokens at once and may c
   8x MMB 69.85 (58.16). FastV-16 >= PDrop-16 on 19/20 cells at equal TF; FastV-2 only leads on ChartQA. PNG
   figures/pareto_2b.png. Backlog 4 gate met -> e003 (f958d92): K=24 2B 2x, 8390878 flops + 8390879 RWQA smoke
   (debug-nextgen), 8390880 general 0-2 + 8390881 ocr 0-3 (nextgen, afterok smoke). Est. 4.0-4.8 GPU-h.
+- 2026-11-09: all jobs done (8387102 ocr 12/12, e003 8390878-81 9/9, all rc=0). e002 done, 11.77 GPU-h: 4x DocVQA 69.07,
+  8x DocVQA 42.63, 8x TextVQA 52.50 (PDrop-16 55.87 / 29.68 / 36.65). FastV-16 >= PDrop-16 on 23/24 cells at equal TF
+  (only 2x MMMU -0.21): direction **positive**. e003 done, 4.15 GPU-h: FastV-24 2x 10.456 TF / 438.6 ms, DocVQA 86.92 (+1.17
+  vs K=16, saturation hit) but OCRBench 44.3 (-17.3; Text Recognition 238 -> 88, dropped/garbled characters) and TextVQA
+  70.03 (-2.6); K=16 dominates K=24. flops.csv + FastV-24 row; PNG updated. Spent 16.15 / 30 GPU-h.
+  **Paused**: brief settled and backlog empty (9B out of scope by user decision). User decision: (a) mark done and
+  merge rows into the tex; (b) K in {8,12,20} 2B 2x sweep to locate the optimum, about 12 GPU-h, fits the remaining 13.85;
+  (c) reopen 9B FastV-16 rows (about 25-35 GPU-h at 9B walltimes, needs a budget raise).

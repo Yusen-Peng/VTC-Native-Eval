@@ -1,4 +1,4 @@
 *.out
 *.log
 outputs/
-output/
+output/__pycache__/

@@ -8,7 +8,7 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 120
-spent_gpu_hours: 88.64
+spent_gpu_hours: 91.01
 max_jobs_in_flight: 12
 jobs:
 - 8490212
@@ -67,11 +67,11 @@ jobs_archived:
 - 8388119
 - 8388120
 - 8388121
-last_wake: '2026-11-10T18:00:01-05:00'
+last_wake: '2026-11-10T18:20:01-05:00'
 next_id: 12
 model: null
 effort: null
-wakes: 18
+wakes: 19
 ---
 # Do the training-based 2x conclusions hold at 4x and 8x?
 
@@ -177,3 +177,4 @@ collapses like fixed pooling. Strongest counter-argument: the 2x DRIP number may
 - 2026-11-10 wake 16: e010 DONE (8489188 archived, 22/22 rc=0, 13.21 GPU-h): DRIP 4x DocVQA 55.96 (band 58 +/- 8 hit; +38.7 over random+SFT, -11.1 vs ToMe 4x). 4x rows complete and in `training_based.csv`; 5/6 bands + 5/5 ordering claims hit. SFT recovers general VQA at 4x (fixed +23.0 MMBench) but not OCR (+3 DocVQA); DRIP keeps its OCR edge over fixed/random but its gap to ToMe widens (DocVQA -6.1 -> -11.1, ChartQA -12 -> -29). Backlog item 3 not triggered. First PNG `figures/score_vs_ratio.png`. Nothing submitted: 8x chains at seg 3 (8489189/91/93 running 2.3 h), final segs pending, e011 gated afterok. Item 4 (naive top-k delta) waits for 8x results and needs a compressor flag that the Constraints forbid under `compressors/`: user decision before running it. 8 ids in flight. spent 75.46 (sacct, finished; driver's 82.47 counted running time).
 - 2026-11-10 wake 17: 8x segments 8489189 (DRIP s4), 8489191 (fixed s3), 8489193 (random s3) TIMEOUT as planned at steps 475/477/484 (84.5-86.2 s/step, no traceback), archived. Final segments 8489190/92/95 resumed (LoRA + drip.bin, de28b43; `dirty: 2` is two __pycache__ .pyc files) and are at steps 475/475/484 of 488, done in ~20 min; e011 8x evals (8490212/13) gated afterok on them. Nothing submitted: backlog items 1-2 covered, item 3 waits on 8x DocVQA, item 4 still needs the user's decision (compressor flag forbidden by Constraints). 5 ids in flight. spent 87.48 (sacct, finished; driver's 87.9 counted running time); projection +~1.5 final segs +~9 e011 = ~98 of 120.
 - 2026-11-10 wake 18: e008 (DRIP 8x, 12.52 GPU-h) and e009 (fixed + random 8x, 24.72 GPU-h) DONE: final segments 8489190/92/95 exit 0:0 at step 488, root adapters (+ drip.bin) present, archived. Last-20 loss fixed/random/DRIP 8x 1.055 / 0.999 / 1.022 (4x: 0.942 / 0.911 / 0.928); DRIP boundary_loss 0.061 -> 0.003. All six trainings complete. e011 8x evals released by afterok: general 8490212_[0-11] and ocr 8490213_[0-2] running, ocr 3-11 pending. Nothing submitted: item 3 waits on 8x DocVQA, item 4 still needs the user's decision (compressor flag forbidden by Constraints). 2 array ids in flight. spent 88.64 (sacct, finished; driver's 88.68 counted running time); projection +~9 e011 = ~98 of 120.
+- 2026-11-10 wake 19: e011 12/24 8x eval tasks done (all rc=0): MME fixed/random/DRIP+SFT 1034 / 1228 / 1266 (tf 566 / 852, ToMe 1151), MMMU 41.8 / 45.0 / 43.3, RWQA 47.1 / 47.7 / 49.9, OCRBench 1.7 / 2.1 / 5.2 (ToMe 6.8; fixed/random under-5 claim HIT). SFT still recovers general VQA at 8x, OCR stays at the floor. MMBench x3 and TextVQA/DocVQA/ChartQA x3 still running, so neither array archived. Nothing submitted: item 3 waits on 8x DocVQA, item 4 still needs the user's decision (compressor flag forbidden by Constraints). 2 array ids in flight. spent 91.01 (sacct, finished; driver's 94.74 counted running time); projection +~6 e011 rest = ~97 of 120.

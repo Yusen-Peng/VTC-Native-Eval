@@ -15,8 +15,10 @@
 #   sbatch --export=ALL,RATIO=2 SFT_perceiver.sh                   # pooled queries (start = fixed pooling)
 #   sbatch --export=ALL,RATIO=2,QUERIES=learned SFT_perceiver.sh   # learned latent queries (as in the paper)
 #   sbatch --export=ALL,RATIO=2,QUERIES=learned_residual SFT_perceiver.sh   # pooled queries + learned latent grid (init 0)
+#   sbatch --export=ALL,RATIO=2,QUERIES=learned,INIT_FROM=$SCRATCH/VTC-Native-Eval-ckpts/init/perceiver_learned_warm_2x.bin SFT_perceiver.sh
+#       # learned queries warm-started from scripts/perceiver_warmstart.py (run name PerceiverLearnedWarm, COMP_LR 1e-3)
 # RATIO = 2 | 4 | 8. COMP_LR = compressor learning rate (default: 2e-5 for pooled, 1e-4 for learned, 1e-3 for
-# learned_residual; LoRA stays 2e-5).
+# learned_residual and for learned + INIT_FROM; LoRA stays 2e-5).
 # Smoke test (~15 min, no full run):
 #   sbatch --partition=debug-nextgen --time=0:15:00 --export=ALL,RATIO=2,DATASETS=llava_665k%1,SUFFIX=_smoke SFT_perceiver.sh
 # ~1.45 min/step on 1 A100 -> 488 steps ~ 11.8 h. Global batch = NGPU x grad_accum = 128 regardless of
@@ -49,16 +51,24 @@ batch_size=1
 grad_accum_steps=$((128 / NGPU))
 mllm="Paranioar/NEO1_0-2B-SFT"
 QUERIES=${QUERIES:-pooled}
+USER_COMP_LR=${COMP_LR:-}
 case "$QUERIES" in
     pooled)  name=Perceiver;        COMP_LR=${COMP_LR:-2e-5} ;;
     learned) name=PerceiverLearned; COMP_LR=${COMP_LR:-1e-4} ;;
     learned_residual) name=PerceiverLearnedResidual; COMP_LR=${COMP_LR:-1e-3} ;;
     *) echo "QUERIES must be pooled|learned|learned_residual, got $QUERIES"; exit 2 ;;
 esac
+INIT_FROM=${INIT_FROM:-}
+if [ -n "$INIT_FROM" ]; then
+    [ "$QUERIES" = learned ] || { echo "INIT_FROM is only wired for QUERIES=learned"; exit 2; }
+    [ -f "$INIT_FROM" ] || { echo "INIT_FROM not found: $INIT_FROM"; exit 2; }
+    name=PerceiverLearnedWarm
+    COMP_LR=${USER_COMP_LR:-1e-3}
+fi
 run_name="NEO_continue_SFT_LLaVA_OV_llava66k_${name}_${RATIO}x${SUFFIX:-}"
 output_dir="$SCRATCH/VTC-Native-Eval-ckpts/output/${run_name}"
 
-echo "===== $(date) :: ${run_name} on ${NGPU} GPU(s), grad_accum ${grad_accum_steps}, data ${DATASETS}, compressor lr ${COMP_LR} ====="
+echo "===== $(date) :: ${run_name} on ${NGPU} GPU(s), grad_accum ${grad_accum_steps}, data ${DATASETS}, compressor lr ${COMP_LR}, init ${INIT_FROM:-fresh} ====="
 echo "commit: $(git rev-parse HEAD)  repo: $REPO"
 if [ -f "$output_dir/perceiver.bin" ] && [ -f "$output_dir/adapter_model.safetensors" ]; then
     echo "training already complete ($output_dir has the final perceiver.bin + adapter), nothing to do"
@@ -101,6 +111,7 @@ args=(
     --compressor_learning_rate "${COMP_LR}"
     --compression_ratio "$(python -c "print(1 / ${RATIO})")"
 )
+[ -n "$INIT_FROM" ] && args+=(--perceiver_init_from "$INIT_FROM")
 
 torchrun \
     --nproc_per_node="${NGPU}" \

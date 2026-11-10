@@ -42,6 +42,10 @@ def build_model(model_args, data_args, tokenizer):
         # keep fp32 master weights: lr-sized updates vanish when rounded to bf16
         model.compressor.float()
         model.compressor.reset_parameters()
+        init_from = getattr(model_args, "perceiver_init_from", None)
+        if init_from:
+            # warm start (a resumed run re-loads its checkpoint's perceiver.bin on top of this)
+            model.compressor.load_perceiver_weights(init_from)
 
     if config.vision_config.vtc_method == "drip":
         # verify actual DRIP temperature

@@ -2396,7 +2396,8 @@ neo_series.update({
         perceiver_path=f"{PERCEIVER_CKPTS}/NEO_continue_SFT_LLaVA_OV_llava66k_{name}_{r}x/perceiver.bin",
         perceiver_queries=queries,
     )
-    for name, queries in (("PerceiverLearnedResidual", "learned_residual"),)
+    for name, queries in (("PerceiverLearnedResidual", "learned_residual"),
+                          ("PerceiverLearnedWarm", "learned"))  # paper-faithful module, warm-started (INIT_FROM)
     for r in (2, 4, 8)
 })
 

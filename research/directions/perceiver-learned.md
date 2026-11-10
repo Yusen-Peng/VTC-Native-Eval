@@ -8,9 +8,10 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 21.82
+spent_gpu_hours: 21.87
 max_jobs_in_flight: 6
 jobs:
+- 8461971
 - 8453616
 - 8453617
 - 8453618
@@ -38,6 +39,7 @@ jobs_archived:
 - 8453620
 - 8454045
 - 8453615
+- 8461970
 last_wake: '2026-11-09T22:50:00-05:00'
 next_id: 6
 model: claude-fable-5-1
@@ -221,3 +223,7 @@ result; record it as such if backlog items 2-4 all fail.
   on debug-nextgen. Go/no-go in e005: chain only if the smoke's steps 11-16 mean is below 1.10. In flight 6 (cap 6): e004
   seg2-4 + eval array, e005 build + smoke. Spent 21.82 (e001-e003 17.52 + e004 seg1 4.00 + seg2 running); committed about
   13.5 more (e004) + 0.6 (e005 smoke); the 8x chain and the e005 chain wait for free ids (seg4 finishes about 07:00 11-10).
+- 2026-11-09 23:00 (same wake). Build 8461970 COMPLETED in 2:44 (0.05 GPU-h): native RMS 4.52, mean-grid RMS 2.94 (18% spatial),
+  scale x1.54; all four build predictions HIT. Smoke 8461971 RUNNING (25 min). Next wake: score the smoke (steps 1-5 and
+  11-16 vs the e002 smoke on the same data), apply the e005 go/no-go; if go, the 4 x 4 h chain + gate evals need 6 ids, so
+  they go in once e004 segments free ids (seg2 ends about 02:20, seg3 06:20). `wake: on_jobs`.

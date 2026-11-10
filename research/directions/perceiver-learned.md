@@ -8,9 +8,11 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 22.95
+spent_gpu_hours: 23.37
 max_jobs_in_flight: 6
 jobs:
+- 8463111
+- 8463112
 - 8453616
 - 8453617
 - 8453618
@@ -227,3 +229,13 @@ result; record it as such if backlog items 2-4 all fail.
   scale x1.54; all four build predictions HIT. Smoke 8461971 RUNNING (25 min). Next wake: score the smoke (steps 1-5 and
   11-16 vs the e002 smoke on the same data), apply the e005 go/no-go; if go, the 4 x 4 h chain + gate evals need 6 ids, so
   they go in once e004 segments free ids (seg2 ends about 02:20, seg3 06:20). `wake: on_jobs`.
+- 2026-11-09 23:45 wake (on_jobs: 8461971 plw_smoke TIMEOUT). e005 DONE, chain NOT submitted (0.47 GPU-h): 15 steps at 89.5 s/step,
+  steps 1-5 mean 1.272 (HIT), steps 11-15 mean 1.236 (predicted 1.05-1.20, MISS; abort line 1.20), 0.30 nats above the e002
+  smoke on identical batches (0.930) and level with the collapsed run (1.202); step-6 spike (grad norm 13.8) as in the collapsed
+  runs. Interpretation: with o_proj/mlp.2 at zero the image path must grow from nothing through Adam, so 15 steps cannot separate
+  "untrainable" from "needs tens of full-lr steps"; warm start alone does not put the paper architecture near the pooled anchor.
+  e007 (503ea57, 1.0 GPU-h): same config as seg0 of the real run (llava_665k%10, no suffix) for 1 h on debug-nextgen, 8463112;
+  go rule steps 25-37 mean < 1.10 (paired refs pooled 0.885 / learned_residual 0.853 / collapsed 1.147), P(go) 0.25. e006 = 8x
+  learned_residual row (backlog item 4): seg1 8463111 on nextgen (4 h); seg2-4 + 8-benchmark eval array appended at later wakes
+  as ids free (cap 6: in flight now 8453616-8453619 + 8463111 + 8463112). e004 seg2 at step 200, paired -0.057 vs pooled 4x;
+  figure refreshed. Spent 22.95 + 0.42 (smoke) of 100; committed about 12 (e004) + 17 (e006) + 1 (e007). `wake: on_jobs`.

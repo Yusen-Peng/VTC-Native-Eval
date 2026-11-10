@@ -8,10 +8,10 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 26.52
+spent_gpu_hours: 26.61
 max_jobs_in_flight: 6
 jobs:
-- 8466350
+- 8466638
 - 8463111
 - 8453616
 - 8453617
@@ -19,6 +19,7 @@ jobs:
 - 8453619
 jobs_archived:
 - 8463112
+- 8466350
 - 8387204
 - 8387205
 - 8387554
@@ -43,8 +44,8 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-09T23:20:01-05:00'
-next_id: 8
+last_wake: '2026-11-10T00:30:00-05:00'
+next_id: 9
 model: claude-fable-5-1
 effort: high
 max_turns: 120
@@ -120,6 +121,9 @@ result; record it as such if backlog items 2-4 all fail.
    `perceiver.bin`, zero-init `o_proj` and the last MLP linear so the first forward is the pure (RoPE-positioned)
    query grid, and raise compressor lr to 1e-3 with the LoRA at 2e-5. Smoke, then full 2x + gate eval.
    Prediction (0.4): MMBench 68-73, DocVQA 25-35; if the step-5 smoke loss is above 1.2 abort and record.
+   *(Closed 2026-11-10 by e005/e007/e008: no-go. 3b, optional, 1 GPU-h: the same warm start with the latent grid centred
+   (mean token direction removed), one 1 h real-schedule segment scored as e007; e008 measured the shared latent direction,
+   not the attention, as what keeps the outputs alike.)*
 4. **Only if 2 or 3 passes the gate:** full 8-benchmark eval of the passing variant at 2x, then train and
    evaluate 4x and 8x with the same variant (2 x 12 h + 2 x 4.5 GPU-h). Prediction (0.5): the learned variant
    is within 2 pts of pooled at every ratio on MMBench and within 5 on DocVQA; no variant beats ToMe on OCR.
@@ -240,3 +244,14 @@ result; record it as such if backlog items 2-4 all fail.
   learned_residual row (backlog item 4): seg1 8463111 on nextgen (4 h); seg2-4 + 8-benchmark eval array appended at later wakes
   as ids free (cap 6: in flight now 8453616-8453619 + 8463111 + 8463112). e004 seg2 at step 200, paired -0.057 vs pooled 4x;
   figure refreshed. Spent 22.95 + 0.42 (smoke) of 100; committed about 12 (e004) + 17 (e006) + 1 (e007). `wake: on_jobs`.
+- 2026-11-10 00:30 wake (on_jobs: 8463112 plw2x_seg0 TIMEOUT). e007 DONE, NO-GO (1.00 GPU-h): 39 steps, steps 25-37 mean 1.143 vs
+  collapsed `learned` 2x 1.147 on the same batches (paired -0.004, sd 0.007), pooled 0.885; 3/3 window predictions hit, go branch
+  did not fire, chain not submitted, backlog item 3 closed. Weight check at checkpoint-30: o_proj at 38% of a trained module's RMS,
+  mlp.2 at 73%, latents moved 0.08%. e008 (d25f75d, probe of checkpoint-30, 8466350, 5 min, 0.09 GPU-h) DONE: attention became
+  near one-hot in 30 steps (entropy 0.11 of log N; the collapsed run is at 0.99 after 488), but output pairwise cosine 0.994 (init
+  0.977): the shared latent direction (82% of the grid) drowns the attention branch in `norm_out`; LLM reads 0.33 nats over zeros.
+  4/9 e008 predictions hit (the attention prediction was the opposite). e006 seg2 8466638 appended (`afterany:8463111`; seg1 at
+  step 48, 87.5 s/step, paired -0.013 vs pooled 8x). e004 seg2 at step 255 (paired -0.053 vs pooled 4x). Figure refreshed. In flight
+  6 (cap 6). Spent 26.61 (driver count incl. running segments); committed about 10 (e004) + 15.5 (e006). Next wake: archive
+  finished segments, append e006 seg3/seg4 + eval array as ids free; optional 3b (centred latents, 1 GPU-h) if an id is free after
+  that. `wake: on_jobs`.

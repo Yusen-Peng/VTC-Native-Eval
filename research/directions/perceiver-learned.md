@@ -11,7 +11,6 @@ budget_gpu_hours: 100
 spent_gpu_hours: 21.82
 max_jobs_in_flight: 6
 jobs:
-- 8453615
 - 8453616
 - 8453617
 - 8453618
@@ -38,8 +37,9 @@ jobs_archived:
 - 8453614
 - 8453620
 - 8454045
-last_wake: '2026-11-09T19:00:01-05:00'
-next_id: 5
+- 8453615
+last_wake: '2026-11-09T22:50:00-05:00'
+next_id: 6
 model: claude-fable-5-1
 effort: high
 max_turns: 120
@@ -212,3 +212,12 @@ result; record it as such if backlog items 2-4 all fail.
   (warm-started paper-faithful `learned`: latents = mean pooled token, zero-init o_proj + last MLP linear, comp lr 1e-3) and
   run its 15-min smoke on debug-nextgen; its training chain goes in with or after the 8x chain (2 training jobs max).
   Spent 17.52 of 100 GPU-h (e001 0.10 + e002 14.98 + e003 2.44); committed about 17.5 more (e004).
+- 2026-11-09 22:50 wake (on_jobs: 8453615 seg1 TIMEOUT). e004 seg1 ended at step 163 as planned (checkpoint-160, 4.00 GPU-h);
+  seg2 8453616 resumed cleanly on a0263 (step 161 bit-identical, 87 s/step, step 170 when checked). 170 steps paired vs
+  pooled 4x: -0.062 nats (five times the 2x gap); figure refreshed. e005 = backlog item 3 (99d7de0): warm-started
+  paper-faithful `learned` queries via INIT_FROM (`scripts/perceiver_warmstart.py`: latents = mean native token map pooled
+  to 32x32 over 256 LLaVA images at native RMS, o_proj + mlp.2 zeroed, other weights from the pooled-2x perceiver.bin;
+  comp lr 1e-3). Desktop CPU selftest + login-node checks passed. Submitted build 8461970 + smoke 8461971 (afterok, 25 min)
+  on debug-nextgen. Go/no-go in e005: chain only if the smoke's steps 11-16 mean is below 1.10. In flight 6 (cap 6): e004
+  seg2-4 + eval array, e005 build + smoke. Spent 21.82 (e001-e003 17.52 + e004 seg1 4.00 + seg2 running); committed about
+  13.5 more (e004) + 0.6 (e005 smoke); the 8x chain and the e005 chain wait for free ids (seg4 finishes about 07:00 11-10).

@@ -8,7 +8,7 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 52.52
+spent_gpu_hours: 53.28
 max_jobs_in_flight: 6
 jobs:
 - 8489019
@@ -53,13 +53,13 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-10T14:30:00-05:00'
+last_wake: '2026-11-10T14:43:27-05:00'
 next_id: 10
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 14
+wakes: 15
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 
@@ -310,3 +310,9 @@ result; record it as such if backlog items 2-4 all fail.
   the same point); too early to score. Figure + RESULTS.md refreshed. Nothing submitted: in flight 6 (cap 6). Next wake (DocVQA
   task 5 about 15:20): write the full 8x row, score the DocVQA and item-4 DocVQA criterion, set e006 done, archive 8489019.
   Then e009 seg1 boundary about 17:52. `wake: on_jobs`.
+- 2026-11-10 14:45 wake (on_jobs: 8489019_{0,1,2,3,4,6,7}; stale trigger, all seven scored at 14:15/14:30). DocVQA task 5 at 62%
+  (1.27 s/item lately, ends about 15:30); the array id stays in `jobs`. e009 seg1 8489021 at step 30 (88.4 s/step): paired vs pooled
+  4x -0.037 over 1-30 and -0.093 over 21-30, vs learned_residual 4x +0.017 / +0.014: once past warmup the lr-only run tracks the
+  learned_residual curve, not the pooled one (early support for the e003 lr attribution; not scored yet). Figure + RESULTS.md
+  refreshed. Nothing submitted: in flight 6 (cap 6). Next wake (task 5 done): write the 8x row, score DocVQA + item-4 criterion,
+  set e006 done, archive 8489019. `wake: on_jobs`.

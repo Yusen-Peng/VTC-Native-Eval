@@ -8,7 +8,7 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 120
-spent_gpu_hours: 69.91
+spent_gpu_hours: 70.83
 max_jobs_in_flight: 12
 jobs:
 - 8489185
@@ -67,11 +67,11 @@ jobs_archived:
 - 8388119
 - 8388120
 - 8388121
-last_wake: '2026-11-10T15:40:00-05:00'
+last_wake: '2026-11-10T16:40:00-05:00'
 next_id: 12
 model: null
 effort: null
-wakes: 13
+wakes: 14
 ---
 # Do the training-based 2x conclusions hold at 4x and 8x?
 
@@ -172,3 +172,4 @@ collapses like fixed pooling. Strongest counter-argument: the 2x DRIP number may
 - 2026-11-10 wake 11: e005 DONE: DRIP 4x seg 7 (8489186, debug-nextgen) reached step 488, root adapter + drip.bin (last-20 loss 0.928, boundary_loss max 0.026; 12.57 GPU-h, 3 segments lost to nodes). e010 smoke passed (Fixed-4x RWQA 51.50); 9/22 4x eval tasks in: fixed+SFT 4x MME 1349 (tf 781), random 1428 (tf 1210), OCRBench 3.0 / 5.6 (tf 2.1 / 4.6), so SFT recovers general VQA, not OCR; MMBench/DocVQA cells still running. Submitted e011 8x evals for Fixed/Random/DRIP (8490212 general, 8490213 ocr, arrays 0-11, de28b43), afterok on the three final 8x segments. 12/12 in flight. spent 64.35 (sacct, finished); projection ~64 + 12 running 8x segs + ~6 e010 rest + ~9 e011 = ~91 of 120.
 - 2026-11-10 wake 12: e010 general suites done (8489181, 8489187 archived, all rc=0). 4x MMBench: fixed+SFT 64.26 (tf 41.24, above the 58 +/- 5 band), random+SFT 67.78 (hit), DRIP 68.47 (hit; ToMe tf 69.67). OCR stays flat for fixed/random (ChartQA 21.3 vs tf 19.1) and DRIP 4x OCRBench fell to 11.6 (2x 40.6, ToMe 4x 16.6): early sign DRIP's OCR edge shrinks at 4x. DocVQA cells still running (8489185, 8489188). Nothing new submitted: backlog item 3 needs the DRIP vs random DocVQA cells; 8x chains at segs 3-4, e011 evals gated afterok. 10 ids in flight. spent 67.59 (sacct, finished; driver's 74.13 counted running time).
 - 2026-11-10 wake 13: e010 19/22 tasks in (all rc=0): TextVQA fixed/random+SFT 4x 15.68 / 18.01 (tf 11.88 / 17.19), DRIP 4x ChartQA 44.08 (fixed/random+SFT 21.32, ToMe 73.24), OCRBench 11.6. DocVQA x3 and DRIP TextVQA still running (8489185_1,5; 8489188_0,1), so no array archived. Nothing submitted: backlog item 3 waits on the DRIP vs random DocVQA cells; 8x chains at segs 3-4, e011 gated afterok. 10 ids in flight. spent 69.91 (sacct, finished; driver's 77.3 counted running time).
+- 2026-11-10 wake 14: e010 DRIP 4x TextVQA in (8489188_0, rc=0): 40.28 (fixed/random+SFT 15.68 / 18.01, ToMe 47.91); 20/22 4x tasks done. Only the three DocVQA tasks remain (8489185_1,5; 8489188_1), so no array archived and nothing submitted: backlog item 3 still waits on DRIP vs random DocVQA. 8x chains: segs 3 running (8489189/91/93), final segs pending; e011 gated afterok. 10 ids in flight. spent 70.83 (sacct, finished; driver's 79.41 counted running time).

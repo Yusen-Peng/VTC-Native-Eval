@@ -8,16 +8,17 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 26.61
+spent_gpu_hours: 30.6
 max_jobs_in_flight: 6
 jobs:
+- 8471019
 - 8466638
 - 8463111
-- 8453616
 - 8453617
 - 8453618
 - 8453619
 jobs_archived:
+- 8453616
 - 8463112
 - 8466350
 - 8387204
@@ -44,13 +45,13 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-10T00:30:00-05:00'
+last_wake: '2026-11-10T03:00:00-05:00'
 next_id: 9
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 9
+wakes: 10
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 
@@ -255,3 +256,11 @@ result; record it as such if backlog items 2-4 all fail.
   6 (cap 6). Spent 26.61 (driver count incl. running segments); committed about 10 (e004) + 15.5 (e006). Next wake: archive
   finished segments, append e006 seg3/seg4 + eval array as ids free; optional 3b (centred latents, 1 GPU-h) if an id is free after
   that. `wake: on_jobs`.
+- 2026-11-10 03:05 wake (on_jobs: 8453616 plr4x_seg2 TIMEOUT). e004 seg2 ended at step 325 as planned (checkpoint-320, 4.00 GPU-h);
+  seg3 8453617 resumed cleanly on a0153 (steps 321-325 bit-identical, 87 s/step, step 331 when checked; ends about 06:42 near
+  step 485, so seg4 only finishes + saves, then eval 8453619). 330 steps paired vs pooled 4x: -0.048 (steady -0.034 since step 170).
+  e006 seg1 8463111 at step 131 (ends about 03:26): paired vs pooled 8x -0.044 over 1-130, -0.074 over 101-130, the 4x pattern
+  one ratio up; the e006 loss-gap prediction is on track. e006 seg3 8471019 submitted (`afterany:8466638`, nextgen, 4 h, at
+  d25f75d, no code change). Figure refreshed, RESULTS.md regenerated. In flight 6 (cap 6): e004 seg3/seg4/eval + e006 seg1-3.
+  Next wake (seg1 8x TIMEOUT about 03:26, or e004 seg3 about 06:42): archive, append e006 seg4 + eval array (2 ids) as ids
+  free; optional 3b after that. Spent 30.6 (driver count). `wake: on_jobs`.

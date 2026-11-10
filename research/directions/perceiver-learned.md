@@ -8,7 +8,7 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 15.14
+spent_gpu_hours: 17.52
 max_jobs_in_flight: 6
 jobs:
 - 8453615
@@ -16,7 +16,6 @@ jobs:
 - 8453617
 - 8453618
 - 8453619
-- 8453620
 jobs_archived:
 - 8387204
 - 8387205
@@ -37,13 +36,15 @@ jobs_archived:
 - 8387867
 - 8387868
 - 8453614
-last_wake: '2026-11-09T18:20:00-05:00'
+- 8453620
+- 8454045
+last_wake: '2026-11-09T19:00:00-05:00'
 next_id: 5
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 5
+wakes: 6
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 
@@ -199,3 +200,15 @@ result; record it as such if backlog items 2-4 all fail.
   compressor lr, not learned queries. Remaining six 2x benchmarks submitted as one array 8453620_[0-5] (DATASETS override in
   eval_table2.sbatch). e004 = 4x row: chain 8453615-8453618 (4 x 4 h, nextgen) + full 8-benchmark eval 8453619_[0-7]
   (afterok seg4). In flight 6 (cap 6); 8x waits for the next wake. Spent 15.14 of 100 GPU-h; committed about 21 more.
+- 2026-11-09 19:00 wake (on_jobs: 8453620_{0,1,2,4,5} done). e003 DONE (2.44 GPU-h): the 2x row is complete. Task 2
+  (RealWorldQA) exited 0 with no result (node a0339 GPU "busy or unavailable" at load; run.py swallows the exception),
+  retried once as 8454045_0 on debug-nextgen (7 min, clean); TextVQA (task 3) finished in-wake. Full 2x learned_residual row
+  73.37 / 1527.3 / 47.00 / 59.22 / 33.42 / 40.00 / 20.7 / 40.24 vs pooled 74.31 / 1524.0 / 46.89 / 57.65 / 32.38 / 37.33 /
+  20.8 / 40.12: same row within noise (max |delta| 1.6 except DocVQA +2.7); neither Perceiver row beats random pruning +
+  LLaVA@66K on OCR. 5 of 7 e003 eval predictions hit (OCRBench/ChartQA equal to pooled, not above). e004 seg1 8453615 at
+  88 s/step (step 26 at 19:00), first 20 steps paired -0.027 nats below pooled 4x; figure refreshed. Nothing new submitted:
+  in flight 5 (e004 chain + eval array), the 8x chain + eval needs 5 ids, so it fits only once seg4 8453618 has finished
+  (about 07:00 2026-11-10). Suggested use of the seg1/seg2 boundary wakes (1 free id each): implement backlog item 3
+  (warm-started paper-faithful `learned`: latents = mean pooled token, zero-init o_proj + last MLP linear, comp lr 1e-3) and
+  run its 15-min smoke on debug-nextgen; its training chain goes in with or after the 8x chain (2 training jobs max).
+  Spent 17.52 of 100 GPU-h (e001 0.10 + e002 14.98 + e003 2.44); committed about 17.5 more (e004).

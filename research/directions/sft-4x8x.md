@@ -21,9 +21,11 @@ jobs:
 - 8454550
 - 8454551
 - 8454552
+- 8463470
+- 8463471
+jobs_archived:
 - 8462191
 - 8462192
-jobs_archived:
 - 8453773
 - 8453777
 - 8453771
@@ -42,8 +44,8 @@ jobs_archived:
 - 8388119
 - 8388120
 - 8388121
-last_wake: '2026-11-09T22:40:01-05:00'
-next_id: 7
+last_wake: '2026-11-09T23:25:00-05:00'
+next_id: 8
 model: null
 effort: null
 wakes: 4
@@ -138,3 +140,4 @@ collapses like fixed pooling. Strongest counter-argument: the 2x DRIP number may
 - 2026-11-09 wake 2: e001 fixed/random 4x smokes pass (87-88 s/step, files written); DRIP crashed step 1 on torch Binomial validation of the soft boundary count (ratio-independent, so the 2x run had validation off); fixed in SFT_vtc.sh (drip-only wrapper, 3b0d626). Submitted e002 DRIP 4x re-smoke A/B (8453771-8453772, debug-nextgen) and e003 fixed+random 4x training chains, 4x4 h each (8453773-8453780, ~25 GPU-h).
 - 2026-11-09 wake 3: e002 DRIP fresh start OK (94.6 s/step, drip.bin saved) but resume crashed (train.py `logging.info`); e004 found a 2nd resume bug (stock loader wants full weights, PeftModel nested); both fixed in the SFT_vtc.sh wrapper (063a171, trainer.py untouched, monkeypatched `_load_from_checkpoint` = perceiver-learned 43311d8 logic), resume verified for DRIP and fixed (8454476/8454477). Cancelled e003 segments 2-4 (old launcher spooled, would crash) and resubmitted 8454543-8454548 on running seg 1; submitted e005 DRIP 4x chain 8454549-8454552 (~13.5 GPU-h). 12 in flight.
 - 2026-11-09 wake 4: e003 segment 1 (8453773/8453777) TIMEOUT as planned at step 166/164; segment 2 (8454543/8454546) resumed from checkpoint-160 cleanly (480 LoRA tensors). e005 DRIP seg 1 running (3 h). Submitted e006 8x launcher smokes, fixed + DRIP, debug-nextgen (8462191-8462192). 8x chains wait for e006 and for free slots (cap 12). Committed GPU-h estimate: ~107 of 120.
+- 2026-11-09 wake 5: e006 8x smokes pass (fixed 90.7 s/step, DRIP 92.0; DRIP boundary_loss 0.063 and pre-clip grad_norm 12 vs 0.025/2.0 at 4x, watch). Submitted e007 DRIP 8x chain segments 1-2 (8463470-8463471, nextgen, ad84457); segments 3-4 and fixed/random 8x chains wait for slots (12/12 in flight). 4x chains: fixed/random at seg 2, DRIP at seg 1 (step ~140).

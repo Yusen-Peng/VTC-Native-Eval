@@ -8,10 +8,9 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 120
-spent_gpu_hours: 73.9
+spent_gpu_hours: 75.46
 max_jobs_in_flight: 12
 jobs:
-- 8489188
 - 8489189
 - 8489190
 - 8489191
@@ -21,6 +20,7 @@ jobs:
 - 8490212
 - 8490213
 jobs_archived:
+- 8489188
 - 8489185
 - 8489181
 - 8489187
@@ -67,11 +67,11 @@ jobs_archived:
 - 8388119
 - 8388120
 - 8388121
-last_wake: '2026-11-10T15:50:00-05:00'
+last_wake: '2026-11-10T16:10:00-05:00'
 next_id: 12
 model: null
 effort: null
-wakes: 15
+wakes: 16
 ---
 # Do the training-based 2x conclusions hold at 4x and 8x?
 
@@ -174,3 +174,4 @@ collapses like fixed pooling. Strongest counter-argument: the 2x DRIP number may
 - 2026-11-10 wake 13: e010 19/22 tasks in (all rc=0): TextVQA fixed/random+SFT 4x 15.68 / 18.01 (tf 11.88 / 17.19), DRIP 4x ChartQA 44.08 (fixed/random+SFT 21.32, ToMe 73.24), OCRBench 11.6. DocVQA x3 and DRIP TextVQA still running (8489185_1,5; 8489188_0,1), so no array archived. Nothing submitted: backlog item 3 waits on the DRIP vs random DocVQA cells; 8x chains at segs 3-4, e011 gated afterok. 10 ids in flight. spent 69.91 (sacct, finished; driver's 77.3 counted running time).
 - 2026-11-10 wake 14: e010 DRIP 4x TextVQA in (8489188_0, rc=0): 40.28 (fixed/random+SFT 15.68 / 18.01, ToMe 47.91); 20/22 4x tasks done. Only the three DocVQA tasks remain (8489185_1,5; 8489188_1), so no array archived and nothing submitted: backlog item 3 still waits on DRIP vs random DocVQA. 8x chains: segs 3 running (8489189/91/93), final segs pending; e011 gated afterok. 10 ids in flight. spent 70.83 (sacct, finished; driver's 79.41 counted running time).
 - 2026-11-10 wake 15: e010 ocr array 8489185 done (8/8 rc=0, archived): DocVQA fixed+SFT 4x 13.99 (tf 10.59), random+SFT 17.28 (tf 14.44), both bands hit at the low edge; fixed/random 4x rows complete. SFT gain at 4x: MMBench +23.0 / +6.8, DocVQA +3.4 / +2.8, so general VQA recovers and OCR does not, as at 2x. Only DRIP 4x DocVQA (8489188_1) remains; backlog item 3 waits on it. Nothing submitted; 8x chains at seg 3, e011 gated afterok. 9 ids in flight. spent 73.90 (sacct, finished; driver's 81.16 counted running time). Wake 14's '16:40' stamp was wrong (clock ~15:30).
+- 2026-11-10 wake 16: e010 DONE (8489188 archived, 22/22 rc=0, 13.21 GPU-h): DRIP 4x DocVQA 55.96 (band 58 +/- 8 hit; +38.7 over random+SFT, -11.1 vs ToMe 4x). 4x rows complete and in `training_based.csv`; 5/6 bands + 5/5 ordering claims hit. SFT recovers general VQA at 4x (fixed +23.0 MMBench) but not OCR (+3 DocVQA); DRIP keeps its OCR edge over fixed/random but its gap to ToMe widens (DocVQA -6.1 -> -11.1, ChartQA -12 -> -29). Backlog item 3 not triggered. First PNG `figures/score_vs_ratio.png`. Nothing submitted: 8x chains at seg 3 (8489189/91/93 running 2.3 h), final segs pending, e011 gated afterok. Item 4 (naive top-k delta) waits for 8x results and needs a compressor flag that the Constraints forbid under `compressors/`: user decision before running it. 8 ids in flight. spent 75.46 (sacct, finished; driver's 82.47 counted running time).

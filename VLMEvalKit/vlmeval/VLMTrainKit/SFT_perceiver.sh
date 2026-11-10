@@ -17,6 +17,7 @@
 #   sbatch --export=ALL,RATIO=2,QUERIES=learned_residual SFT_perceiver.sh   # pooled queries + learned latent grid (init 0)
 #   sbatch --export=ALL,RATIO=2,QUERIES=learned,INIT_FROM=$SCRATCH/VTC-Native-Eval-ckpts/init/perceiver_learned_warm_2x.bin SFT_perceiver.sh
 #       # learned queries warm-started from scripts/perceiver_warmstart.py (run name PerceiverLearnedWarm, COMP_LR 1e-3)
+#   sbatch --export=ALL,RATIO=4,COMP_LR=1e-3 SFT_perceiver.sh      # pooled queries, compressor lr 1e-3 (run name PerceiverLr1e3)
 # RATIO = 2 | 4 | 8. COMP_LR = compressor learning rate (default: 2e-5 for pooled, 1e-4 for learned, 1e-3 for
 # learned_residual and for learned + INIT_FROM; LoRA stays 2e-5).
 # Smoke test (~15 min, no full run):
@@ -53,7 +54,10 @@ mllm="Paranioar/NEO1_0-2B-SFT"
 QUERIES=${QUERIES:-pooled}
 USER_COMP_LR=${COMP_LR:-}
 case "$QUERIES" in
-    pooled)  name=Perceiver;        COMP_LR=${COMP_LR:-2e-5} ;;
+    pooled)  name=Perceiver;        COMP_LR=${COMP_LR:-2e-5}
+             # pooled queries at a non-default compressor lr get their own run name (PerceiverLr1e3 for 1e-3), so the
+             # original Perceiver_{2,4,8}x runs are never resumed or overwritten; config key ...-PerceiverLr1e3-<r>x
+             [ -n "$USER_COMP_LR" ] && [ "$USER_COMP_LR" != 2e-5 ] && name="PerceiverLr$(echo "$USER_COMP_LR" | tr -d '.-')" ;;
     learned) name=PerceiverLearned; COMP_LR=${COMP_LR:-1e-4} ;;
     learned_residual) name=PerceiverLearnedResidual; COMP_LR=${COMP_LR:-1e-3} ;;
     *) echo "QUERIES must be pooled|learned|learned_residual, got $QUERIES"; exit 2 ;;

@@ -8,7 +8,7 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 32.6
+spent_gpu_hours: 48.15
 max_jobs_in_flight: 6
 jobs:
 - 8472979
@@ -46,13 +46,13 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-10T03:40:00-05:00'
+last_wake: '2026-11-10T03:40:01-05:00'
 next_id: 9
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 11
+wakes: 12
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 

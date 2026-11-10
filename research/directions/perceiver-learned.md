@@ -8,16 +8,17 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 58.5
+spent_gpu_hours: 58.69
 max_jobs_in_flight: 6
 jobs:
-- 8489021
 - 8489022
 - 8489023
 - 8489024
 - 8490000
 - 8495564
+- 8496576
 jobs_archived:
+- 8489021
 - 8493342
 - 8495437
 - 8489019
@@ -56,13 +57,13 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-10T17:25:00-05:00'
+last_wake: '2026-11-10T18:05:00-05:00'
 next_id: 12
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 17
+wakes: 18
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 
@@ -346,3 +347,14 @@ result; record it as such if backlog items 2-4 all fail.
   refreshed. In flight 6 (cap 6): e009 chain (seg1 running, ends about 17:52) + gate + e011 seg1. Spent 58.5 (e001-e010 incl.
   e009 seg1 so far); committed about 9 (e009 chain remainder) + 2.2 (gate) + 14.9 (e011) = about 85 of 100 at completion. Next
   wake (e009 seg1 TIMEOUT about 17:52): archive seg1, check seg2 resume, append e011 seg2 (`afterany:8495564`). `wake: on_jobs`.
+- 2026-11-10 18:05 wake (on_jobs: 8489021 plp4x_seg1 TIMEOUT). e009 seg1 ended at step 160 as planned (checkpoint-160 complete,
+  0 steps lost, 4.00 GPU-h; e009 at 4.34); seg2 8489022 resumed cleanly on a0256 (adapter + perceiver.bin from checkpoint-160,
+  step 161 at 0.8584, 87 s/step, step 165 when checked; ends about 21:53 near step 323). 160 steps paired: vs learned_residual 4x
+  -0.009 (1-160; -0.011 to -0.013 on every post-warmup window), vs pooled 4x -0.073 (e004 was -0.049 at the same point): the
+  lr-only control sits on, lately slightly below, the learned_residual curve. e011 seg1 8495564 running on a0146 since 17:44
+  (19 min queue wait): steps 1-2 bit-identical to pooled 8x and learned_residual 8x (HIT), steps 1-10 within 0.001 of both,
+  89.7 s/step; its abort rule is nowhere near triggering. e011 seg2 8496576 submitted (`afterany:8495564`, nextgen, 4 h, at
+  e1ed476, no code change). Figure + RESULTS.md refreshed. In flight 6 (cap 6): e009 seg2-4 + gate, e011 seg1-2. Spent 58.69
+  (driver count); committed about 8 (e009 chain remainder) + 2.2 (gate) + 14.6 (e011). Next wake (e011 seg1 TIMEOUT about
+  21:44 or e009 seg2 about 21:53): archive, check resumes, append e011 seg3 (`afterany:8496576`); seg4 + the 3-benchmark eval
+  array once e009 segments free ids. `wake: on_jobs`.

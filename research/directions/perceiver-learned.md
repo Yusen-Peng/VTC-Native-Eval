@@ -11,13 +11,14 @@ budget_gpu_hours: 100
 spent_gpu_hours: 26.52
 max_jobs_in_flight: 6
 jobs:
+- 8466350
 - 8463111
-- 8463112
 - 8453616
 - 8453617
 - 8453618
 - 8453619
 jobs_archived:
+- 8463112
 - 8387204
 - 8387205
 - 8387554

@@ -103,11 +103,47 @@ args=(
 # relaxed (soft) boundaries, a non-integer; torch's default argument validation raises on it (e001, job
 # 8388118). The 2x DRIP row could only have trained with validation off, so turn it off for drip only,
 # without touching compressors/: train.py is run through a one-line wrapper.
-# The wrapper (all methods) also gives transformers.utils.logging the .info that train.py's resume branch
-# calls; without it every resumed segment dies before training (e002, job 8453772).
-novalidate=""
-[ "$VTC_METHOD" = drip ] && novalidate="torch.distributions.Distribution.set_default_validate_args(False); "
-entry=(--no-python python -c "import sys, runpy, torch; import transformers.utils.logging as L; L.info = lambda *a, **k: print(*a, flush=True); ${novalidate}sys.argv[0] = './neo/train/train.py'; runpy.run_path(sys.argv[0], run_name='__main__')")
+# The wrapper (all methods) also makes resume work without editing train.py / trainer.py:
+# (1) train.py's resume branch calls transformers.utils.logging.info, which does not exist (e002, job 8453772);
+# (2) the stock _load_from_checkpoint sees NEOChatModel, not a PeftModel, and looks for full weights (e004, job
+#     8454365), so load adapter_model.safetensors into the nested PeftModel directly, then <vtc_method>.bin as
+#     LoRATrainer does. Same logic as perceiver-learned 43311d8 (resume verified there, job 8387862).
+export REPO VTC_METHOD
+read -r -d '' wrapper <<'PY' || true
+import os, sys, runpy, torch
+import transformers.utils.logging as L
+L.info = lambda *a, **k: print(*a, flush=True)
+if os.environ["VTC_METHOD"] == "drip":
+    torch.distributions.Distribution.set_default_validate_args(False)
+sys.path.insert(0, os.path.abspath(os.environ["REPO"]))
+import safetensors.torch
+from peft import PeftModel, set_peft_model_state_dict
+import VLMEvalKit.vlmeval.VLMTrainKit.neo.train.trainer as T
+stock_load = T.LoRATrainer._load_from_checkpoint
+def load_from_checkpoint(self, ckpt, model=None):
+    m = self.accelerator.unwrap_model(model if model is not None else self.model)
+    lm = getattr(m, "language_model", None)
+    if not isinstance(lm, PeftModel):
+        return stock_load(self, ckpt, model=model)
+    f = os.path.join(ckpt, "adapter_model.safetensors")
+    sd = safetensors.torch.load_file(f, device="cpu")
+    r = set_peft_model_state_dict(lm, sd, adapter_name=lm.active_adapter)
+    missing = [k for k in r.missing_keys if "lora_" in k]
+    if missing or r.unexpected_keys:
+        raise RuntimeError(f"LoRA resume mismatch: missing {missing[:2]} ({len(missing)}), unexpected {list(r.unexpected_keys)[:2]}")
+    print(f"resumed LoRA adapter ({len(sd)} tensors) from {f}", flush=True)
+    vtc = getattr(m, "vtc_method", None)
+    if vtc in T.TRAINABLE_VTC_METHODS:
+        w = os.path.join(ckpt, f"{vtc}.bin")
+        if not os.path.isfile(w):
+            raise FileNotFoundError(f"Missing {vtc} checkpoint: {w}")
+        getattr(m.compressor, f"load_{vtc}_weights")(w)
+        print(f"resumed {vtc} weights from {w}", flush=True)
+T.LoRATrainer._load_from_checkpoint = load_from_checkpoint
+sys.argv[0] = "./neo/train/train.py"
+runpy.run_path(sys.argv[0], run_name="__main__")
+PY
+entry=(--no-python python -c "$wrapper")
 
 torchrun \
     --nproc_per_node="${NGPU}" \

@@ -8,7 +8,7 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 55.2
+spent_gpu_hours: 58.5
 max_jobs_in_flight: 6
 jobs:
 - 8489021
@@ -16,8 +16,9 @@ jobs:
 - 8489023
 - 8489024
 - 8490000
-- 8493342
 jobs_archived:
+- 8493342
+- 8495437
 - 8489019
 - 8489020
 - 8472979
@@ -54,13 +55,13 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-10T15:35:00-05:00'
+last_wake: '2026-11-10T15:40:01-05:00'
 next_id: 11
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 16
+wakes: 17
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 
@@ -133,8 +134,9 @@ result; record it as such if backlog items 2-4 all fail.
    Prediction (0.4): MMBench 68-73, DocVQA 25-35; if the step-5 smoke loss is above 1.2 abort and record.
    *(Closed 2026-11-10 by e005/e007/e008: no-go. 3b, optional, 1 GPU-h: the same warm start with the latent grid centred
    (mean token direction removed), one 1 h real-schedule segment scored as e007; e008 measured the shared latent direction,
-   not the attention, as what keeps the outputs alike. 3b submitted 2026-11-10 as e010: centred latents at their own
-   0.82 RMS, 1 h segment on debug-nextgen, same go rule as e007.)*
+   not the attention, as what keeps the outputs alike. 3b run 2026-11-10 as e010: centred latents at their own
+   0.82 RMS, 1 h segment on debug-nextgen, same go rule as e007: NO-GO, steps 25-37 mean 1.158, +0.015 above the uncentred
+   warm run and +0.011 above the collapsed run on the same batches; step-1 loss 5.35. Item 3 closed in all forms.)*
 4. **Only if 2 or 3 passes the gate:** full 8-benchmark eval of the passing variant at 2x, then train and
    evaluate 4x and 8x with the same variant (2 x 12 h + 2 x 4.5 GPU-h). Prediction (0.5): the learned variant
    is within 2 pts of pooled at every ratio on MMBench and within 5 on DocVQA; no variant beats ToMe on OCR.

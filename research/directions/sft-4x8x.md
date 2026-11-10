@@ -8,26 +8,40 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 120
-spent_gpu_hours: 1.4
+spent_gpu_hours: 1.8
 max_jobs_in_flight: 12
 jobs:
+- 8453773
+- 8453777
+- 8454543
+- 8454544
+- 8454545
+- 8454546
+- 8454547
+- 8454548
+- 8454549
+- 8454550
+- 8454551
+- 8454552
+jobs_archived:
 - 8453771
 - 8453772
-- 8453773
 - 8453774
 - 8453775
 - 8453776
-- 8453777
 - 8453778
 - 8453779
 - 8453780
-jobs_archived:
+- 8454364
+- 8454365
+- 8454476
+- 8454477
 - 8388118
 - 8388119
 - 8388120
 - 8388121
-last_wake: '2026-11-09T18:00:01-05:00'
-next_id: 4
+last_wake: '2026-11-09T19:40:00-05:00'
+next_id: 6
 model: null
 effort: null
 wakes: 2
@@ -120,3 +134,4 @@ collapses like fixed pooling. Strongest counter-argument: the 2x DRIP number may
 ## Log
 - 2026-11-07 wake 1: wrote SFT_vtc.sh + 4x/8x config keys (9a659cf); cloned OSC checkout; e001 smokes (fixed/random/DRIP 4x, DRIP resume test) on debug-nextgen: 8388118-8388121.
 - 2026-11-09 wake 2: e001 fixed/random 4x smokes pass (87-88 s/step, files written); DRIP crashed step 1 on torch Binomial validation of the soft boundary count (ratio-independent, so the 2x run had validation off); fixed in SFT_vtc.sh (drip-only wrapper, 3b0d626). Submitted e002 DRIP 4x re-smoke A/B (8453771-8453772, debug-nextgen) and e003 fixed+random 4x training chains, 4x4 h each (8453773-8453780, ~25 GPU-h).
+- 2026-11-09 wake 3: e002 DRIP fresh start OK (94.6 s/step, drip.bin saved) but resume crashed (train.py `logging.info`); e004 found a 2nd resume bug (stock loader wants full weights, PeftModel nested); both fixed in the SFT_vtc.sh wrapper (063a171, trainer.py untouched, monkeypatched `_load_from_checkpoint` = perceiver-learned 43311d8 logic), resume verified for DRIP and fixed (8454476/8454477). Cancelled e003 segments 2-4 (old launcher spooled, would crash) and resubmitted 8454543-8454548 on running seg 1; submitted e005 DRIP 4x chain 8454549-8454552 (~13.5 GPU-h). 12 in flight.

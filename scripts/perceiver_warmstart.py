@@ -16,6 +16,12 @@ Run from any directory (absolute paths; neo env, HF_HOME, HF_HUB_OFFLINE=1, LLaV
     python $REPO/scripts/perceiver_warmstart.py --ratio 2 --n 256 --out $SCRATCH/VTC-Native-Eval-ckpts/init/perceiver_learned_warm_2x.bin
 Then train with  QUERIES=learned INIT_FROM=<out> SFT_perceiver.sh  (run name PerceiverLearnedWarm).
 ``--selftest`` (CPU, no data, no checkpoints) exercises build_init + the strict load + the first-forward identity.
+
+Item 3b (e008: the grid's common direction, 82% of its RMS, drowns the attention branch in norm_out): derive a
+centred init from an existing one on the CPU (seconds, any node, no data):
+    python $REPO/scripts/perceiver_warmstart.py --center-from <warm.bin> --out <warm_c.bin> [--rms keep|native]
+latents <- latents - mean over the grid cells (the 18% spatial part only); ``--rms keep`` (default) leaves it at
+its own RMS, ``native`` rescales it back to the source grid's RMS. Everything else is copied unchanged.
 """
 import argparse
 import json
@@ -55,12 +61,52 @@ def build_init(learned_sd, pooled_sd, mean_grid, native_rms):
     return out
 
 
+def grid_stats(lat):
+    """lat [D, G, G]: RMS, RMS of the per-cell deviation from the mean cell, and the mean pairwise cosine
+    between cells (1.0 = every cell the same direction)."""
+    cells = lat.flatten(1).t().float()  # [G*G, D]
+    dev = cells - cells.mean(dim=0, keepdim=True)
+    u = F.normalize(cells, dim=1)
+    cos = u @ u.t()
+    n = cos.shape[0]
+    return {"rms": cells.pow(2).mean().sqrt().item(), "spatial_dev_rms": dev.pow(2).mean().sqrt().item(),
+            "cell_pairwise_cosine": ((cos.sum() - n) / (n * (n - 1))).item()}
+
+
+def center_init(sd, rms="keep"):
+    """Same state dict with the latents centred over the grid cells. rms: keep (the spatial part at its own
+    RMS) | native (rescaled to the source grid's RMS). Returns (new state dict, stats before, stats after)."""
+    out = {k: v.clone() for k, v in sd.items()}
+    lat = sd["latents"]
+    g = lat.reshape(lat.shape[-3], lat.shape[-2], lat.shape[-1]).float()  # [D, G, G]
+    before = grid_stats(g)
+    c = g - g.mean(dim=(1, 2), keepdim=True)
+    if rms == "native":
+        c = c * (before["rms"] / c.pow(2).mean().sqrt())
+    elif rms != "keep":
+        raise ValueError(rms)
+    out["latents"] = c.reshape(lat.shape).to(lat.dtype)
+    return out, before, grid_stats(c)
+
+
 def selftest():
     # compressor package without the rest of vlmeval (runs on the desktop CPU, stdlib + torch)
     from scripts.test_perceiver_modes import load_package
     PerceiverCompressor = load_package()[1].PerceiverCompressor
     torch.manual_seed(0)
     D, hd, G = 64, 16, 8
+    # centring: a grid that is one common direction plus a small spatial part
+    common = torch.randn(D, 1, 1)
+    sd0 = {"latents": (common + 0.2 * torch.randn(D, G, G)).reshape(1, D, G, G), "other": torch.ones(3)}
+    for rms in ("keep", "native"):
+        sd1, b, a = center_init(sd0, rms)
+        g1 = sd1["latents"][0]
+        assert g1.mean(dim=(1, 2)).abs().max() < 1e-5, "not centred"
+        assert b["cell_pairwise_cosine"] > 0.9 and abs(a["cell_pairwise_cosine"]) < 0.1, (b, a)
+        assert torch.equal(sd1["other"], sd0["other"])
+        want = b["rms"] if rms == "native" else b["spatial_dev_rms"]
+        assert abs(a["rms"] - want) < 1e-4, (rms, a, b)
+    print(f"center_init: cosine {b['cell_pairwise_cosine']:.3f} -> {a['cell_pairwise_cosine']:.3f}, keep/native RMS ok")
     for ratio in (2, 4, 8):
         pooled = PerceiverCompressor(1 / ratio, hidden_size=D, head_dim=hd, queries="pooled", latent_grid=G)
         for p in pooled.parameters():  # a "trained" pooled module: non-trivial weights everywhere
@@ -132,11 +178,27 @@ def main():
     ap.add_argument("--from", dest="src", default=None, help="trained pooled perceiver.bin (default: pooled run of --ratio)")
     ap.add_argument("--out", default=None)
     ap.add_argument("--dataset", default="llava_665k")
+    ap.add_argument("--center-from", default=None, help="existing warm init bin: write a centred copy to --out (CPU)")
+    ap.add_argument("--rms", default="keep", choices=("keep", "native"), help="latent RMS after centring")
     args = ap.parse_args()
     if args.selftest:
         selftest()
         return
     assert args.out, "--out required"
+    if args.center_from:
+        sd = torch.load(args.center_from, map_location="cpu", weights_only=True)
+        new, before, after = center_init(sd, args.rms)
+        os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
+        torch.save(new, args.out)
+        src_meta = os.path.splitext(args.center_from)[0] + ".json"
+        meta = {"center_from": args.center_from, "rms": args.rms, "before": before, "after": after,
+                "source_meta": json.load(open(src_meta)) if os.path.isfile(src_meta) else None}
+        with open(os.path.splitext(args.out)[0] + ".json", "w") as f:
+            json.dump(meta, f, indent=1)
+        print(f"[warmstart] centred latents ({args.rms}): rms {before['rms']:.4f} -> {after['rms']:.4f}, "
+              f"spatial dev {before['spatial_dev_rms']:.4f} -> {after['spatial_dev_rms']:.4f}, cell cosine "
+              f"{before['cell_pairwise_cosine']:.4f} -> {after['cell_pairwise_cosine']:.4f}; wrote {args.out} ({len(new)} tensors)")
+        return
     from VLMEvalKit.vlmeval.vlm.neo.local_models.compressors.perceiver import PerceiverCompressor
     from scripts.perceiver_probe import build_batches, data_args_like_sft, load_model, model_args  # noqa: E402
     from VLMEvalKit.vlmeval.VLMTrainKit.neo.train.build import build_tokenizer

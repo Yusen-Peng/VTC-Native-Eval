@@ -2398,6 +2398,7 @@ neo_series.update({
     )
     for name, queries in (("PerceiverLearnedResidual", "learned_residual"),
                           ("PerceiverLearnedWarm", "learned"),  # paper-faithful module, warm-started (INIT_FROM)
+                          ("PerceiverLearnedWarmC", "learned"),  # same, centred latent grid (INIT_TAG=C, e010)
                           ("PerceiverLr1e3", "pooled"))  # pooled queries, compressor lr 1e-3 (lr-only control, e009)
     for r in (2, 4, 8)
 })

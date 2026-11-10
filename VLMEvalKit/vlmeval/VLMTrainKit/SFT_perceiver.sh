@@ -66,7 +66,8 @@ INIT_FROM=${INIT_FROM:-}
 if [ -n "$INIT_FROM" ]; then
     [ "$QUERIES" = learned ] || { echo "INIT_FROM is only wired for QUERIES=learned"; exit 2; }
     [ -f "$INIT_FROM" ] || { echo "INIT_FROM not found: $INIT_FROM"; exit 2; }
-    name=PerceiverLearnedWarm
+    # INIT_TAG distinguishes warm-start variants (C = centred latents, item 3b): run name PerceiverLearnedWarm<INIT_TAG>
+    name=PerceiverLearnedWarm${INIT_TAG:-}
     COMP_LR=${USER_COMP_LR:-1e-3}
 fi
 run_name="NEO_continue_SFT_LLaVA_OV_llava66k_${name}_${RATIO}x${SUFFIX:-}"

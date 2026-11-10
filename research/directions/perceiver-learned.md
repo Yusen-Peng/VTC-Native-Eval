@@ -16,6 +16,7 @@ jobs:
 - 8489023
 - 8489024
 - 8490000
+- 8495564
 jobs_archived:
 - 8493342
 - 8495437
@@ -55,8 +56,8 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-10T15:40:01-05:00'
-next_id: 11
+last_wake: '2026-11-10T17:25:00-05:00'
+next_id: 12
 model: claude-fable-5-1
 effort: high
 max_turns: 120
@@ -332,3 +333,16 @@ result; record it as such if backlog items 2-4 all fail.
   committed about 10.5 (e009 chain remainder) + 2.2 (gate) + 1.0 (e010). Next wake (e010 TIMEOUT about 16:47): score the
   steps-25-37 rule; go => chain + gate (13.5 GPU-h, needs ids as e009 segments finish); no-go => close 3b. Then e009 seg1
   boundary about 17:52. Candidate after e009's gate: 8x lr-only pooled control (about 17 GPU-h). `wake: on_jobs`.
+- 2026-11-10 17:25 wake (on_jobs: 8493342 plwc2x_seg0 TIMEOUT). e010 DONE, NO-GO (1.07 GPU-h): 39 steps, steps 25-37 mean 1.158
+  vs e007 warm 1.143 (paired +0.015, sd 0.006) and collapsed 1.147 (+0.011); step-1 loss 5.35 (grad norm 63), back to 1.41 by
+  step 3. 3/5 run predictions hit; chain not submitted; item 3b and item 3 closed in all forms. Probe 8495437 of checkpoint-30
+  (4 min, in-wake, 0.07 GPU-h): the centred init's outputs are pairwise-orthogonal at step 0 (cosine 0.0001, frozen-LLM loss 5.07)
+  and S copies of one vector by step 30 (0.9995) with the queries still orthogonal: the shared output direction is re-created by
+  training through attention/o_proj, i.e. the collapse is an attractor of the setup, not an init artefact (probe prediction < 0.9
+  MISS). e009 seg1 at step 127 (88.3 s/step): paired vs learned_residual 4x -0.009 (1-127), -0.016 (101-127); vs pooled 4x -0.079.
+  e011 (e1ed476, records-only commit) = 8x lr-only pooled control (`PerceiverLr1e3_8x`, comp lr 1e-3, same command as e009 with
+  RATIO=8; config key checked from /tmp on the login node): seg1 8495564 on nextgen (4 h); seg2-4 + MMBench/MME/DocVQA eval
+  appended as ids free; P(reproduces >= half of e006's +14 MMBench / +177 MME) 0.6; abort rule in the record. Figure + RESULTS.md
+  refreshed. In flight 6 (cap 6): e009 chain (seg1 running, ends about 17:52) + gate + e011 seg1. Spent 58.5 (e001-e010 incl.
+  e009 seg1 so far); committed about 9 (e009 chain remainder) + 2.2 (gate) + 14.9 (e011) = about 85 of 100 at completion. Next
+  wake (e009 seg1 TIMEOUT about 17:52): archive seg1, check seg2 resume, append e011 seg2 (`afterany:8495564`). `wake: on_jobs`.

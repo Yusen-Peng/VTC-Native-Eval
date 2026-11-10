@@ -8,13 +8,11 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 120
-spent_gpu_hours: 69.44
+spent_gpu_hours: 64.35
 max_jobs_in_flight: 12
 jobs:
-- 8489180
 - 8489181
 - 8489185
-- 8489186
 - 8489187
 - 8489188
 - 8489189
@@ -23,7 +21,11 @@ jobs:
 - 8489192
 - 8489193
 - 8489195
+- 8490212
+- 8490213
 jobs_archived:
+- 8489180
+- 8489186
 - 8454544
 - 8454545
 - 8454547
@@ -65,8 +67,8 @@ jobs_archived:
 - 8388119
 - 8388120
 - 8388121
-last_wake: '2026-11-10T13:20:01-05:00'
-next_id: 11
+last_wake: '2026-11-10T14:40:00-05:00'
+next_id: 12
 model: null
 effort: null
 wakes: 11
@@ -167,3 +169,4 @@ collapses like fixed pooling. Strongest counter-argument: the 2x DRIP number may
 - 2026-11-10 wake 8: e003 seg 2 (8454543/8454546) TIMEOUT as planned at step 326, checkpoint-320, 84.5 s/step; seg 3 resumed cleanly (480 LoRA tensors), seg 4 will finish the last ~8 steps. Submitted e009 fixed + random 8x segment 1 (8470989-8470990, nextgen, exclude a0233, ee905ad); segments 2-4 and DRIP 8x seg 4 wait for slots (12/12). spent_gpu_hours = 20.86 from sacct over finished jobs (26.01 from the driver counted running time). Projection ~104 of 120 GPU-h.
 - 2026-11-10 wake 9: e005 DRIP 4x seg 4 (8454552) TIMEOUT as planned at checkpoint-320 (85.5 s/step), seg 5 resumed; e008 DRIP 8x seg 1 (8463947, node a0341, so the a0233 exclusion works) TIMEOUT as planned at checkpoint-160 (88.7 s/step), seg 2 resumed. Submitted e009 fixed/random 8x segment 2 (8474120-8474121, afterany, ecf8110). 12/12 in flight; still to append: e009 segs 3-4 (x2), DRIP 8x seg 4. spent_gpu_hours 28.87 from finished jobs (driver's 35.94 counted running time). Evals start as each chain ends.
 - 2026-11-10 wake 10: e003 DONE: fixed + random 4x reached step 488 (root adapters, last-20 loss 0.94 / 0.91 vs 1.20 / 1.08 first-20; 24.83 GPU-h). DRIP 4x seg 5 and DRIP 8x seg 2, fixed/random 8x seg 2 TIMEOUT as planned (ckpt 470 / 310 / 310 / 320). DRIP 4x seg 6 and DRIP 8x seg 3 FAILED at CUDA set_device on node a0362 (same fault as a0233, which OSC drained for reboot today): node, not code, so retried with `--exclude=a0233,a0362` instead of pausing. Submitted (8779b0d): DRIP 4x seg 7 on debug-nextgen (8489186, 18 steps), DRIP 8x segs 4-5 (8489189-90), fixed 8x segs 3-4 (8489191-92), random 8x segs 3-4 (8489193, 8489195); e010 4x evals: debug-nextgen smoke Fixed-4x/RealWorldQA 8489180, then Fixed+Random general/ocr arrays 8489181/8489185 and DRIP-4x 8489187/8489188 (afterok on smoke and seg 7). 12/12 in flight. spent 61.77 (sacct, finished jobs); projection +~27 this round +~13.5 for 8x evals = ~102 of 120.
+- 2026-11-10 wake 11: e005 DONE: DRIP 4x seg 7 (8489186, debug-nextgen) reached step 488, root adapter + drip.bin (last-20 loss 0.928, boundary_loss max 0.026; 12.57 GPU-h, 3 segments lost to nodes). e010 smoke passed (Fixed-4x RWQA 51.50); 9/22 4x eval tasks in: fixed+SFT 4x MME 1349 (tf 781), random 1428 (tf 1210), OCRBench 3.0 / 5.6 (tf 2.1 / 4.6), so SFT recovers general VQA, not OCR; MMBench/DocVQA cells still running. Submitted e011 8x evals for Fixed/Random/DRIP (8490212 general, 8490213 ocr, arrays 0-11, de28b43), afterok on the three final 8x segments. 12/12 in flight. spent 64.35 (sacct, finished); projection ~64 + 12 running 8x segs + ~6 e010 rest + ~9 e011 = ~91 of 120.

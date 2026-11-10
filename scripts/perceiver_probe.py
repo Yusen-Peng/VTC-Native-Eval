@@ -16,6 +16,8 @@ measures the NEO-2B training loss under several (LoRA adapter, compressor, visua
     residual/no-latents  same, latent grid zeroed (pooled queries + the trained gated residuals)
     residual/fixed       same adapter, plain fixed pooling (= the compressor at step 0)
     residual/zeros       same adapter, zeros
+    warm/{trained,zeros,noise}   (--warm-ckpt, e007) warm-started paper-faithful `learned` module + adapter at a checkpoint
+    warm-init/trained    (--warm-init) the warm-start init .bin under no adapter (= step 0 of the warm run)
 
 and dumps, for each Perceiver compressor, statistics of its attention and output on the first K images:
 attention entropy over keys per query relative to uniform (log N), max attention weight, mean pairwise cosine
@@ -259,6 +261,10 @@ def main():
     ap.add_argument("--ratio", type=int, default=2)
     ap.add_argument("--ckpts", default=CKPTS)
     ap.add_argument("--conditions", nargs="*", default=None, help="subset of condition names")
+    ap.add_argument("--warm-ckpt", default=None,
+                    help="checkpoint-* dir (adapter + perceiver.bin) of a warm-started `learned` run (e007); enables warm/*")
+    ap.add_argument("--warm-init", default=None,
+                    help="perceiver_warmstart.py init .bin (step 0 of the warm run, no adapter); enables warm-init/trained")
     args = ap.parse_args()
     device = torch.device("cuda")
     r = args.ratio
@@ -273,6 +279,11 @@ def main():
         "base-learned-init": dict(lora=None, vtc="perceiver", ratio=1 / r, queries="learned", perceiver=None),
         "base-none": dict(lora=None, vtc="none", ratio=1.0, queries="pooled", perceiver=None),
     }
+    if args.warm_ckpt:  # e007: warm-started paper-faithful `learned` module + its LoRA at a training checkpoint
+        specs["warm"] = dict(lora=args.warm_ckpt, vtc="perceiver", ratio=1 / r, queries="learned",
+                             perceiver=f"{args.warm_ckpt}/perceiver.bin")
+    if args.warm_init:  # the same module at step 0 (no adapter): what the LLM saw at the first forward
+        specs["warm-init"] = dict(lora=None, vtc="perceiver", ratio=1 / r, queries="learned", perceiver=args.warm_init)
     conditions = [  # (name, spec key, visual)
         ("learned/trained", "learned", "real"), ("learned/zeros", "learned", "zeros"), ("learned/noise", "learned", "noise"),
         ("pooled/trained", "pooled", "real"), ("pooled/zeros", "pooled", "zeros"),
@@ -281,7 +292,11 @@ def main():
         # learned_residual (e002+): trained; latents zeroed; plain fixed pooling under the same adapter; zeros
         ("residual/trained", "residual", "real"), ("residual/no-latents", "residual", "no-latents"),
         ("residual/fixed", "residual", "fixed"), ("residual/zeros", "residual", "zeros"),
+        # warm-started `learned` (e007): trained module; zeros; noise; the step-0 module under no adapter
+        ("warm/trained", "warm", "real"), ("warm/zeros", "warm", "zeros"), ("warm/noise", "warm", "noise"),
+        ("warm-init/trained", "warm-init", "real"),
     ]
+    conditions = [c for c in conditions if c[1] in specs]
     if args.conditions:
         conditions = [c for c in conditions if c[0] in args.conditions]
 
@@ -325,7 +340,9 @@ def main():
     pairs = [("learned/trained", "learned/zeros"), ("learned/trained", "learned/noise"), ("pooled/trained", "pooled/zeros"),
              ("learned/trained", "pooled/trained"), (f"base/fixed{r}x", f"base/fixed{r}x-zeros"),
              ("residual/trained", "residual/no-latents"), ("residual/trained", "residual/fixed"),
-             ("residual/trained", "residual/zeros"), ("residual/trained", "pooled/trained")]
+             ("residual/trained", "residual/zeros"), ("residual/trained", "pooled/trained"),
+             ("warm/trained", "warm/zeros"), ("warm/trained", "warm/noise"), ("warm/trained", "learned/trained"),
+             ("warm/trained", "warm-init/trained")]
     print("\n| a | b | mean(a-b) | sd(a-b) |\n|---|---|---|---|")
     for a, b in pairs:
         if a in c and b in c:

@@ -8,16 +8,17 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 48.14
+spent_gpu_hours: 51.33
 max_jobs_in_flight: 6
 jobs:
 - 8489019
-- 8489020
 - 8489021
 - 8489022
 - 8489023
 - 8489024
+- 8490000
 jobs_archived:
+- 8489020
 - 8472979
 - 8471019
 - 8466638
@@ -52,13 +53,13 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-10T13:25:00-05:00'
+last_wake: '2026-11-10T14:15:00-05:00'
 next_id: 10
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 12
+wakes: 13
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 
@@ -291,3 +292,14 @@ result; record it as such if backlog items 2-4 all fail.
   (in-flight cap 6 reached: eval array + smoke + 4 segments). Figure + RESULTS.md refreshed. Spent 48.14 of 100; committed about
   4.5 (e006 eval) + 14.8 (e009). Next wake: score the smoke (abort rule in e009), archive the eval tasks (check result files, not
   exit codes), score the e006 benchmark predictions, write the 8x row. `wake: on_jobs`.
+- 2026-11-10 14:15 wake (on_jobs: 8489019_{1,2,3,6} done, 8489020 smoke TIMEOUT). e006 eval 6 of 8 tasks done (0/1/2/3/6/7, result
+  files present, 1.96 GPU-h); TextVQA and DocVQA still running (DocVQA about 1:45 to go). 8x row so far: MMBench 58.16 / MME 1226.6 /
+  MMMU 43.44 / RWQA 47.84 / OCRBench 2.0 / ChartQA 14.32 vs pooled 8x 44.07 / 1050.0 / 42.22 / 47.97 / 1.9 / 13.56: +14.1 MMBench and
+  +177 MME (the 4x gain was +2.3 / +37), MMMU +1.2, the rest within noise; MMBench and MME predictions missed far on the high side,
+  ChartQA 20-30 missed low (14.3, pooled 13.6). e009 smoke 8489020 as designed (12 steps, 87.5 s/step, 0.34 GPU-h): steps 1-5 mean
+  1.236 (prediction 0.95-1.15 MISS: the anchor was the 2x smoke, the 4x init on `%1` sits at 1.24-1.26), max 1.360 at step 11 (grad norm
+  1.5, no spike), abort rule not triggered. Seg1 8489021 running on a0176 since 13:52 (88.8 s/step; steps 1-2 bit-identical to pooled
+  4x, step 3 diverges by 0.0002). e009 gate eval 8490000_[0-1] (MMBench + DocVQA, `afterok:8489024`) submitted at ae62a23 after the
+  config-key check on the login node. Figure + RESULTS.md refreshed. In flight 6 (cap 6): eval array + e009 chain + gate. Spent 51.33
+  (driver count); committed about 1.3 (e006 eval remainder) + 12.3 (e009 chain) + 2.2 (gate). Next wake: finish the 8x row (DocVQA,
+  TextVQA, item-4 DocVQA criterion), set e006 done; then e009 segment boundaries. `wake: on_jobs`.

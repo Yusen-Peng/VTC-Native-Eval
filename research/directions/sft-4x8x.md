@@ -8,7 +8,7 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 120
-spent_gpu_hours: 0.2
+spent_gpu_hours: 1.4
 max_jobs_in_flight: 12
 jobs:
 - 8453771
@@ -26,11 +26,11 @@ jobs_archived:
 - 8388119
 - 8388120
 - 8388121
-last_wake: '2026-11-09'
+last_wake: '2026-11-09T18:00:01-05:00'
 next_id: 4
 model: null
 effort: null
-wakes: 1
+wakes: 2
 ---
 # Do the training-based 2x conclusions hold at 4x and 8x?
 

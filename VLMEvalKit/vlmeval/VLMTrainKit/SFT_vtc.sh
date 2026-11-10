@@ -103,10 +103,11 @@ args=(
 # relaxed (soft) boundaries, a non-integer; torch's default argument validation raises on it (e001, job
 # 8388118). The 2x DRIP row could only have trained with validation off, so turn it off for drip only,
 # without touching compressors/: train.py is run through a one-line wrapper.
-entry=(./neo/train/train.py)
-if [ "$VTC_METHOD" = drip ]; then
-    entry=(--no-python python -c "import sys, runpy, torch; torch.distributions.Distribution.set_default_validate_args(False); sys.argv[0] = './neo/train/train.py'; runpy.run_path(sys.argv[0], run_name='__main__')")
-fi
+# The wrapper (all methods) also gives transformers.utils.logging the .info that train.py's resume branch
+# calls; without it every resumed segment dies before training (e002, job 8453772).
+novalidate=""
+[ "$VTC_METHOD" = drip ] && novalidate="torch.distributions.Distribution.set_default_validate_args(False); "
+entry=(--no-python python -c "import sys, runpy, torch; import transformers.utils.logging as L; L.info = lambda *a, **k: print(*a, flush=True); ${novalidate}sys.argv[0] = './neo/train/train.py'; runpy.run_path(sys.argv[0], run_name='__main__')")
 
 torchrun \
     --nproc_per_node="${NGPU}" \

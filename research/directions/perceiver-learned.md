@@ -8,16 +8,22 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 48.15
+spent_gpu_hours: 48.14
 max_jobs_in_flight: 6
 jobs:
+- 8489019
+- 8489020
+- 8489021
+- 8489022
+- 8489023
+- 8489024
+jobs_archived:
 - 8472979
 - 8471019
 - 8466638
 - 8453617
 - 8453618
 - 8453619
-jobs_archived:
 - 8463111
 - 8453616
 - 8463112
@@ -46,8 +52,8 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-10T03:40:01-05:00'
-next_id: 9
+last_wake: '2026-11-10T13:25:00-05:00'
+next_id: 10
 model: claude-fable-5-1
 effort: high
 max_turns: 120
@@ -272,3 +278,16 @@ result; record it as such if backlog items 2-4 all fail.
   e004 seg3 at step 370 (paired -0.033 over 331-370, -0.047 over 1-370). Figure refreshed, RESULTS.md regenerated. In flight
   6 (cap 6): e004 seg3/seg4/eval + e006 seg2-4. Next wake (e004 seg3 about 06:42 or seg4/eval): archive, submit the e006
   8-benchmark eval array (`afterok:8472979`, 1 id); optional 3b after that. Spent 32.6 (driver count). `wake: on_jobs`.
+- 2026-11-10 13:40 wake (on_jobs: e004 chain + eval array and e006 chain all finished). e004 DONE (16.81 GPU-h): 4x chain resumed
+  bit-identically at 160/320/480, seg4 13 min; final MA-10 0.897 vs pooled 4x 0.932 (paired -0.043 over the run, -0.033 sd 0.011
+  steady); full 4x row 66.92 / 1408.4 / 44.00 / 52.03 / 16.77 / 16.23 / 3.6 / 22.36 vs pooled 64.60 / 1371.4 / 44.67 / 51.37 /
+  15.63 / 14.27 / 2.8 / 21.52: above pooled on 7 of 8 (+2.3 MMBench, +37 MME, +2.0 DocVQA), 7/12 predictions hit, misses all
+  "more gain than predicted" (item-4 "within 2 pts" missed by +0.32 in the favourable direction). e006 training DONE (12.25 GPU-h,
+  eval pending): MA-10 0.9905 vs pooled 8x 1.049 (paired -0.057; the gap grows with the ratio: -0.012 / -0.033 / -0.059), 4/4
+  training predictions hit; 8-benchmark eval array 8489019_[0-7] submitted at d25f75d-equivalent script (ae62a23 checkout, eval
+  script unchanged). e009 (ae62a23) = the lr-only control from e003's "Next": `pooled` queries at compressor lr 1e-3, 4x (run name
+  `PerceiverLr1e3`, new SFT_perceiver.sh name rule + config key); smoke 8489020 (debug-nextgen, 20 min) + chain 8489021-8489024
+  (`afterany`, 4 x 4 h, nextgen); gate eval appended after seg4. P(reproduces >= half of e004's gain) 0.6. Optional 3b skipped
+  (in-flight cap 6 reached: eval array + smoke + 4 segments). Figure + RESULTS.md refreshed. Spent 48.14 of 100; committed about
+  4.5 (e006 eval) + 14.8 (e009). Next wake: score the smoke (abort rule in e009), archive the eval tasks (check result files, not
+  exit codes), score the e006 benchmark predictions, write the 8x row. `wake: on_jobs`.

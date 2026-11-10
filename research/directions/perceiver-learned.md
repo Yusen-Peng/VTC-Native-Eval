@@ -8,16 +8,17 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 55.02
+spent_gpu_hours: 55.2
 max_jobs_in_flight: 6
 jobs:
-- 8489019
 - 8489021
 - 8489022
 - 8489023
 - 8489024
 - 8490000
+- 8493342
 jobs_archived:
+- 8489019
 - 8489020
 - 8472979
 - 8471019
@@ -53,8 +54,8 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-10T14:40:01-05:00'
-next_id: 10
+last_wake: '2026-11-10T15:35:00-05:00'
+next_id: 11
 model: claude-fable-5-1
 effort: high
 max_turns: 120
@@ -132,7 +133,8 @@ result; record it as such if backlog items 2-4 all fail.
    Prediction (0.4): MMBench 68-73, DocVQA 25-35; if the step-5 smoke loss is above 1.2 abort and record.
    *(Closed 2026-11-10 by e005/e007/e008: no-go. 3b, optional, 1 GPU-h: the same warm start with the latent grid centred
    (mean token direction removed), one 1 h real-schedule segment scored as e007; e008 measured the shared latent direction,
-   not the attention, as what keeps the outputs alike.)*
+   not the attention, as what keeps the outputs alike. 3b submitted 2026-11-10 as e010: centred latents at their own
+   0.82 RMS, 1 h segment on debug-nextgen, same go rule as e007.)*
 4. **Only if 2 or 3 passes the gate:** full 8-benchmark eval of the passing variant at 2x, then train and
    evaluate 4x and 8x with the same variant (2 x 12 h + 2 x 4.5 GPU-h). Prediction (0.5): the learned variant
    is within 2 pts of pooled at every ratio on MMBench and within 5 on DocVQA; no variant beats ToMe on OCR.
@@ -316,3 +318,15 @@ result; record it as such if backlog items 2-4 all fail.
   learned_residual curve, not the pooled one (early support for the e003 lr attribution; not scored yet). Figure + RESULTS.md
   refreshed. Nothing submitted: in flight 6 (cap 6). Next wake (task 5 done): write the 8x row, score DocVQA + item-4 criterion,
   set e006 done, archive 8489019. `wake: on_jobs`.
+- 2026-11-10 15:35 wake (on_jobs: 8489019_[0-7] all COMPLETED). e006 DONE (16.98 GPU-h; eval 4.73): DocVQA task 5 10.92 vs pooled
+  8x 9.78 (+1.14), item-4 DocVQA criterion HIT; full 8x row 58.16 / 1226.6 / 43.44 / 47.84 / 12.26 / 10.92 / 2.0 / 14.32, above
+  pooled on 7 of 8; 9/13 predictions hit (MMBench/MME far above the ranges, ChartQA below). Backlog item 4 complete: learned_residual
+  rows at 2x/4x/8x. General-VQA gain grows with the ratio (MMBench -0.9 / +2.3 / +14.1), OCR gain stays 1-3 pts. e009 seg1 at
+  step 71 (88.2 s/step): paired vs pooled 4x -0.078 (1-70), -0.109 (41-70); vs learned_residual 4x -0.002 (1-70), -0.018 (41-70):
+  the lr-only run sits on the learned_residual curve (the +/-0.010 prediction on track). e010 (28ed0b7) = optional item 3b: e005
+  init with the latent grid centred (`--center-from`, CPU on the login node: cell cosine 0.976 -> 0.001, RMS 4.52 -> 0.82, both
+  predicted), `INIT_TAG=C` run name PerceiverLearnedWarmC, 1 h debug-nextgen segment 8493342 (started at once on a0129), e007 go
+  rule (steps 25-37 mean < 1.10, P(go) 0.3). Figure + RESULTS.md refreshed. In flight 6 (cap 6). Spent 55.2 (driver count);
+  committed about 10.5 (e009 chain remainder) + 2.2 (gate) + 1.0 (e010). Next wake (e010 TIMEOUT about 16:47): score the
+  steps-25-37 rule; go => chain + gate (13.5 GPU-h, needs ids as e009 segments finish); no-go => close 3b. Then e009 seg1
+  boundary about 17:52. Candidate after e009's gate: 8x lr-only pooled control (about 17 GPU-h). `wake: on_jobs`.

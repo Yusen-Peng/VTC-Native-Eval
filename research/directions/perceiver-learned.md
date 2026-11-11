@@ -15,8 +15,8 @@ jobs:
 - 8500977
 - 8500978
 - 8506246
-- 8506665
 jobs_archived:
+- 8506665
 - 8489024
 - 8489023
 - 8496576
@@ -390,15 +390,21 @@ result; record it as such if backlog items 2-4 all fail.
   MMBench about 02:50, DocVQA about 04:00): score e009's training predictions on the final trainer_state.json and the gate
   (MMBench >= 65.8 and DocVQA >= 15.3 = reproduces half of e004's gain), set e009 done, write the Interpretation (the lr
   attribution at 4x). Then e011 seg3 about 05:45. `wake: on_jobs`.
-- 2026-11-11 02:40 wake (on_jobs: 8489024 plp4x_seg4 COMPLETED). e009 training DONE (seg4 12:34 exit 0, 0.21 GPU-h; training
+- 2026-11-11 02:20 wake (on_jobs: 8489024 plp4x_seg4 COMPLETED). e009 training DONE (seg4 12:34 exit 0, 0.21 GPU-h; training
   12.55 GPU-h, 87.1 s/step over the chain): MA-10 at 488 = 0.8935 (learned_residual 4x 0.897, pooled 4x 0.932); paired vs
   learned_residual 4x -0.008 over 1-488 and -0.007 over 321-488 (sd 0.005), vs pooled 4x -0.051 / -0.041 (e004 was -0.043 /
   -0.033): 5/5 training predictions hit, the lr-only control sits on, slightly below, the learned_residual curve. Gate 8490000_[0-1]
-  running since 02:07 (MMBench ends about 02:40, DocVQA about 04:15); e009 stays `submitted` until the gate is scored. e012
-  (01d2387, 8506665, debug-nextgen 30 min, about 0.15 GPU-h) = probe of the e009 module at 4x vs the learned_residual 4x and
-  pooled-2e-5 4x modules on the e001 samples (`lr` spec + `pooled/fixed` in perceiver_probe.py): predicts lr/trained within 0.02
-  of residual/trained, 0.03+ below pooled/trained, same MLP-gate shape. e011 seg3 at step 343 (paired +0.000 vs learned_residual
-  8x, -0.056 vs pooled 8x). Figure + RESULTS.md refreshed. In flight 5 (cap 6): gate, e011 seg3-4 + eval, e012. Spent 75.56
-  (driver count); committed about 2.2 (gate) + 4.1 (e011 seg3-4) + 4.7 (e011 eval) + 0.15 (e012) = about 87 of 100 at
-  completion. Next wake (MMBench task about 02:45, probe about 02:50, DocVQA about 04:15): score the gate and the probe, set e009
-  and e012 done, write the 4x lr-attribution interpretation; then e011 seg3 about 05:45. `wake: on_jobs`.
+  running since 02:07; MMBench task COMPLETED in-wake (02:35, 0.47 GPU-h): **67.01** vs learned_residual 4x 66.92 and pooled
+  4x 64.60 (+2.41 where e004 was +2.32; 65.5-68.5 HIT, half-gain line 65.8 HIT). DocVQA task running (ends about 04:15); e009
+  stays `submitted` until it is scored. e012 (01d2387, 8506665, debug-nextgen, DONE in-wake, 4:33, 0.08 GPU-h) = probe of the e009
+  module at 4x vs the learned_residual 4x and pooled-2e-5 4x modules on the e001 samples (`lr` spec + `pooled/fixed` in
+  perceiver_probe.py): lr/trained 0.7424 vs residual/trained 0.7472 (paired -0.005, SE 0.003) vs pooled/trained 0.7826 (-0.040);
+  both lr-1e-3 modules are worth 0.17 nats over plain fixed pooling under their own adapter, the lr-2e-5 module 0.001 (fixed
+  pooling + 0.7% RMS); same MLP-gate scale (0.018 / 0.012), attention gate unchanged from init in both, latents 0.25% of the
+  query (0.002 nats). 7/12 predictions hit (misses: the module does far more at 4x than the 2x figures suggested; zeros floor
+  1.10 not 1.3). The e003 lr attribution holds at 4x on the curve, the module and MMBench. e011 seg3 at step 343 (paired
+  +0.000 vs learned_residual 8x, -0.056 vs pooled 8x). Figure + RESULTS.md refreshed. In flight 4 (cap 6): gate DocVQA task,
+  e011 seg3-4 + eval. Spent 75.56 (driver count; e009 13.02 + e012 0.08 so far); committed about 1.7 (DocVQA) + 4.1 (e011
+  seg3-4) + 4.7 (e011 eval) = about 87 of 100 at completion. Next wake (DocVQA about 04:15): score DocVQA (14.5-18.0, >= 15.3),
+  set e009 done, finish its Interpretation; then e011 seg3 about 05:45. No 2x lr-only training planned (the 2x rows agree
+  within noise and the remaining budget does not cover 14.8 GPU-h). `wake: on_jobs`.

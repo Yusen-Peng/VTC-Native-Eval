@@ -8,14 +8,14 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 76.55
+spent_gpu_hours: 78.93
 max_jobs_in_flight: 6
 jobs:
-- 8490000
 - 8500977
 - 8500978
 - 8506246
 jobs_archived:
+- 8490000
 - 8506665
 - 8489024
 - 8489023
@@ -61,13 +61,13 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-11T02:43:01-05:00'
+last_wake: '2026-11-11T04:00:25-05:00'
 next_id: 13
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 22
+wakes: 23
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 
@@ -413,3 +413,19 @@ result; record it as such if backlog items 2-4 all fail.
   +0.002 over 321-350, -0.055 vs pooled 8x). Nothing finished, nothing submitted; figure + RESULTS.md refreshed. In flight 4
   (cap 6). Next wake (DocVQA about 04:10): score DocVQA (14.5-18.0, >= 15.3), set e009 done, finish its Interpretation; then
   e011 seg3 about 05:45. `wake: on_jobs`.
+- 2026-11-11 04:00 wake (on_jobs: 8490000_0/_1 plp4x_gate COMPLETED). e009 DONE (14.62 GPU-h; gate 2.07): DocVQA task 1:35:55
+  (1.60 GPU-h): **16.67** vs learned_residual 4x 16.23 and pooled 4x 14.27 (+2.40 over pooled where e004 was +1.96); 14.5-18.0
+  HIT, half-gain line >= 15.3 HIT, alternative branch refuted; e009 11/13 predictions (gate 4/4, training 5/5, smoke 0/2). 4x
+  block now: pooled lr 2e-5 64.60 / 14.27, learned_residual lr 1e-3 66.92 / 16.23, pooled lr 1e-3 67.01 / 16.67, loss 0.932 /
+  0.897 / 0.894: the lr attribution holds at 4x on the curve (e009), the module (e012) and both gate benchmarks; e009
+  Interpretation written (table entry "pooled queries, compressor lr 1e-3", learned_residual as footnote; compressor-lr sweep
+  is the follow-up to propose, not to run). 8490000 archived. e011 seg3 8500977 at step 412 (88 s/step; paired +0.001 vs
+  learned_residual 8x over 1-410, +0.002 over 321-410, -0.056 vs pooled 8x; e011 at 10.25 GPU-h). Figure + RESULTS.md refreshed.
+  Nothing submitted: the backlog is complete (items 1-4 done, 3/3b closed, item 5 not triggered because item 2 passed), e011 is
+  the last open piece, and the remaining budget after e011's commitments (about 14.5 of 100) does not cover the 2x lr-only
+  training (14.8), which the 2x rows (same within noise) do not need. In flight 3 (cap 6): e011 seg3-4 + eval array. Spent 78.93
+  (driver count; own tally 79.0 incl. e011 so far); committed about 1.5 (seg3 remainder) + 0.3 (seg4) + 4.7 (eval) = about 85.5
+  at completion. Next wake (seg3 TIMEOUT about 05:45, seg4 about 06:05, eval tasks 06:30-09:30): archive, check the seg4 resume,
+  score e011's training predictions on the final trainer_state.json, then the 8 benchmarks (check result files, not exit codes),
+  write the 8x row, set e011 done; optional in-wake probe of the e011 module at 8x (0.1 GPU-h, as e012) if the row lands. Then
+  the direction is complete: write the closing summary and set `status: done`. `wake: on_jobs`.

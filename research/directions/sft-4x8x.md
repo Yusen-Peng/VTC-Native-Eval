@@ -5,14 +5,14 @@ title: Do the training-based 2x conclusions hold at 4x and 8x? (fixed pooling, r
 project: vtc
 type: direction
 cluster: ascend
-status: active
+status: paused
 wake: on_jobs
 budget_gpu_hours: 120
-spent_gpu_hours: 96.85
+spent_gpu_hours: 101.67
 max_jobs_in_flight: 12
-jobs:
-- 8490213
+jobs: []
 jobs_archived:
+- 8490213
 - 8490212
 - 8489190
 - 8489192
@@ -67,11 +67,11 @@ jobs_archived:
 - 8388119
 - 8388120
 - 8388121
-last_wake: '2026-11-10T19:00:01-05:00'
+last_wake: '2026-11-10T20:12:00-05:00'
 next_id: 12
 model: null
 effort: null
-wakes: 21
+wakes: 22
 ---
 # Do the training-based 2x conclusions hold at 4x and 8x?
 
@@ -180,3 +180,4 @@ collapses like fixed pooling. Strongest counter-argument: the 2x DRIP number may
 - 2026-11-10 wake 19: e011 12/24 8x eval tasks done (all rc=0): MME fixed/random/DRIP+SFT 1034 / 1228 / 1266 (tf 566 / 852, ToMe 1151), MMMU 41.8 / 45.0 / 43.3, RWQA 47.1 / 47.7 / 49.9, OCRBench 1.7 / 2.1 / 5.2 (ToMe 6.8; fixed/random under-5 claim HIT). SFT still recovers general VQA at 8x, OCR stays at the floor. MMBench x3 and TextVQA/DocVQA/ChartQA x3 still running, so neither array archived. Nothing submitted: item 3 waits on 8x DocVQA, item 4 still needs the user's decision (compressor flag forbidden by Constraints). 2 array ids in flight. spent 91.01 (sacct, finished; driver's 94.74 counted running time); projection +~6 e011 rest = ~97 of 120.
 - 2026-11-10 wake 20: e011 general array 8490212 DONE (12/12 rc=0, 3.21 GPU-h, archived). 8x MMBench fixed/random/DRIP+SFT 44.85 / 58.59 / 59.97 (tf 29.64 / 41.67, ToMe 57.99): all three bands HIT. ChartQA 13.28 / 15.84 / 23.72 (ToMe 48.56): OCR flat under SFT, DRIP gap to ToMe as at 4x. 18/24 tasks in; TextVQA + DocVQA x3 (8490213_{0,1,4,5,8,9}) still running. Nothing submitted: item 3 waits on 8x DocVQA, item 4 needs the user's decision (compressor flag forbidden by Constraints). PNG regenerated once 8x DocVQA is in. 1 array id in flight. spent 94.19 (sacct, finished; driver's 98.02 counted running time).
 - 2026-11-10 wake 21: e011 TextVQA 8x in (8490213_{0,4,8}, rc=0): fixed/random/DRIP+SFT 10.48 / 12.65 / 22.48 (tf 9.41 / 11.87, ToMe 29.90); OCR flat under SFT, DRIP +9.8 over random, -7.4 vs ToMe. 21/24 tasks done; only DocVQA x3 (8490213_{1,5,9}) running, so 8490213 not archived. Nothing submitted: item 3 waits on 8x DocVQA, item 4 needs the user's decision (compressor flag forbidden by Constraints). 1 array id in flight. spent 96.85 (sacct, finished; driver's 99.75 counted running time).
+- 2026-11-10 wake 22: e011 DONE (8490213 archived, 24/24 rc=0, 13.03 GPU-h). 8x DocVQA fixed/random/DRIP+SFT 9.66 / 10.98 / 28.66 (tf 8.69 / 9.56, ToMe 38.48); e011 9/9 claims HIT. All six rows complete in `training_based.csv` (4x sha 8779b0d, 8x de28b43), PNG regenerated. Answer: (a) SFT MMBench gain fixed +3.8/+23.0/+15.2, random -0.5/+6.8/+16.9 at 2x/4x/8x, OCR gain <= +1.4 DocVQA at 8x; (b) DRIP beats random+SFT on DocVQA at every ratio (+38.1/+38.7/+17.7) but stays below ToMe (-6.1/-11.1/-9.8). Item 3 not triggered. PAUSED: goal settled; the only remaining backlog item (4, naive top-k delta) needs a flag under `compressors/`, forbidden by Constraints, so it is the user's call. spent 101.67 of 120 (sacct, finished; e011 sum).

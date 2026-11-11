@@ -48,7 +48,7 @@ for ax, m, base in zip(axes, ("MMBench", "DocVQA"), (76.20, 89.86)):
 axes[0].set_ylabel("score")
 h, l = axes[0].get_legend_handles_labels()
 fig.legend(h, l, loc="lower center", ncol=4, fontsize=8, frameon=False)
-fig.suptitle("NEO-2B: LLaVA@66K SFT (solid) vs training-free (dashed); 8x SFT pending", fontsize=10)
+fig.suptitle("NEO-2B: LLaVA@66K SFT (solid) vs training-free (dashed)", fontsize=10)
 fig.tight_layout(rect=(0, 0.1, 1, 0.95))
 fig.savefig(out)
 print(out)

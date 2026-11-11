@@ -8,16 +8,18 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 58.69
+spent_gpu_hours: 66.69
 max_jobs_in_flight: 6
 jobs:
-- 8489022
 - 8489023
 - 8489024
 - 8490000
-- 8495564
 - 8496576
+- 8500977
+- 8500978
 jobs_archived:
+- 8489022
+- 8495564
 - 8489021
 - 8493342
 - 8495437
@@ -57,13 +59,13 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-10T18:05:00-05:00'
+last_wake: '2026-11-10T22:10:00-05:00'
 next_id: 12
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 18
+wakes: 19
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 
@@ -358,3 +360,16 @@ result; record it as such if backlog items 2-4 all fail.
   (driver count); committed about 8 (e009 chain remainder) + 2.2 (gate) + 14.6 (e011). Next wake (e011 seg1 TIMEOUT about
   21:44 or e009 seg2 about 21:53): archive, check resumes, append e011 seg3 (`afterany:8496576`); seg4 + the 3-benchmark eval
   array once e009 segments free ids. `wake: on_jobs`.
+- 2026-11-10 22:10 wake (on_jobs: 8489022 plp4x_seg2 TIMEOUT, 8495564 plp8x_seg1 TIMEOUT). e009 seg2 ended at step 324 as planned
+  (checkpoint-320 complete, 4 steps redone, 4.00 GPU-h; e009 at 8.34); seg3 8489023 resumed cleanly on a0119 (steps 321-324
+  bit-identical, 87-88 s/step; ends about 01:53 11-11 near step 483, then seg4 finishes + gate 8490000). 320 steps paired: vs
+  learned_residual 4x -0.009 (1-320), -0.008 (161-320), -0.006 (281-320), converging; vs pooled 4x -0.057 / -0.042 (e004 was
+  -0.034 over 161-320). e011 seg1 ended at step 161 as planned (checkpoint-160, 1 step redone, 4.00 GPU-h, 88.1 s/step HIT);
+  seg2 8496576 resumed cleanly on a0113 (step 161 bit-identical 0.9474, checkpoint-170, 88.5 s/step; ends about 01:45 near step
+  320). 160 steps paired: vs learned_residual 8x -0.001 (1-160), +0.004 (141-160): the lr-only 8x run is on the learned_residual
+  curve to within one sd; vs pooled 8x -0.050 (e006 was -0.049 at the same point). e011 abort rule not triggered. e011 seg3
+  8500977 (`afterany:8496576`) + seg4 8500978 (`afterany:8500977`) submitted (nextgen, 4 h each, at e1ed476, no code change).
+  Figure + RESULTS.md refreshed. In flight 6 (cap 6): e009 seg3-4 + gate, e011 seg2-4. Spent 66.69 (driver count); committed
+  about 4.5 (e009 seg3-4) + 2.2 (gate) + 8.5 (e011 seg2-4) + 2.6 (e011 eval) = about 84.5 of 100 at completion. Next wake
+  (e011 seg2 about 01:45 or e009 seg3 about 01:53): archive, check resumes, submit the e011 3-benchmark eval array
+  (`afterok:8500978`, `--array=0-2`) with the first freed id. `wake: on_jobs`.

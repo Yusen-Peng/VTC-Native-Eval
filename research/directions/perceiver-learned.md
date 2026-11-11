@@ -8,7 +8,7 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 83.13
+spent_gpu_hours: 84.25
 max_jobs_in_flight: 6
 jobs:
 - 8506246
@@ -62,13 +62,13 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-11T06:00:01-05:00'
+last_wake: '2026-11-11T06:20:01-05:00'
 next_id: 14
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 25
+wakes: 26
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 
@@ -458,4 +458,14 @@ result; record it as such if backlog items 2-4 all fail.
   (about 07:50). The array id stays in `jobs`. RESULTS.md regenerated, figure refreshed (training complete, curve unchanged).
   Nothing submitted (backlog complete; in flight 1). Spent 83.13 (driver count; own tally 81.0 + the running eval). Next wake:
   score MMBench (54-61, >= 51.1) and DocVQA (10-12), TextVQA and ChartQA, write the full 8x row, set e011 done, write its
+  Interpretation; then the closing summary and `status: done`. `wake: on_jobs`.
+- 2026-11-11 06:45 wake (on_jobs: 8506246_{0,1,2,3,6,7} COMPLETED; 1/2/3/6 scored earlier). e011 eval tasks 0 (MMBench) and
+  7 (ChartQA) done with result files (1.15 GPU-h; eval 1.90 so far, e011 at 14.11): MMBench **58.59** vs learned_residual 8x
+  58.16 and tex pooled 8x 44.07 (+14.52 where e006 was +14.09; same category profile, spatial_relationship 0.178 in both),
+  ChartQA **13.76** vs 14.32 / 13.56 (all three 8x rows below untrained random pruning 15.20). MMBench predictions HIT (54-61,
+  half-gain >= 51.1), alternative branch (<= 48) refuted: with MME already in, the lr-only pooled 8x row reproduces the whole
+  general-VQA gain of the learned_residual 8x row (4/4 eval predictions so far). TextVQA at 80% (ends about 06:53), DocVQA at
+  39% (about 07:12); the array id stays in `jobs`; a background watch on the DocVQA result file runs in this wake. RESULTS.md
+  regenerated, figure refreshed (unchanged). Nothing submitted (backlog complete; in flight 1). Spent 84.25 (driver count; own
+  tally 82.9 + the two running tasks). Next: score TextVQA and DocVQA (10-12), write the full 8x row, set e011 done, write its
   Interpretation; then the closing summary and `status: done`. `wake: on_jobs`.

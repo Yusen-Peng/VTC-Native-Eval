@@ -8,7 +8,7 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 75.56
+spent_gpu_hours: 76.55
 max_jobs_in_flight: 6
 jobs:
 - 8490000
@@ -61,13 +61,13 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-11T02:00:01-05:00'
+last_wake: '2026-11-11T02:43:01-05:00'
 next_id: 13
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 21
+wakes: 22
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 
@@ -408,3 +408,8 @@ result; record it as such if backlog items 2-4 all fail.
   seg3-4) + 4.7 (e011 eval) = about 87 of 100 at completion. Next wake (DocVQA about 04:15): score DocVQA (14.5-18.0, >= 15.3),
   set e009 done, finish its Interpretation; then e011 seg3 about 05:45. No 2x lr-only training planned (the 2x rows agree
   within noise and the remaining budget does not cover 14.8 GPU-h). `wake: on_jobs`.
+- 2026-11-11 02:45 wake (on_jobs: 8490000_0 plp4x_gate COMPLETED; stale trigger, scored at 02:20). DocVQA task 8490000_1 at 34%
+  (1.54 s/item, ends about 04:10); e011 seg3 8500977 at step 358 (88.3 s/step; paired +0.000 vs learned_residual 8x over 1-350,
+  +0.002 over 321-350, -0.055 vs pooled 8x). Nothing finished, nothing submitted; figure + RESULTS.md refreshed. In flight 4
+  (cap 6). Next wake (DocVQA about 04:10): score DocVQA (14.5-18.0, >= 15.3), set e009 done, finish its Interpretation; then
+  e011 seg3 about 05:45. `wake: on_jobs`.

@@ -8,15 +8,16 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 74.68
+spent_gpu_hours: 75.56
 max_jobs_in_flight: 6
 jobs:
-- 8489024
 - 8490000
 - 8500977
 - 8500978
 - 8506246
+- 8506665
 jobs_archived:
+- 8489024
 - 8489023
 - 8496576
 - 8489022
@@ -60,13 +61,13 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-11T02:02:11-05:00'
-next_id: 12
+last_wake: '2026-11-11T02:00:01-05:00'
+next_id: 13
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 20
+wakes: 21
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 
@@ -389,3 +390,15 @@ result; record it as such if backlog items 2-4 all fail.
   MMBench about 02:50, DocVQA about 04:00): score e009's training predictions on the final trainer_state.json and the gate
   (MMBench >= 65.8 and DocVQA >= 15.3 = reproduces half of e004's gain), set e009 done, write the Interpretation (the lr
   attribution at 4x). Then e011 seg3 about 05:45. `wake: on_jobs`.
+- 2026-11-11 02:40 wake (on_jobs: 8489024 plp4x_seg4 COMPLETED). e009 training DONE (seg4 12:34 exit 0, 0.21 GPU-h; training
+  12.55 GPU-h, 87.1 s/step over the chain): MA-10 at 488 = 0.8935 (learned_residual 4x 0.897, pooled 4x 0.932); paired vs
+  learned_residual 4x -0.008 over 1-488 and -0.007 over 321-488 (sd 0.005), vs pooled 4x -0.051 / -0.041 (e004 was -0.043 /
+  -0.033): 5/5 training predictions hit, the lr-only control sits on, slightly below, the learned_residual curve. Gate 8490000_[0-1]
+  running since 02:07 (MMBench ends about 02:40, DocVQA about 04:15); e009 stays `submitted` until the gate is scored. e012
+  (01d2387, 8506665, debug-nextgen 30 min, about 0.15 GPU-h) = probe of the e009 module at 4x vs the learned_residual 4x and
+  pooled-2e-5 4x modules on the e001 samples (`lr` spec + `pooled/fixed` in perceiver_probe.py): predicts lr/trained within 0.02
+  of residual/trained, 0.03+ below pooled/trained, same MLP-gate shape. e011 seg3 at step 343 (paired +0.000 vs learned_residual
+  8x, -0.056 vs pooled 8x). Figure + RESULTS.md refreshed. In flight 5 (cap 6): gate, e011 seg3-4 + eval, e012. Spent 75.56
+  (driver count); committed about 2.2 (gate) + 4.1 (e011 seg3-4) + 4.7 (e011 eval) + 0.15 (e012) = about 87 of 100 at
+  completion. Next wake (MMBench task about 02:45, probe about 02:50, DocVQA about 04:15): score the gate and the probe, set e009
+  and e012 done, write the 4x lr-attribution interpretation; then e011 seg3 about 05:45. `wake: on_jobs`.

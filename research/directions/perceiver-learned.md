@@ -8,13 +8,14 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 78.93
+spent_gpu_hours: 81.04
 max_jobs_in_flight: 6
 jobs:
+- 8506246
+- 8510092
+jobs_archived:
 - 8500977
 - 8500978
-- 8506246
-jobs_archived:
 - 8490000
 - 8506665
 - 8489024
@@ -61,13 +62,13 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-11T04:00:25-05:00'
-next_id: 13
+last_wake: '2026-11-11T06:05:00-05:00'
+next_id: 14
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 23
+wakes: 24
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 
@@ -429,3 +430,15 @@ result; record it as such if backlog items 2-4 all fail.
   score e011's training predictions on the final trainer_state.json, then the 8 benchmarks (check result files, not exit codes),
   write the 8x row, set e011 done; optional in-wake probe of the e011 module at 8x (0.1 GPU-h, as e012) if the row lands. Then
   the direction is complete: write the closing summary and set `status: done`. `wake: on_jobs`.
+- 2026-11-11 06:05 wake (on_jobs: 8500977 plp8x_seg3 TIMEOUT, 8500978 plp8x_seg4 COMPLETED). e011 training DONE (12.21 GPU-h,
+  87.4 s/step over the chain; seg3 ended at step 484 as planned, seg4 resumed bit-identically from checkpoint-480 and finished
+  step 488 + final save in 12:46): MA-10 at 488 = 0.9932 (learned_residual 8x 0.9905, pooled 8x 1.0488); paired vs learned_residual
+  8x +0.001 over 1-488 (sd 0.008) and +0.002 over 321-488 (sd 0.005), vs pooled 8x -0.056 / -0.057 (e006 was -0.057 / -0.059):
+  6/6 training predictions hit, the lr-only 8x run is the learned_residual 8x curve. 8500977/8500978 archived. Eval array
+  8506246_[0-7] started 05:59 (all 8 tasks running; DocVQA ends about 07:45). e013 (records-only; code at 01d2387) = e012 at 8x:
+  probe of the e011 module vs the learned_residual 8x and pooled-2e-5 8x modules on the e001 samples, 8510092 on debug-nextgen
+  (30 min, about 0.1 GPU-h), submitted now because it needs only the final checkpoint, not the eval. Figure + RESULTS.md
+  refreshed. In flight 2 (cap 6). Spent 81.04 (driver count; own tally 80.9 + the running eval); committed about 4.6 (eval)
+  + 0.1 (probe) = about 86 of 100 at completion. Next wake (probe about 06:20, eval tasks 06:25-07:45): score the probe (e013),
+  then the 8 benchmarks (check result files, not exit codes), write the 8x row, score e011's eval predictions, set e011 done,
+  write its Interpretation; then the closing summary and `status: done`. `wake: on_jobs`.

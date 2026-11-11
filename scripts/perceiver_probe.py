@@ -17,6 +17,8 @@ measures the NEO-2B training loss under several (LoRA adapter, compressor, visua
     residual/fixed       same adapter, plain fixed pooling (= the compressor at step 0)
     residual/zeros       same adapter, zeros
     warm/{trained,zeros,noise}   (--warm-ckpt, e007) warm-started paper-faithful `learned` module + adapter at a checkpoint
+    lr/{trained,fixed,zeros}     (e009/e011) `pooled` queries trained at compressor lr 1e-3 (run PerceiverLr1e3_<r>x) + adapter
+    pooled/fixed                 the tex pooled run's adapter with plain fixed pooling (its compressor at step 0)
     warm-init/trained    (--warm-init) the warm-start init .bin under no adapter (= step 0 of the warm run)
 
 and dumps, for each Perceiver compressor, statistics of its attention and output on the first K images:
@@ -271,6 +273,7 @@ def main():
     L = f"{args.ckpts}/NEO_continue_SFT_LLaVA_OV_llava66k_PerceiverLearned_{r}x"
     P = f"{args.ckpts}/NEO_continue_SFT_LLaVA_OV_llava66k_Perceiver_{r}x"
     R = f"{args.ckpts}/NEO_continue_SFT_LLaVA_OV_llava66k_PerceiverLearnedResidual_{r}x"
+    LR = f"{args.ckpts}/NEO_continue_SFT_LLaVA_OV_llava66k_PerceiverLr1e3_{r}x"
     specs = {
         "learned": dict(lora=L, vtc="perceiver", ratio=1 / r, queries="learned", perceiver=f"{L}/perceiver.bin"),
         "pooled": dict(lora=P, vtc="perceiver", ratio=1 / r, queries="pooled", perceiver=f"{P}/perceiver.bin"),
@@ -278,6 +281,8 @@ def main():
         "base-fixed": dict(lora=None, vtc="fixed", ratio=1 / r, queries="pooled", perceiver=None),
         "base-learned-init": dict(lora=None, vtc="perceiver", ratio=1 / r, queries="learned", perceiver=None),
         "base-none": dict(lora=None, vtc="none", ratio=1.0, queries="pooled", perceiver=None),
+        # e009/e011: pooled queries at compressor lr 1e-3 (the lr-only control of the learned_residual rows)
+        "lr": dict(lora=LR, vtc="perceiver", ratio=1 / r, queries="pooled", perceiver=f"{LR}/perceiver.bin"),
     }
     if args.warm_ckpt:  # e007: warm-started paper-faithful `learned` module + its LoRA at a training checkpoint
         specs["warm"] = dict(lora=args.warm_ckpt, vtc="perceiver", ratio=1 / r, queries="learned",
@@ -286,7 +291,7 @@ def main():
         specs["warm-init"] = dict(lora=None, vtc="perceiver", ratio=1 / r, queries="learned", perceiver=args.warm_init)
     conditions = [  # (name, spec key, visual)
         ("learned/trained", "learned", "real"), ("learned/zeros", "learned", "zeros"), ("learned/noise", "learned", "noise"),
-        ("pooled/trained", "pooled", "real"), ("pooled/zeros", "pooled", "zeros"),
+        ("pooled/trained", "pooled", "real"), ("pooled/zeros", "pooled", "zeros"), ("pooled/fixed", "pooled", "fixed"),
         (f"base/fixed{r}x", "base-fixed", "real"), (f"base/fixed{r}x-zeros", "base-fixed", "zeros"),
         ("base/learned-init", "base-learned-init", "real"), ("base/none", "base-none", "real"),
         # learned_residual (e002+): trained; latents zeroed; plain fixed pooling under the same adapter; zeros
@@ -295,6 +300,8 @@ def main():
         # warm-started `learned` (e007): trained module; zeros; noise; the step-0 module under no adapter
         ("warm/trained", "warm", "real"), ("warm/zeros", "warm", "zeros"), ("warm/noise", "warm", "noise"),
         ("warm-init/trained", "warm-init", "real"),
+        # pooled queries at compressor lr 1e-3 (e009/e011): trained; plain fixed pooling under the same adapter; zeros
+        ("lr/trained", "lr", "real"), ("lr/fixed", "lr", "fixed"), ("lr/zeros", "lr", "zeros"),
     ]
     conditions = [c for c in conditions if c[1] in specs]
     if args.conditions:
@@ -342,7 +349,9 @@ def main():
              ("residual/trained", "residual/no-latents"), ("residual/trained", "residual/fixed"),
              ("residual/trained", "residual/zeros"), ("residual/trained", "pooled/trained"),
              ("warm/trained", "warm/zeros"), ("warm/trained", "warm/noise"), ("warm/trained", "learned/trained"),
-             ("warm/trained", "warm-init/trained")]
+             ("warm/trained", "warm-init/trained"),
+             ("lr/trained", "lr/fixed"), ("lr/trained", "lr/zeros"), ("lr/trained", "pooled/trained"),
+             ("lr/trained", "residual/trained"), ("pooled/trained", "pooled/fixed")]
     print("\n| a | b | mean(a-b) | sd(a-b) |\n|---|---|---|---|")
     for a, b in pairs:
         if a in c and b in c:

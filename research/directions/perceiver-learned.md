@@ -8,7 +8,7 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 81.11
+spent_gpu_hours: 83.13
 max_jobs_in_flight: 6
 jobs:
 - 8506246
@@ -62,13 +62,13 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-11T06:05:00-05:00'
+last_wake: '2026-11-11T06:00:01-05:00'
 next_id: 14
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 24
+wakes: 25
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 
@@ -450,3 +450,12 @@ result; record it as such if backlog items 2-4 all fail.
   Spent 81.04 (driver count) + 0.07 (e013) + the running eval; about 86 at completion. Next wake (eval tasks 06:25-07:45):
   score the remaining 6 benchmarks (check result files, not exit codes), write the 8x row, score e011's eval predictions, set
   e011 done, write its Interpretation; then the closing summary and `status: done`. `wake: on_jobs`.
+- 2026-11-11 06:40 wake (on_jobs: 8506246_{1,2,3,6} COMPLETED; 2 and 3 scored at 06:25). e011 eval tasks 1 (MME) and 6 (OCRBench)
+  done with result files (0.51 GPU-h; eval 0.75 so far, e011 at 12.96): MME **1224.9** (perception; reasoning 366.4) vs
+  learned_residual 8x 1226.6 and tex pooled 8x 1050.0 (+174.9 where e006 was +176.6), OCRBench **1.8** vs 2.0 / 1.9. MME
+  predictions HIT (1180-1260; half-gain line >= 1138), alternative branch (<= 1100) refuted; the lr-only 8x row reproduces the
+  whole e006 MME gain. Four tasks running: MMBench 61% (ends about 06:35), ChartQA 66%, TextVQA 40% (about 07:00), DocVQA 20%
+  (about 07:50). The array id stays in `jobs`. RESULTS.md regenerated, figure refreshed (training complete, curve unchanged).
+  Nothing submitted (backlog complete; in flight 1). Spent 83.13 (driver count; own tally 81.0 + the running eval). Next wake:
+  score MMBench (54-61, >= 51.1) and DocVQA (10-12), TextVQA and ChartQA, write the full 8x row, set e011 done, write its
+  Interpretation; then the closing summary and `status: done`. `wake: on_jobs`.

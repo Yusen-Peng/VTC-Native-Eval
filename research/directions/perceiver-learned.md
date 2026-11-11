@@ -8,12 +8,12 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 81.04
+spent_gpu_hours: 81.11
 max_jobs_in_flight: 6
 jobs:
 - 8506246
-- 8510092
 jobs_archived:
+- 8510092
 - 8500977
 - 8500978
 - 8490000
@@ -439,6 +439,14 @@ result; record it as such if backlog items 2-4 all fail.
   probe of the e011 module vs the learned_residual 8x and pooled-2e-5 8x modules on the e001 samples, 8510092 on debug-nextgen
   (30 min, about 0.1 GPU-h), submitted now because it needs only the final checkpoint, not the eval. Figure + RESULTS.md
   refreshed. In flight 2 (cap 6). Spent 81.04 (driver count; own tally 80.9 + the running eval); committed about 4.6 (eval)
-  + 0.1 (probe) = about 86 of 100 at completion. Next wake (probe about 06:20, eval tasks 06:25-07:45): score the probe (e013),
-  then the 8 benchmarks (check result files, not exit codes), write the 8x row, score e011's eval predictions, set e011 done,
-  write its Interpretation; then the closing summary and `status: done`. `wake: on_jobs`.
+  + 0.1 (probe) = about 86 of 100 at completion.
+- 2026-11-11 06:25 (same wake). e013 DONE (8510092 COMPLETED 4:23, 0.07 GPU-h): lr/trained 0.8388 vs residual/trained 0.8343
+  (paired +0.005, SE 0.004) vs pooled-2e-5 0.8880 (-0.049); both lr-1e-3 8x modules worth 0.14-0.15 nats over fixed pooling
+  under their own adapter, the lr-2e-5 module 0.001 (fixed pooling + 0.2% RMS); same MLP-gate scale (0.010 / 0.012), attention
+  gates at init scale, latents 0.27% of the query (0.000 nats); 10/13 predictions (misses: lr-fixed gap -0.147 vs the -0.15
+  line, attention-gate sign, zeros floor 1.00 not 1.05-1.25: the text-only floor falls with the ratio 1.33 / 1.10 / 1.00).
+  The lr attribution holds on the module at all three ratios. 8510092 archived. Eval tasks 2 (MMMU 42.78 vs e006 43.44 /
+  pooled 42.22) and 3 (RWQA 48.10 vs 47.84 / 47.97) done in-wake, within noise; six tasks running. In flight 1 (cap 6).
+  Spent 81.04 (driver count) + 0.07 (e013) + the running eval; about 86 at completion. Next wake (eval tasks 06:25-07:45):
+  score the remaining 6 benchmarks (check result files, not exit codes), write the 8x row, score e011's eval predictions, set
+  e011 done, write its Interpretation; then the closing summary and `status: done`. `wake: on_jobs`.

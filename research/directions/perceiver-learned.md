@@ -469,3 +469,11 @@ result; record it as such if backlog items 2-4 all fail.
   regenerated, figure refreshed (unchanged). Nothing submitted (backlog complete; in flight 1). Spent 84.25 (driver count; own
   tally 82.9 + the two running tasks). Next: score TextVQA and DocVQA (10-12), write the full 8x row, set e011 done, write its
   Interpretation; then the closing summary and `status: done`. `wake: on_jobs`.
+- 2026-11-11 07:15 (same wake). Task 4 TextVQA COMPLETED 06:51 (52:31, 0.88 GPU-h): **12.03** vs learned_residual 8x 12.26 /
+  tex pooled 8x 10.59 (+1.44 where e006 was +1.67); 7 of 8 tasks done, eval 2.78 GPU-h, e011 at 14.99. e011 Interpretation
+  drafted (the lr attribution holds at 8x on the curve, the module and seven benchmarks: the lr-only pooled row reproduces the
+  learned_residual 8x row within item noise everywhere, and the whole +14 MMBench / +177 MME gain over the tex pooled row).
+  DocVQA task 5 at 67% at 07:13 (1.3 it/s, ends about 07:37 + scoring), past this wake's limit; the array id stays in `jobs`.
+  Spent 84.25 (driver count; own tally 83.8 + DocVQA running). Next wake (8506246_5 COMPLETED): score DocVQA (10-12) from
+  `*_DocVQA_VAL_acc.csv`, write the full 8x row, set e011 done, archive 8506246; then the closing summary and `status: done`.
+  `wake: on_jobs`.

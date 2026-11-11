@@ -8,7 +8,7 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 120
-spent_gpu_hours: 94.19
+spent_gpu_hours: 96.85
 max_jobs_in_flight: 12
 jobs:
 - 8490213
@@ -67,11 +67,11 @@ jobs_archived:
 - 8388119
 - 8388120
 - 8388121
-last_wake: '2026-11-10T18:40:01-05:00'
+last_wake: '2026-11-10T19:00:01-05:00'
 next_id: 12
 model: null
 effort: null
-wakes: 20
+wakes: 21
 ---
 # Do the training-based 2x conclusions hold at 4x and 8x?
 
@@ -179,3 +179,4 @@ collapses like fixed pooling. Strongest counter-argument: the 2x DRIP number may
 - 2026-11-10 wake 18: e008 (DRIP 8x, 12.52 GPU-h) and e009 (fixed + random 8x, 24.72 GPU-h) DONE: final segments 8489190/92/95 exit 0:0 at step 488, root adapters (+ drip.bin) present, archived. Last-20 loss fixed/random/DRIP 8x 1.055 / 0.999 / 1.022 (4x: 0.942 / 0.911 / 0.928); DRIP boundary_loss 0.061 -> 0.003. All six trainings complete. e011 8x evals released by afterok: general 8490212_[0-11] and ocr 8490213_[0-2] running, ocr 3-11 pending. Nothing submitted: item 3 waits on 8x DocVQA, item 4 still needs the user's decision (compressor flag forbidden by Constraints). 2 array ids in flight. spent 88.64 (sacct, finished; driver's 88.68 counted running time); projection +~9 e011 = ~98 of 120.
 - 2026-11-10 wake 19: e011 12/24 8x eval tasks done (all rc=0): MME fixed/random/DRIP+SFT 1034 / 1228 / 1266 (tf 566 / 852, ToMe 1151), MMMU 41.8 / 45.0 / 43.3, RWQA 47.1 / 47.7 / 49.9, OCRBench 1.7 / 2.1 / 5.2 (ToMe 6.8; fixed/random under-5 claim HIT). SFT still recovers general VQA at 8x, OCR stays at the floor. MMBench x3 and TextVQA/DocVQA/ChartQA x3 still running, so neither array archived. Nothing submitted: item 3 waits on 8x DocVQA, item 4 still needs the user's decision (compressor flag forbidden by Constraints). 2 array ids in flight. spent 91.01 (sacct, finished; driver's 94.74 counted running time); projection +~6 e011 rest = ~97 of 120.
 - 2026-11-10 wake 20: e011 general array 8490212 DONE (12/12 rc=0, 3.21 GPU-h, archived). 8x MMBench fixed/random/DRIP+SFT 44.85 / 58.59 / 59.97 (tf 29.64 / 41.67, ToMe 57.99): all three bands HIT. ChartQA 13.28 / 15.84 / 23.72 (ToMe 48.56): OCR flat under SFT, DRIP gap to ToMe as at 4x. 18/24 tasks in; TextVQA + DocVQA x3 (8490213_{0,1,4,5,8,9}) still running. Nothing submitted: item 3 waits on 8x DocVQA, item 4 needs the user's decision (compressor flag forbidden by Constraints). PNG regenerated once 8x DocVQA is in. 1 array id in flight. spent 94.19 (sacct, finished; driver's 98.02 counted running time).
+- 2026-11-10 wake 21: e011 TextVQA 8x in (8490213_{0,4,8}, rc=0): fixed/random/DRIP+SFT 10.48 / 12.65 / 22.48 (tf 9.41 / 11.87, ToMe 29.90); OCR flat under SFT, DRIP +9.8 over random, -7.4 vs ToMe. 21/24 tasks done; only DocVQA x3 (8490213_{1,5,9}) running, so 8490213 not archived. Nothing submitted: item 3 waits on 8x DocVQA, item 4 needs the user's decision (compressor flag forbidden by Constraints). 1 array id in flight. spent 96.85 (sacct, finished; driver's 99.75 counted running time).

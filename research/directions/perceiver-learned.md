@@ -5,14 +5,14 @@ title: Why does the learned-query Perceiver collapse to chance under LoRA SFT, a
 project: vtc
 type: direction
 cluster: ascend
-status: active
+status: done
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 84.25
+spent_gpu_hours: 85.5
 max_jobs_in_flight: 6
-jobs:
-- 8506246
+jobs: []
 jobs_archived:
+- 8506246
 - 8510092
 - 8500977
 - 8500978
@@ -62,13 +62,13 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-11T06:20:01-05:00'
+last_wake: '2026-11-11T07:20:00-05:00'
 next_id: 14
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 26
+wakes: 27
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 
@@ -181,6 +181,51 @@ result; record it as such if backlog items 2-4 all fail.
 - Every record: the hypothesis it tests (a/b/c above), prediction with confidence, the smoke loss at step 5,
   the probe numbers, and a PNG of training loss vs step for every run of this direction overlaid on the six
   existing curves (from `trainer_state.json`).
+
+## Conclusion (2026-11-11, direction complete)
+**Answer to the title question.** The paper-faithful `learned` Perceiver collapses because of scale at init, cause (b),
+measured not guessed: 0.02-RMS latents are drowned by the O(1) attention residual, so the module emits S near-identical
+copies of one vector (output pairwise cosine 0.995 at init, 0.9999 after training; attention uniform to 1% of log N; e001).
+The LLM reads 0.27-0.33 nats from that single global vector, so cause (a) in its strong form is refuted, and the collapse is an
+attractor of the setup, not an init artefact: a warm start from the pooled module (e005/e007) and a centred latent grid that
+starts pairwise-orthogonal (e010, probe e008/8495437) are both pulled back to one shared output direction within 30 steps.
+Backlog item 3 is closed in all forms as a no-go.
+
+**What fixes it.** Anchoring the queries on fixed pooling (`learned_residual`: pooled queries + zero-init latent grid, tanh
+gates, init == fixed pooling) trains without collapse and passes the gate at 2x (73.37 MMBench / 40.00 DocVQA vs the
+settle line 72 / 30; e002), then at 4x and 8x (e004, e006). But the latents stay inert in every trained module (0.2-0.3% of
+the query, 0.000-0.002 nats; e003/e012/e013), and the lr-only control (`pooled` queries, compressor lr 1e-3) reproduces the
+learned_residual run at 4x (e009/e012) and 8x (e011/e013) on the loss curve (paired within 0.010 nats, under one sd), on the
+module (per-sample loss within 0.005) and on the benchmarks. The "learned queries" rows differ from the tex pooled rows in
+their compressor learning rate (1e-3 vs 2e-5), not in their queries.
+
+| ratio | module (compressor lr) | final MA-10 loss | MMBench | MME | MMMU | RWQA | TextVQA | DocVQA | OCRBench | ChartQA | record |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2x | pooled (2e-5, tex row) | 0.795 | 74.31 | 1524.0 | 46.89 | 57.65 | 32.38 | 37.33 | 20.8 | 40.12 | tex |
+| 2x | learned_residual (1e-3) | 0.787 | 73.37 | 1527.3 | 47.00 | 59.22 | 33.42 | 40.00 | 20.7 | 40.24 | e002/e003 |
+| 4x | pooled (2e-5, tex row) | 0.932 | 64.60 | 1371.4 | 44.67 | 51.37 | 15.63 | 14.27 | 2.8 | 21.52 | tex |
+| 4x | learned_residual (1e-3) | 0.897 | 66.92 | 1408.4 | 44.00 | 52.03 | 16.77 | 16.23 | 3.6 | 22.36 | e004 |
+| 4x | pooled (1e-3) | 0.894 | 67.01 | | | | | 16.67 | | | e009 (gate only) |
+| 8x | pooled (2e-5, tex row) | 1.049 | 44.07 | 1050.0 | 42.22 | 47.97 | 10.59 | 9.78 | 1.9 | 13.56 | tex |
+| 8x | learned_residual (1e-3) | 0.991 | 58.16 | 1226.6 | 43.44 | 47.84 | 12.26 | 10.92 | 2.0 | 14.32 | e006 |
+| 8x | pooled (1e-3) | 0.993 | 58.59 | 1224.9 | 42.78 | 48.10 | 12.03 | 10.48 | 1.8 | 13.76 | e011 |
+
+**What the higher compressor lr buys.** The gain grows with the ratio (loss -0.008 / -0.035 / -0.058 nats; MMBench -0.9 /
++2.3 / +14.5; MME +3 / +37 / +175 at 2x / 4x / 8x) and lives in the per-token MLP branch of the module (the attention gate
+stays at init scale at every ratio), which has more to correct the more patches each output token summarises. It restores
+the coarse image summary general VQA needs; OCR does not move (DocVQA +1 to +3, OCRBench within 1 pt, ChartQA below untrained
+random pruning at 4x and 8x): all Perceiver rows sit at the untrained fixed-pooling OCR floor, so OCR at high ratios needs
+token selection (ToMe-style), not a better resampler.
+
+**Recommended table entries** (`tab:training-based`, Perceiver block): "Perceiver, pooled queries, compressor lr 1e-3" with
+the learned_residual rows as a footnote ("learned latents on top of pooled queries: inert, same row within noise"); the
+paper-faithful learned-query variant as "collapses at this data scale (LLaVA@66K, frozen LLM + LoRA), cause: scale at init".
+Caveat: neither compressor lr was tuned (1e-3 is DRIP's boundary-predictor lr); a compressor-lr sweep is the follow-up.
+
+**Cost.** 13 records, about 86 of 100 GPU-h (five 12-h trainings of 12.2-12.6 GPU-h each, four full or partial evals, two
+smokes, three 1-h probes/segments, five short probes). Follow-ups for the user, not run: (1) compressor-lr sweep for the
+pooled Perceiver at 4x (3e-4 / 1e-3 / 3e-3, about 45 GPU-h); (2) the 2x pooled lr 1e-3 row (14.8 GPU-h) only if the
+table needs a uniform block, the 2x rows already agree within noise; (3) OCR at 8x via token selection.
 
 ## Log
 - 2026-11-07 14:05 wake (manual). Created the OSC checkout `wt/vtc/perceiver-learned` (clone of origin). e001 =
@@ -477,3 +522,12 @@ result; record it as such if backlog items 2-4 all fail.
   Spent 84.25 (driver count; own tally 83.8 + DocVQA running). Next wake (8506246_5 COMPLETED): score DocVQA (10-12) from
   `*_DocVQA_VAL_acc.csv`, write the full 8x row, set e011 done, archive 8506246; then the closing summary and `status: done`.
   `wake: on_jobs`.
+- 2026-11-11 07:50 wake (on_jobs: 8506246_{0,1,2,3,4,6,7} COMPLETED, all scored earlier; task 5 waited for in-wake). e011 DONE
+  (16.79 GPU-h; eval 4.58): DocVQA task 5 COMPLETED 07:47 (1:48:00, 1.80 GPU-h): **10.48** vs learned_residual 8x 10.92 (-0.44) and
+  the tex pooled 8x row 9.78 (+0.70 where e006 was +1.14); 10-12 HIT; e011 11/11 predictions. Full lr-only pooled 8x row 58.59 /
+  1224.9 / 42.78 / 48.10 / 12.03 / 10.48 / 1.8 / 13.76 vs learned_residual 8x 58.16 / 1226.6 / 43.44 / 47.84 / 12.26 / 10.92 / 2.0 /
+  14.32: the same row on all eight benchmarks (max |delta| 0.66 pts, 1.7 MME points). 8506246 archived. Conclusion section written
+  above (answer: collapse = scale at init, an attractor of the setup; fix = pooled-anchored queries, but the gain is the compressor
+  lr 1e-3, reproduced by pooled queries at 4x and 8x on curve, module and benchmarks; table entry "pooled queries, compressor lr
+  1e-3"). RESULTS.md regenerated, figure refreshed. Backlog complete, nothing in flight, nothing submitted. Spent 85.5 of 100
+  (sum of the 13 records). `status: done`.

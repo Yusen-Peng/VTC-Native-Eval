@@ -8,16 +8,17 @@ cluster: ascend
 status: active
 wake: on_jobs
 budget_gpu_hours: 100
-spent_gpu_hours: 66.69
+spent_gpu_hours: 74.68
 max_jobs_in_flight: 6
 jobs:
-- 8489023
 - 8489024
 - 8490000
-- 8496576
 - 8500977
 - 8500978
+- 8506246
 jobs_archived:
+- 8489023
+- 8496576
 - 8489022
 - 8495564
 - 8489021
@@ -59,13 +60,13 @@ jobs_archived:
 - 8453615
 - 8461970
 - 8461971
-last_wake: '2026-11-10T22:10:00-05:00'
+last_wake: '2026-11-11T02:02:11-05:00'
 next_id: 12
 model: claude-fable-5-1
 effort: high
 max_turns: 120
 timeout_minutes: 60
-wakes: 19
+wakes: 20
 ---
 # Why does the learned-query Perceiver collapse, and what fixes it?
 
@@ -373,3 +374,18 @@ result; record it as such if backlog items 2-4 all fail.
   about 4.5 (e009 seg3-4) + 2.2 (gate) + 8.5 (e011 seg2-4) + 2.6 (e011 eval) = about 84.5 of 100 at completion. Next wake
   (e011 seg2 about 01:45 or e009 seg3 about 01:53): archive, check resumes, submit the e011 3-benchmark eval array
   (`afterok:8500978`, `--array=0-2`) with the first freed id. `wake: on_jobs`.
+- 2026-11-11 02:10 wake (on_jobs: 8489023 plp4x_seg3 TIMEOUT, 8496576 plp8x_seg2 TIMEOUT). e009 seg3 ended at step 484 as planned
+  (checkpoint-480 complete, 4 steps redone, 4.00 GPU-h; e009 at 12.34); seg4 8489024 resumed on a0119 (steps 481-484 bit-identical,
+  87 s/step; finishes step 488 + final save about 02:15, then gate 8490000_[0-1]). 480 steps paired: vs learned_residual 4x -0.008
+  (1-480), -0.007 (321-480 and 441-480), inside the +/-0.010 band throughout; vs pooled 4x -0.052 / -0.040 (e004 was -0.033 over
+  321-480). MA-10 at 480 = 0.877 (learned_residual 0.897, pooled 0.932). e011 seg2 ended at step 324 as planned (checkpoint-320
+  complete, 4 steps redone, 4.00 GPU-h; e011 at 8.0); seg3 8500977 resumed on a0113 (steps 321-324 bit-identical, 88 s/step; ends
+  about 05:45 near step 483, seg4 8500978 then finishes). 320 steps paired: vs learned_residual 8x +0.000 (1-320), +0.001 / +0.002
+  on the later windows (sd 0.005-0.009): the same curve; vs pooled 8x -0.056 / -0.061 (e006 was -0.063 over 161-320). e011 eval
+  array 8506246_[0-7] submitted (`afterok:8500978`, nextgen, 3 h, at e1ed476, identical command to the e006 array): all 8
+  benchmarks instead of the planned 3 (+2.1 GPU-h, direction finishes about 87 of 100), so the row is comparable with the full
+  e006 row. Figure + RESULTS.md refreshed. In flight 5 (cap 6): e009 seg4 + gate, e011 seg3-4 + eval. Spent 74.68 (driver count);
+  committed about 0.3 (e009 seg4) + 2.2 (gate) + 4.3 (e011 seg3-4) + 4.7 (e011 eval). Next wake (e009 seg4 about 02:15, gate
+  MMBench about 02:50, DocVQA about 04:00): score e009's training predictions on the final trainer_state.json and the gate
+  (MMBench >= 65.8 and DocVQA >= 15.3 = reproduces half of e004's gain), set e009 done, write the Interpretation (the lr
+  attribution at 4x). Then e011 seg3 about 05:45. `wake: on_jobs`.

@@ -8,8 +8,8 @@ conda activate neo
 python tradeoff_analysis.py
 """
 
-baseline_model = "NEO-9B-SFT" # NEO-2B-SFT or NEO-9B-SFT
-csv_path = "training_free_9B.csv" # training_free_2B.csv or training_free_9B.csv
+baseline_model = "NEO-2B-SFT" # NEO-2B-SFT or NEO-9B-SFT
+csv_path = "results_2B.csv"
 
 coarse_benchmarks = [
     "MMBench",
@@ -84,23 +84,31 @@ df["OCR"] = df.apply(
 
 methods = [
     "fixed pooling",
+    "fixed pooling(train)",
     "spatial pooling",
     "random pruning",
+    "random pruning(train)",
     "ToMe",
     "PruneSID",
     "CDPruner",
+    "VLVLM",
     "FastV-2",
+    "FastV-16",
     "PyramidDrop-16",
 ]
 
 method_styles = {
     "fixed pooling":   {"marker": "o", "color": "tab:blue"},
-    "spatial pooling": {"marker": "s", "color": "tab:orange"},
+    "fixed pooling(train)": {"marker": "o", "color": "navy"},
+    "spatial pooling": {"marker": "o", "color": "tab:orange"},
     "random pruning":  {"marker": "^", "color": "tab:green"},
+    "random pruning(train)": {"marker": "^", "color": "tab:olive"},
     "ToMe":            {"marker": "D", "color": "tab:red"},
     "PruneSID":        {"marker": "P", "color": "tab:purple"},
     "CDPruner":        {"marker": "H", "color": "tab:cyan"},
+    "VLVLM":           {"marker": "s", "color": "gold"},
     "FastV-2":         {"marker": "v", "color": "tab:gray"},
+    "FastV-16":        {"marker": "v", "color": "tab:pink"},
     "PyramidDrop-16":  {"marker": "X", "color": "tab:brown"},
 }
 
@@ -214,7 +222,7 @@ def plot_performance(x_col, xlabel, filename):
         labels,
         loc="upper center",
         bbox_to_anchor=(0.5, 1.04),
-        ncol=len(methods) + 2,
+        ncol=(len(methods) + 2)//2,
         frameon=False,
     )
 

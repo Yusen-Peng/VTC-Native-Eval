@@ -50,6 +50,26 @@ df = df.merge(
     validate="one_to_one",
 )
 
+
+# Reuse inference latency for trained variants
+latency_source = {
+    "fixed pooling(train)": "fixed pooling",
+    "random pruning(train)": "random pruning",
+}
+
+for trained_method, source_method in latency_source.items():
+    source_latency = df[df["Model"] == source_method].set_index(
+        "compression"
+    )["total_latency_ms"]
+
+    mask = df["Model"] == trained_method
+
+    df.loc[mask, "total_latency_ms"] = (
+        df.loc[mask, "compression"]
+        .map(source_latency)
+        .to_numpy()
+    )
+
 baseline = df[df["Model"] == baseline_model].iloc[0]
 
 
@@ -91,6 +111,7 @@ methods = [
     "ToMe",
     "PruneSID",
     "CDPruner",
+    "Perceiver",
     "VLVLM",
     "FastV-2",
     "FastV-16",
@@ -106,6 +127,7 @@ method_styles = {
     "ToMe":            {"marker": "D", "color": "tab:red"},
     "PruneSID":        {"marker": "P", "color": "tab:purple"},
     "CDPruner":        {"marker": "H", "color": "tab:cyan"},
+    "Perceiver":        {"marker": "H", "color": "magenta"},
     "VLVLM":           {"marker": "s", "color": "gold"},
     "FastV-2":         {"marker": "v", "color": "tab:gray"},
     "FastV-16":        {"marker": "v", "color": "tab:pink"},
@@ -203,8 +225,8 @@ def plot_performance(x_col, xlabel, filename):
                 ax.set_xticks([0, 5, 10, 20, 30, 40, 45])
                 ax.set_xlim(0, 50)
 
-            elif x_col == "total_latency_ms":
-                ax.set_xlim(left=0)
+        elif x_col == "total_latency_ms":
+            ax.set_xlim(left=0)
 
     axes[0].set_ylabel(
         f"Relative Performance vs. {baseline_model} (%)",

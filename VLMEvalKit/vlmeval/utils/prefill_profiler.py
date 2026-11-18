@@ -44,10 +44,7 @@ class NEOPrefillProfiler:
             self.end_recorded = True
 
     def install(self):
-        self.model.extract_feature_with_positions = (
-            functools.wraps(self.original_extract)(self._extract)
-        )
-
+        self.model.extract_feature_with_positions = self._extract
         self.handles.append(
             self.model.language_model.register_forward_hook(
                 self._llm_post

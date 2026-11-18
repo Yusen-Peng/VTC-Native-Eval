@@ -38,38 +38,6 @@ flops_df = pd.read_csv("flops.csv")
 # Select the corresponding model scale
 scale = "2B" if baseline_model == "NEO-2B-SFT" else "9B"
 
-flops_df = flops_df[flops_df["scale"] == scale]
-
-# Merge latency measurements
-df = df.merge(
-    flops_df[
-        ["Model", "compression", "total_latency_ms"]
-    ],
-    on=["Model", "compression"],
-    how="left",
-    validate="one_to_one",
-)
-
-
-# Reuse inference latency for trained variants
-latency_source = {
-    "fixed pooling(train)": "fixed pooling",
-    "random pruning(train)": "random pruning",
-}
-
-for trained_method, source_method in latency_source.items():
-    source_latency = df[df["Model"] == source_method].set_index(
-        "compression"
-    )["total_latency_ms"]
-
-    mask = df["Model"] == trained_method
-
-    df.loc[mask, "total_latency_ms"] = (
-        df.loc[mask, "compression"]
-        .map(source_latency)
-        .to_numpy()
-    )
-
 baseline = df[df["Model"] == baseline_model].iloc[0]
 
 
@@ -225,7 +193,7 @@ def plot_performance(x_col, xlabel, filename):
                 ax.set_xticks([0, 5, 10, 20, 30, 40, 45])
                 ax.set_xlim(0, 50)
 
-        elif x_col == "total_latency_ms":
+        elif x_col == "stress_total_latency_ms":
             ax.set_xlim(left=0)
 
     axes[0].set_ylabel(
@@ -290,7 +258,7 @@ plot_performance(
 # ============================================================
 
 plot_performance(
-    x_col="total_latency_ms",
+    x_col="stress_total_latency_ms",
     xlabel="Prefill Latency (ms)",
     filename=f"training_free_latency_{baseline_model}",
 )

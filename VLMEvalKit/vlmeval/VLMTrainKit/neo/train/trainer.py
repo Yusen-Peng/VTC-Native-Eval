@@ -258,9 +258,29 @@ class LoRATrainer(Trainer):
 
 
     def _load_from_checkpoint(self, resume_from_checkpoint, model: NEOChatModel | None = None):
-        super()._load_from_checkpoint(resume_from_checkpoint, model=model)
         target_model: NEOChatModel = model if model is not None else self.model
         target_model = self.accelerator.unwrap_model(target_model)
+        peft_model = getattr(target_model, "language_model", None)
+        if _is_peft_model(peft_model):
+            # `_save` writes only the LoRA adapter (adapter_model.safetensors) + <vtc_method>.bin. The stock loader
+            # sees NEOChatModel (not a PeftModel) and looks for full model weights, so load the adapter directly.
+            import safetensors.torch
+            from peft import set_peft_model_state_dict
+
+            adapter_file = os.path.join(resume_from_checkpoint, "adapter_model.safetensors")
+            if not os.path.isfile(adapter_file):
+                raise FileNotFoundError(f"Missing LoRA adapter checkpoint: {adapter_file}")
+            sd = safetensors.torch.load_file(adapter_file, device="cpu")
+            result = set_peft_model_state_dict(peft_model, sd, adapter_name=peft_model.active_adapter)
+            missing = [k for k in result.missing_keys if "lora_" in k]
+            if missing or result.unexpected_keys:
+                raise RuntimeError(f"LoRA adapter resume mismatch: {len(missing)} missing LoRA tensors "
+                                   f"(e.g. {missing[:2]}), {len(result.unexpected_keys)} unexpected "
+                                   f"(e.g. {list(result.unexpected_keys)[:2]})")
+            print(f"🔁 Resumed LoRA adapter ({len(sd)} tensors) from {adapter_file}", flush=True)
+            del sd
+        else:
+            super()._load_from_checkpoint(resume_from_checkpoint, model=model)
         vtc_method = getattr(target_model, "vtc_method", None)
         if vtc_method in TRAINABLE_VTC_METHODS:
             weights_path = os.path.join(resume_from_checkpoint, f"{vtc_method}.bin")

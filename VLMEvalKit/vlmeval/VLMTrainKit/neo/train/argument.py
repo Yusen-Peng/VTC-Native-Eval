@@ -29,6 +29,10 @@ class ModelArguments:
     compression_ratio: float = field(default=1.0)
     drip_temperature: float = field(default=0.1)
     perceiver_queries: str = field(default="pooled", metadata={"help": "Perceiver queries: pooled | learned"})
+    perceiver_init_from: Optional[str] = field(
+        default=None,
+        metadata={"help": "perceiver.bin to warm-start a fresh Perceiver from (strict; e.g. scripts/perceiver_warmstart.py)."},
+    )
 
 
 @dataclass

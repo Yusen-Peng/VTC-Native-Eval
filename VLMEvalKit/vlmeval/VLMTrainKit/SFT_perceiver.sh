@@ -14,12 +14,21 @@
 # Submit from VLMEvalKit/vlmeval/VLMTrainKit (mkdir -p logs first), one job per compression ratio:
 #   sbatch --export=ALL,RATIO=2 SFT_perceiver.sh                   # pooled queries (start = fixed pooling)
 #   sbatch --export=ALL,RATIO=2,QUERIES=learned SFT_perceiver.sh   # learned latent queries (as in the paper)
-# RATIO = 2 | 4 | 8. COMP_LR = compressor learning rate (default: 2e-5 for pooled, 1e-4 for learned; LoRA stays 2e-5).
+#   sbatch --export=ALL,RATIO=2,QUERIES=learned_residual SFT_perceiver.sh   # pooled queries + learned latent grid (init 0)
+#   sbatch --export=ALL,RATIO=2,QUERIES=learned,INIT_FROM=$SCRATCH/VTC-Native-Eval-ckpts/init/perceiver_learned_warm_2x.bin SFT_perceiver.sh
+#       # learned queries warm-started from scripts/perceiver_warmstart.py (run name PerceiverLearnedWarm, COMP_LR 1e-3)
+#   sbatch --export=ALL,RATIO=4,COMP_LR=1e-3 SFT_perceiver.sh      # pooled queries, compressor lr 1e-3 (run name PerceiverLr1e3)
+# RATIO = 2 | 4 | 8. COMP_LR = compressor learning rate (default: 2e-5 for pooled, 1e-4 for learned, 1e-3 for
+# learned_residual and for learned + INIT_FROM; LoRA stays 2e-5).
 # Smoke test (~15 min, no full run):
 #   sbatch --partition=debug-nextgen --time=0:15:00 --export=ALL,RATIO=2,DATASETS=llava_665k%1,SUFFIX=_smoke SFT_perceiver.sh
-# ~1.4 min/step on 1 A100 -> 488 steps ~ 11.5 h. Global batch = NGPU x grad_accum = 128 regardless of
+# ~1.45 min/step on 1 A100 -> 488 steps ~ 11.8 h. Global batch = NGPU x grad_accum = 128 regardless of
 # --gpus-per-node, but >1 GPU (DDP) is untested in this training code.
-# Re-submitting the same RATIO resumes from the latest checkpoint-* in the output dir.
+# Re-submitting the same RATIO resumes from the latest checkpoint-* in the output dir, so a full run can be a
+# chain of 4 h segments (`sbatch --time=4:00:00 ... ; sbatch --dependency=afterany:<prev> ...`); a segment that
+# finds the final perceiver.bin (written only after the last step) exits 0 without loading anything.
+# REPO = checkout to train from (default: the shared $SCRATCH/VTC-Native-Eval); its VLMEvalKit is put first on
+# PYTHONPATH so `import vlmeval` resolves there and not to the editable install of another checkout.
 set -euo pipefail
 
 RATIO=${RATIO:?set RATIO=2|4|8}
@@ -33,7 +42,9 @@ unset TRANSFORMERS_CACHE HUGGINGFACE_HUB_CACHE
 export HF_HOME=$SCRATCH/hf
 export HF_HUB_OFFLINE=1
 
-cd "$SCRATCH/VTC-Native-Eval/VLMEvalKit/vlmeval/VLMTrainKit"
+REPO=${REPO:-$SCRATCH/VTC-Native-Eval}
+export PYTHONPATH="$REPO/VLMEvalKit:$REPO${PYTHONPATH:+:$PYTHONPATH}"
+cd "$REPO/VLMEvalKit/vlmeval/VLMTrainKit"
 
 # Count allocated GPUs from Slurm; `nvidia-smi -L | wc -l` overcounts on MIG nodes (extra partition lines)
 NGPU=${SLURM_GPUS_ON_NODE:-$(nvidia-smi -L | grep -c '^GPU')}
@@ -41,16 +52,34 @@ batch_size=1
 grad_accum_steps=$((128 / NGPU))
 mllm="Paranioar/NEO1_0-2B-SFT"
 QUERIES=${QUERIES:-pooled}
+USER_COMP_LR=${COMP_LR:-}
 case "$QUERIES" in
-    pooled)  name=Perceiver;        COMP_LR=${COMP_LR:-2e-5} ;;
+    pooled)  name=Perceiver;        COMP_LR=${COMP_LR:-2e-5}
+             # pooled queries at a non-default compressor lr get their own run name (PerceiverLr1e3 for 1e-3), so the
+             # original Perceiver_{2,4,8}x runs are never resumed or overwritten; config key ...-PerceiverLr1e3-<r>x
+             [ -n "$USER_COMP_LR" ] && [ "$USER_COMP_LR" != 2e-5 ] && name="PerceiverLr$(echo "$USER_COMP_LR" | tr -d '.-')" ;;
     learned) name=PerceiverLearned; COMP_LR=${COMP_LR:-1e-4} ;;
-    *) echo "QUERIES must be pooled|learned, got $QUERIES"; exit 2 ;;
+    learned_residual) name=PerceiverLearnedResidual; COMP_LR=${COMP_LR:-1e-3} ;;
+    *) echo "QUERIES must be pooled|learned|learned_residual, got $QUERIES"; exit 2 ;;
 esac
+INIT_FROM=${INIT_FROM:-}
+if [ -n "$INIT_FROM" ]; then
+    [ "$QUERIES" = learned ] || { echo "INIT_FROM is only wired for QUERIES=learned"; exit 2; }
+    [ -f "$INIT_FROM" ] || { echo "INIT_FROM not found: $INIT_FROM"; exit 2; }
+    # INIT_TAG distinguishes warm-start variants (C = centred latents, item 3b): run name PerceiverLearnedWarm<INIT_TAG>
+    name=PerceiverLearnedWarm${INIT_TAG:-}
+    COMP_LR=${USER_COMP_LR:-1e-3}
+fi
 run_name="NEO_continue_SFT_LLaVA_OV_llava66k_${name}_${RATIO}x${SUFFIX:-}"
 output_dir="$SCRATCH/VTC-Native-Eval-ckpts/output/${run_name}"
 
-echo "===== $(date) :: ${run_name} on ${NGPU} GPU(s), grad_accum ${grad_accum_steps}, data ${DATASETS}, compressor lr ${COMP_LR} ====="
-echo "commit: $(git rev-parse HEAD)"
+echo "===== $(date) :: ${run_name} on ${NGPU} GPU(s), grad_accum ${grad_accum_steps}, data ${DATASETS}, compressor lr ${COMP_LR}, init ${INIT_FROM:-fresh} ====="
+echo "commit: $(git rev-parse HEAD)  repo: $REPO"
+if [ -f "$output_dir/perceiver.bin" ] && [ -f "$output_dir/adapter_model.safetensors" ]; then
+    echo "training already complete ($output_dir has the final perceiver.bin + adapter), nothing to do"
+    exit 0
+fi
+echo "checkpoints present: $(ls -d "$output_dir"/checkpoint-* 2>/dev/null | xargs -n1 basename 2>/dev/null | tr '\n' ' ')"
 
 args=(
     --model_name_or_path "${mllm}"
@@ -87,6 +116,7 @@ args=(
     --compressor_learning_rate "${COMP_LR}"
     --compression_ratio "$(python -c "print(1 / ${RATIO})")"
 )
+[ -n "$INIT_FROM" ] && args+=(--perceiver_init_from "$INIT_FROM")
 
 torchrun \
     --nproc_per_node="${NGPU}" \

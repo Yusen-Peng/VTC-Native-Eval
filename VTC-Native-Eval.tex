@@ -32,6 +32,7 @@
 %Including images in your LaTeX document requires adding
 %additional package(s)
 \usepackage{graphicx}
+\usepackage{arydshln}
 \usepackage{makecell}
 \usepackage{adjustbox}
 \usepackage{makecell}
@@ -139,14 +140,17 @@
         \cellcolor{green!10}Fixed pooling & training-\textbf{free} & encoder-level & \cmark & -- & \cmark \\
         \cellcolor{green!10}Fixed pooling & training-\textbf{based} & encoder-level & \cmark & -- & \cmark \\
         \cellcolor{green!10}Random pruning & training-\textbf{free} & encoder-level & \cmark & -- & \cmark \\
-        \cellcolor{green!10}Random pruning & training~\textbf{based} & encoder-level & \cmark & & \\
+        \cellcolor{green!10}Random pruning & training~\textbf{based} & encoder-level & \cmark & &  \cmark \\
         \cellcolor{gray!10}PruMerge[ICCV'25] & training-\textbf{free} & encoder-level & \xmark & need attention! & NA \\
-        \cellcolor{green!10}PruneSID[ICLR'26] & training-\textbf{free} & encoder-level & \cmark & skip CLS reweighting (following QwenVL setup) & \cmark \\
-        \cellcolor{green!10}ToME[ICLR'23] & training-\textbf{free} & encoder-level & \cmark & \url{https://github.com/facebookresearch/ToMe/blob/main/tome/merge.py} & \\
-        \cellcolor{green!10}Perceiver[ICML'21] & training-\textbf{based} & encoder-level & \cmark & \url{https://github.com/Yusen-Peng/DRIP/blob/main/src/LLaVA_wrapper/llava_local/model/multimodal_encoder/perceiver_utils.py} & \\
-        \cellcolor{green!10}DRIP & training-\textbf{based} & encoder-level & \cmark & \url{https://github.com/Yusen-Peng/DRIP/blob/main/src/LLaVA_wrapper/llava_local/model/multimodal_encoder/clip_encoder.py} &  \\
-        \cellcolor{green!10}FastV[ECCV'24] & training-\textbf{free} & LLM-level & \cmark & \url{https://github.com/pkunlp-icler/FastV/blob/main/src/FastV/llava-hf/transformers/src/transformers/models/llama/modeling_llama.py} & \\
+        \cellcolor{green!10}\textbf{PruneSID}[ICLR'26] & training-\textbf{free} & encoder-level & \cmark & skip CLS reweighting (following QwenVL setup) & \cmark \\
+        \cellcolor{green!10}\textbf{ToMe}[ICLR'23] & training-\textbf{free} & encoder-level & \cmark & \url{https://github.com/facebookresearch/ToMe/blob/main/ToMe/merge.py} & \cmark \\
+        \cellcolor{green!10}\textbf{CDPruner}[Neurips'25] & training-\textbf{free} & encoder-level & \cmark & -- & \cmark \\
+        
+        \cellcolor{green!10}Perceiver[ICML'21] & training-\textbf{based} & encoder-level & \cmark & \url{https://github.com/Yusen-Peng/DRIP/blob/main/src/LLaVA_wrapper/llava_local/model/multimodal_encoder/perceiver_utils.py} & \cmark \\
+        \cellcolor{green!10}DRIP & training-\textbf{based} & encoder-level & \cmark & \url{https://github.com/Yusen-Peng/DRIP/blob/main/src/LLaVA_wrapper/llava_local/model/multimodal_encoder/clip_encoder.py} & \cmark \\
+        \cellcolor{green!10}FastV[ECCV'24] & training-\textbf{free} & LLM-level & \cmark & \url{https://github.com/pkunlp-icler/FastV/blob/main/src/FastV/llava-hf/transformers/src/transformers/models/llama/modeling_llama.py} & \cmark \\
         \cellcolor{green!10}SparseVLM[ICML'25] & training-\textbf{free} & LLM-level & \cmark & \url{https://github.com/Gumpest/SparseVLMs/blob/main/llava/model/language_model/modelling_sparse_llama.py} & \\
+        \cellcolor{green!10}\textbf{PyramidDrop}[CVPR'25] & training-free & LLM-level & \cmark & \url{https://github.com/Yusen-Peng/VLVLM/blob/c919621ca1f903ad081dc8cd5b7bf7d06fdede78/src/LLaVA_wrapper/llava_local/model/modeling_llama_pdrop.py#L1304} & \cmark \\
         \bottomrule
     \end{tabular}}
     \caption{Method list}
@@ -156,47 +160,149 @@
 \begin{table*}[ht]
     \centering
     \adjustbox{width=1.0\textwidth}{
-    \begin{tabular}{c|cccc|cccc|c}
+    \begin{tabular}{c|cccc|cccc|cc}
         \toprule
-         \textbf{\textcolor{cyan}{Training-free} Model} & \colorbox{yellow!20}{\textbf{MMBench}} & \colorbox{yellow!20}{\textbf{MME}} & \colorbox{yellow!20}{\textbf{MMMU}} & \colorbox{yellow!20}{\textbf{RealWorldQA}} & \colorbox{red!20}{\textbf{TextVQA}} & \colorbox{red!20}{\textbf{DocVQA}} & \colorbox{red!20}{\textbf{OCRBench}} & \colorbox{red!20}{\textbf{ChartQA}} & \colorbox{brown!20}{\textbf{TFLOPs}}  \\
+         \textbf{\textcolor{cyan}{Training-free} Model} & \colorbox{yellow!20}{\textbf{MMBench}} & \colorbox{yellow!20}{\textbf{MME}} & \colorbox{yellow!20}{\textbf{MMMU}} & \colorbox{yellow!20}{\textbf{RealWorldQA}} & \colorbox{red!20}{\textbf{TextVQA}} & \colorbox{red!20}{\textbf{DocVQA}} & \colorbox{red!20}{\textbf{OCRBench}} & \colorbox{red!20}{\textbf{ChartQA}} & \colorbox{brown!20}{\thead{\textbf{TFLOPs}\\$2048\times2048$}} & \colorbox{brown!20}{\thead{\textbf{Latency(ms)}\\$2048\times2048$}} \\
         \midrule
-        \rowcolor{gray!10}\multicolumn{9}{c}{2B scale} \\
+        \rowcolor{gray!10}\multicolumn{11}{c}{2B scale} \\
         time estimate & 25 mins & 15 mins & 15 mins & 10 mins & 55 mins & 2 hours & 25 mins & 35 mins \\
-        NEO-2B-MT & 74.74 & 1501.42 & 47.88 & 60.65 & 67.68 & 86.28 & 76.3 & 79.88 \\        
-        NEO-2B-SFT & 76.20 & 1565.7 & 48.33 & 62.74 & 73.94 & 89.86 & 77.0 & 81.0 \\
-        \rowcolor{green!10}\multicolumn{9}{c}{2x compression} \\
-        + fixed pooling & 70.62 & 1444.2 & 46.33 & 57.39 & 28.29 & 28.85 & 11.20 & 37.00 \\
-        + random pruning & 73.20 & 1489.2 & 46.00 & 57.12 & 32.18 & 35.33 & 18.40 & 35.12 \\
-        + ToMe & 74.57 & 1551.2 & 48.67 & 62.22 & 66.35 & 86.13 & 45.00 & 80.24 \\
-        + PruneSID & 74.74 & 1555.2 & 47.67 & 61.05 & 62.05 & 77.83 & 40.10 & 71.88 \\
-        \rowcolor{green!10}\multicolumn{9}{c}{4x compression} \\
-        + fixed pooling & 41.24 & 781.1 & 42.67 & 44.18 & 11.88 & 10.59 & 2.10 & 19.12 \\
-        + spatial pooling & 55.07 & 1086.5 & 43.89 & 46.80 & 15.93 & 18.78 & 4.20 & 28.40 \\
-        + random pruning & 61.00 & 1210.4 & 44.89 & 51.11 & 17.19 & 14.44 & 4.60 & 19.08 \\
-        + ToMe & 69.67 & 1427.5 & 46.56 & 56.99 & 47.91 & 67.01 & 16.60 & 73.24 \\
-        + PruneSID & 69.76 & 1397.4 & 45.78 & 55.16 & 40.51 & 44.36 & 10.40 & 45.84 \\
-        \rowcolor{green!10}\multicolumn{9}{c}{8x compression} \\
-        + fixed pooling & 29.64 & 565.8 & 42.56 & 42.48 & 9.41 & 8.69 & 1.80 & 13.24 \\
-        + spatial pooling & 31.70 & 589.4 & 42.11 & 42.75 & 9.44 & 9.35 & 1.80 & 15.08 \\
-        + random pruning & 41.67 & 852.1 & 43.11 & 45.62 & 11.87 & 9.56 & 2.70 & 15.20 \\
-        + ToMe & 57.99 & 1151.1 & 43.78 & 51.37 & 29.90 & 38.48 & 6.80 & 48.56 \\
-        + PruneSID & 59.62 & 1145.6 & 44.56 & 51.50 & 28.17 & 37.23 & 6.40 & 42.88 \\
-        \rowcolor{gray!10}\multicolumn{9}{c}{9B scale} \\
-        time estimate & \\
-        NEO-9B-SFT & \\
+        NEO-2B-MT & 74.74 & 1501.42 & 47.88 & 60.65 & 67.68 & 86.28 & 76.3 & 79.88 & 13.55 & 567.84 \\        
+        NEO-2B-SFT & 76.20 & 1565.7 & 48.33 & 62.74 & 73.94 & 89.86 & 77.0 & 81.0 & 13.55 & 567.84 \\
+        \rowcolor{green!10}\multicolumn{11}{c}{2x compression} \\
+        + fixed pooling & 70.62 & 1444.2 & 46.33 & 57.39 & 28.29 & 28.85 & 11.20 & 37.00 & 5.81 & 219.73 \\
+        + random pruning & 73.20 & 1489.2 & 46.00 & 57.12 & 32.18 & 35.33 & 18.40 & 35.12 & 5.80 & 219.51  \\
+        \hline
+        + \textbf{ToMe} & 74.57 & 1551.2 & 48.67 & 62.22 & 66.35 & 86.13 & 45.00 & 80.24 & 5.81 & 222.51 \\
+        + \textbf{PruneSID} & 74.74 & 1555.2 & 47.67 & 61.05 & 62.05 & 77.83 & 40.10 & 71.88 & 5.86 & 456.86 \\
+        + \textbf{CDPruner} & 74.48 & 1530.6 & 47.77 & 58.69 & 52.43 & 69.17 & 30.9 & 76.64 & 5.83 & 996.22 \\
+        \hline
+        + FP (train) & 74.39 & 1526.62 & 47.44 & 56.73 & 32.19 & 37.44 & 20.4 & 39.84 & 5.81 \\
+        + RP (train) & 72.68 & 1531.26 & 46.44 & 58.43 & 34.05 & 41.95 & 21.9 & 38.8 & 5.80 \\
+        + \textbf{Perceiver} \\
+        + \textbf{VLVLM} & 75.08 & 1538.00 & 47.22 & 59.34 & 58.94 & 80.04 & 40.6 & 68.12 & 5.85 & 221.26 \\
+
+        \hline
+        + \textbf{FastV-2} & 73.80 & 1533.6 & 48.67 & 59.61 & 54.38 & 82.00 & 47.10 & 79.20 & 6.19 & 240.96 \\
+        + \textbf{PyramidDrop-16} & 74.22 & 1536.36 & 47.77 & 57.90 & 67.18 & 81.54 & 51.2 & 63.04 & 8.92 & 366.62 \\
+
+        \rowcolor{green!11}\multicolumn{11}{c}{4x compression} \\
+        + fixed pooling & 41.24 & 781.1 & 42.67 & 44.18 & 11.88 & 10.59 & 2.10 & 19.12 & 2.70 & 115.09  \\
+        + spatial pooling & 55.07 & 1086.5 & 43.89 & 46.80 & 15.93 & 18.78 & 4.20 & 28.40 & 2.69 & 114.91 \\
+        + random pruning & 61.00 & 1210.4 & 44.89 & 51.11 & 17.19 & 14.44 & 4.60 & 19.08 & 2.69 & 115.63 \\
+        \hline
+        + \textbf{ToMe} & 69.67 & 1427.5 & 46.56 & 56.99 & 47.91 & 67.01 & 16.6 & 73.24 & 2.71 & 118.57 \\
+        + \textbf{PruneSID} & 69.76 & 1397.4 & 45.78 & 55.16 & 40.51 & 44.36 & 10.4 & 45.84 & 2.74 & 254.66 \\
+        + \textbf{CDPruner} & 68.55 & 1377.84 & 47.55 & 52.81 & 32.55 & 57.75 & 12.4 & 59.64 & 2.73 & 452.41 \\
+        
+        \hline
+        + \textbf{FastV-2} & 65.46 & 1390.0 & 46.56 & 55.56 & 35.24 & 63.92 & 16.40 & 61.52 & 3.23 & 137.57 \\
+        + \textbf{PyramidDrop-16} & 69.75 & 1439.62 & 46.44 & 51.50 & 51.39 & 55.87  & 20.9 & 37.48 & 7.01 & 301.27 \\
+       \rowcolor{green!10}\multicolumn{11}{c}{8x compression} \\
+        + fixed pooling & 29.64 & 565.8 & 42.56 & 42.48 & 9.41 & 8.69 & 1.80 & 13.24 & 1.34 & 114.64 \\
+        + spatial pooling & 31.70 & 589.4 & 42.11 & 42.75 & 9.44 & 9.35 & 1.80 & 15.08 & 1.33 & 114.84 \\
+        + random pruning & 41.67 & 852.1 & 43.11 & 45.62 & 11.87 & 9.56 & 2.70 & 15.20 & 1.33 & 114.44 \\
+        \hline
+        + \textbf{ToMe} & 57.99 & 1151.1 & 43.78 & 51.37 & 29.90 & 38.48 & 6.80 & 48.56 & 1.35 & 118.26 \\
+        + \textbf{PruneSID} & 59.62 & 1145.6 & 44.56 & 51.50 & 28.17 & 37.23 & 6.40 & 42.88 & 1.37 & 218.26 \\
+        + \textbf{CDPruner} & 56.18 & 1178.73 & 45.22 & 47.58 & 19.60 & 29.27 & 4.1 & 31.40 & 1.37 & 237.84 \\
+        \hline
+        + \textbf{FastV-2} & 56.62 & 1160.3 & 43.33 & 49.80 & 21.31 & 39.99 & 7.30 & 42.36 & 1.94 & 136.21 \\
+        + \textbf{PyramidDrop-16} & 58.16 & 1272.86 & 45.55 & 48.36 & 36.65 & 29.68 & 8.5 & 23.52 & 6.24 & 299.90 \\
         \bottomrule
     \end{tabular}}
-    \caption{\textbf{Training-free experiments only}.}
-    \label{tab:training-free}
+    \caption{\textbf{NEO-2B experiments}.}
+    \label{tab:results-2B}
 \end{table*}
 %todo jack 10/13-10/19: eval tflops with fvcore and plot like fig 1: ex in other VTC; run 9B scale experiments: ensure inference fits fine on 40GB A100
 
+
+\begin{table*}[ht]
+    \centering
+    \adjustbox{width=1.0\textwidth}{
+    \begin{tabular}{c|cccc|cccc|cc}
+        \toprule
+         \textbf{\textcolor{cyan}{Training-free} Model} & \colorbox{yellow!20}{\textbf{MMBench}} & \colorbox{yellow!20}{\textbf{MME}} & \colorbox{yellow!20}{\textbf{MMMU}} & \colorbox{yellow!20}{\textbf{RealWorldQA}} & \colorbox{red!20}{\textbf{TextVQA}} & \colorbox{red!20}{\textbf{DocVQA}} & \colorbox{red!20}{\textbf{OCRBench}} & \colorbox{red!20}{\textbf{ChartQA}} & \colorbox{brown!20}{\thead{\textbf{TFLOPs}\\$2048\times2048$}} & \colorbox{brown!20}{\thead{\textbf{Latency}\\$2048\times2048$}} \\
+        \midrule        \rowcolor{gray!10}\multicolumn{11}{c}{9B scale} \\
+        time estimate & 40 mins & 25 mins & 20 mins & 10 mins & 1 hour & 3 hours & 20 mins & 35 mins \\
+        NEO-9B-SFT & 82.22 & 1634.8 & 54.22 & 67.32 & 75.12 & 88.70 & 77.70 & 82.40 & 45.88 & 1338.35 \\
+        \rowcolor{green!10}\multicolumn{11}{c}{2x compression} \\
+        + fixed pooling & 75.95 & 1579.1 & 51.56 & 60.26 & 32.20 & 33.43 & 14.90 & 44.56 & 20.97 & 522.00 \\
+        + random pruning & 76.63 & 1586.2 & 50.78 & 61.57 & 34.37 & 36.97 & 19.50 & 36.12 & 20.94 & 522.20 \\
+        + \textbf{ToMe} & 80.76 & 1627.3 & 53.89 & 66.01 & 68.93 & 85.29 & 49.80 & 79.44 & 20.97 & 527.16 \\
+        + \textbf{PruneSID} & 80.24 & 1625.7 & 53.00 & 63.66 & 63.31 & 72.68 & 42.90 & 71.00 & 21.06 & 759.99 \\
+        + \textbf{CDPruner} & 79.46 & 1629.11 & 54.77 & 66.53 & 66.59 & 81.25 & 55.0 & 78.36 & 21.00 & 996.22 \\
+        \hline
+        + \textbf{VLVLM} & & & & & & & & & 21.10 \\
+        \hline
+        + \textbf{FastV-2} & 81.01 & 1635.9 & 53.00 & 65.75 & 62.21 & 65.37 & 42.60 & 77.40 & 22.12 & 564.60 \\
+        + \textbf{PyramidDrop-16} & 81.35 & 1639.96 & 53.88 & 67.32 & 72.97 & 82.65 & 55.2 & 66.48 & 30.47 & 842.52 \\
+        \rowcolor{green!10}\multicolumn{11}{c}{4x compression} \\
+        + fixed pooling & 51.46 & 1044.7 & 51.11 & 50.72 & 14.92 & 13.27 & 3.20 & 21.72 & 10.10 & 226.00 \\
+        + spatial pooling & 62.46 & 1258.9 & 50.11 & 50.72 & 18.46 & 21.77 & 5.90 & 32.52 & 10.08 & 225.22 \\
+        + random pruning & 68.30 & 1443.4 & 51.33 & 55.82 & 19.58 & 16.12 & 5.70 & 21.44 & 10.08 & 226.20  \\
+        + \textbf{ToMe} & 76.63 & 1528.0 & 52.78 & 59.35 & 53.31 & 69.37 & 20.30 & 70.64 & 10.12 & 231.99 \\
+        + \textbf{PruneSID} & 74.66 & 1500.2 & 52.44 & 60.00 & 42.94 & 49.55 & 13.70 & 43.96 & 10.18 & 363.99 \\
+        + \textbf{CDPruner} & 74.82 & 1476.2 & 53.88 & 61.17 & 49.93 & 71.65 & 21.7 & 70.24 & 10.15 & 452.41 \\
+        \hline
+        + \textbf{FastV-2} & 75.52 & 1516.1 & 51.78 & 60.65 & 41.23 & 38.09 & 12.20 & 54.32 & 11.78 & 281.38 \\
+        + \textbf{PyramidDrop-16} & 80.75 & 1639.58 & 53.66 & 65.75 & 64.19 & 66.15 & 35.3 & 39.2 & 23.75 & 660.32 \\
+        \rowcolor{green!10}\multicolumn{11}{c}{8x compression} \\
+        + fixed pooling & 37.29 & 714.7 & 49.22 & 45.36 & 10.85 & 10.29 & 2.20 & 16.84 & 5.07 & 125.69 \\
+        + spatial pooling & 41.58 & 795.6 & 50.00 & 44.71 & 12.08 & 10.85 & 2.20 & 18.60 & 5.07 & 125.45 \\
+        + random pruning & 56.87 & 1148.5 & 49.89 & 52.03 & 14.75 & 11.23 & 3.10 & 16.88 & 5.07 & 125.93 \\
+        + \textbf{ToMe} & 67.10 & 1296.1 & 51.67 & 55.29 & 38.06 & 46.34 & 10.10 & 51.40 & 5.10 & 133.38 \\
+        + \textbf{PruneSID} & 68.38 & 1355.4 & 51.11 & 57.25 & 34.84 & 43.52 & 8.40 & 46.00 & 5.15 & 228.96 \\
+        + \textbf{CDPruner} & 66.92 & 1241.56 & 51.55 & 56.73 & 32.43 & 47.20 & 10.2 & 53.96 & 5.13 & 237.84 \\
+        \hline
+        + \textbf{FastV-2} & 68.30 & 1379.2 & 51.44 & 52.94 & 24.98 & 20.82 & 5.40 & 25.32 & 7.00 & 186.01 \\
+        + \textbf{PyramidDrop-16} & 79.20 & 1538.08 & 53.00 & 61.04 & 52.96 & 46.69 & 24.3 & 23.04 & 20.65 & 598.80 \\
+        \bottomrule
+    \end{tabular}}
+    \caption{\textbf{NEO-9B experiments}.}
+    \label{tab:results-9B}
+\end{table*}
+
+
 \begin{figure*}[ht]
     \centering
-    \includegraphics[width=1.0\linewidth]{figures/training_free_compression.pdf}
-    \caption{NEO-2B-SFT training-free results from \autoref{fig:NEO-2B-SFT-free}.}
-    \label{fig:NEO-2B-SFT-free}
+    \includegraphics[width=1.0\linewidth]{figures/training_free_tflops_NEO-2B-SFT.pdf}
+    \caption{NEO-2B-SFT training-free results -- FLOPs}
+    \label{fig:NEO-2B-SFT-free-tflops}
 \end{figure*}
+
+\begin{figure*}[ht]
+    \centering
+    \includegraphics[width=1.0\linewidth]{figures/training_free_latency_NEO-2B-SFT.pdf}
+    \caption{NEO-2B-SFT training-free results -- Latency}
+    \label{fig:NEO-2B-SFT-free-latency}
+\end{figure*}
+
+
+\begin{figure*}[ht]
+    \centering
+    \includegraphics[width=1.0\linewidth]{figures/training_free_tflops_NEO-9B-SFT.pdf}
+    \caption{NEO-9B-SFT training-free results - FLOPs}
+    \label{fig:NEO-9B-SFT-free-tflops}
+\end{figure*}
+
+\begin{figure*}[ht]
+    \centering
+    \includegraphics[width=1.0\linewidth]{figures/training_free_latency_NEO-9B-SFT.pdf}
+    \caption{NEO-9B-SFT training-free results - Latency}
+    \label{fig:NEO-9B-SFT-free-latency}
+\end{figure*}
+
+
+
+
+\begin{figure*}[ht]
+    \centering
+    \includegraphics[width=1.0\linewidth]{figures/scaling_pareto.pdf}
+    \caption{Compute-Performance Pareto Frontier across 2B and 9B}
+    \label{fig:scaling_pareto}
+\end{figure*}
+
+
 
 % \begin{table*}[ht]
 %     \centering
@@ -239,13 +345,13 @@
 \begin{table*}[ht]
     \centering
     \adjustbox{width=1.0\textwidth}{
-    \begin{tabular}{c|cccc|cccc}
+    \begin{tabular}{c|cccc|cccc|c}
         \toprule
-        \textbf{\textcolor{red}{Training-based} Model} & \colorbox{yellow!20}{\textbf{MMBench}} & \colorbox{yellow!20}{\textbf{MME}} & \colorbox{yellow!20}{\textbf{MMMU}} & \colorbox{yellow!20}{\textbf{RealWorldQA}} & \colorbox{red!20}{\textbf{TextVQA}} & \colorbox{red!20}{\textbf{DocVQA}} & \colorbox{red!20}{\textbf{OCRBench}} & \colorbox{red!20}{\textbf{ChartQA}} \\
+        \textbf{\textcolor{red}{Training-based} Model} & \colorbox{yellow!20}{\textbf{MMBench}} & \colorbox{yellow!20}{\textbf{MME}} & \colorbox{yellow!20}{\textbf{MMMU}} & \colorbox{yellow!20}{\textbf{RealWorldQA}} & \colorbox{red!20}{\textbf{TextVQA}} & \colorbox{red!20}{\textbf{DocVQA}} & \colorbox{red!20}{\textbf{OCRBench}} & \colorbox{red!20}{\textbf{ChartQA}} & \colorbox{brown!20}{\thead{\textbf{TFLOPs}\\$2048\times2048$}} \\
         \midrule
-        \rowcolor{gray!10}\multicolumn{9}{c}{2B scale} \\
+        \rowcolor{gray!10}\multicolumn{10}{c}{2B scale} \\
         time estimate & 25 mins & 15 mins & 15 mins & 10 mins & 55 mins & 2 hours & 25 mins & 35 mins \\
-        \textcolor{gray}{NEO-2B-MT} & \textcolor{gray}{74.74} & \textcolor{gray}{1501.42} & \textcolor{gray}{47.88} & \textcolor{gray}{60.65} & \textcolor{gray}{67.68} & \textcolor{gray}{86.28} & \textcolor{gray}{76.3} & \textcolor{gray}{79.88} \\
+        \textcolor{gray}{NEO-2B-MT} & \textcolor{gray}{74.74} & \textcolor{gray}{1501.42} & \textcolor{gray}{47.88} & \textcolor{gray}{60.65} & \textcolor{gray}{67.68} & \textcolor{gray}{86.28} & \textcolor{gray}{76.3} & \textcolor{gray}{79.88} & \\
         \textcolor{gray}{NEO-2B-SFT (OCR@76K)} & \textcolor{gray}{76.03} & \textcolor{gray}{1584.11} & \textcolor{gray}{47.22} & \textcolor{gray}{63.00} & \textcolor{gray}{59.88} & \textcolor{gray}{82.76} & \textcolor{gray}{76.0} & \textcolor{gray}{44.4} \\
         \rowcolor{yellow!10}NEO-2B-SFT & 76.20 & 1565.7 & 48.33 & 62.74 & 73.94 & 89.86 & 77.0 & 81.0 \\
         NEO-2B-SFT \textbf{(LLaVA@66K)} & 75.68 & 1572.73 & 47.88 & 62.22 & 72.16 & 89.16 & 75.9 & 79.92  \\
@@ -257,23 +363,34 @@
         \rowcolor{green!10}\multicolumn{9}{c}{2x compression} \\
         % + fixed pooling (OCR@76K) & 72.42 & 1502.6 & 47.22 & 57.77 & \textcolor{red}{27.80} & \textcolor{red}{37.12} & \textcolor{red}{19.5} & \textcolor{red}{30.72} \\
         \rowcolor{gray!10}\multicolumn{9}{c}{\textbf{training-free methods}} \\
-        ToMe & 74.57 & 1551.2 & 48.67 & 62.22 & 66.35 & 86.13 & 45.0 & 80.24 \\
-        PruneSID & 74.74 & 1555.2 & 47.67 & 61.05 & 62.05 & 77.83 & 40.1 & 71.88 \\
+        \textbf{ToMe} & 74.57 & 1551.2 & 48.67 & 62.22 & 66.35 & 86.13 & 45.0 & 80.24 \\
+        \textbf{PruneSID} & 74.74 & 1555.2 & 47.67 & 61.05 & 62.05 & 77.83 & 40.1 & 71.88 \\
+        \textbf{CDPruner} & 74.48 & 1530.6 & 47.77 & 58.69 & 52.43 & 69.17 & 30.9 & 76.64 \\
+
+
         \rowcolor{gray!10}\multicolumn{9}{c}{\textbf{fixed pooling}} \\
         
         no train & 70.62 & 1444.2 & 46.33 & 57.39 & 28.29 & 28.85 & 11.2 & 37.00 \\
         
-        + LLaVA@66K & 74.39 & 1526.62 & 47.44 & 56.73 & 32.19 & 37.44 & 20.4 & 39.84 \\
+        \rowcolor{yellow!30}+ LLaVA@66K & 74.39 & 1526.62 & 47.44 & 56.73 & 32.19 & 37.44 & 20.4 & 39.84 \\
         + LLaVA@332K & 73.88 & 1525.03 & 45.11 & 58.69 & 35.47 & 43.08 & 22.9 & 41.12 \\
         + LLaVA@66K+KL & 74.22 & 1517.88 & 47.22 & 59.74 & 32.48 & 36.73 & 20.2 & 40.48 \\
         + AskModelAnything@66K & 72.94 & 1496.3 & 47.55 & 60.65 & 32.12 & 37.46 & 20.0 & 35.56 \\
         \rowcolor{gray!10}\multicolumn{9}{c}{\textbf{random pruning}} \\
         
         no train & 73.20 & 1489.2 & 46.00 & 57.12 & 32.18 & 35.33 & 18.4 & 35.12\\
-        + LLaVA@66K & 72.68 & 1531.26 & 46.44 & 58.43 & 34.05 & 41.95 & 21.9 & 38.8 \\
-        \rowcolor{gray!10}\multicolumn{9}{c}{\textbf{Perceiver}} \\ + LLaVA@66K \\
-        \rowcolor{gray!10}\multicolumn{9}{c}{\textbf{DRIP}} \\
-        + LLaVA@66K \\
+        \rowcolor{yellow!30}+ LLaVA@66K & 72.68 & 1531.26 & 46.44 & 58.43 & 34.05 & 41.95 & 21.9 & 38.8 \\
+        \rowcolor{gray!10}\multicolumn{9}{c}{\textbf{Perceiver}} \\ 
+        + LLaVA@66K, 2x, FP & 74.31 & 1523.96 & 46.89 & 57.65 & 32.38 & 37.33 & 20.80 & 40.12 \\
+        \rowcolor{gray!10}\multicolumn{9}{c}{\textbf{DRIP/VLVLM}} \\
+        + LLaVA@66K (temp=0.1) & 68.72 & 1506.75 & 45.55 & 53.07 & 32.88 & 46.52 & 18.5 & 38.08 \\
+        \cellcolor{pink!40}\texttt{TRAIN} - different temp \\
+
+        + LLaVA@66K (temp=0.01) & 68.64 & 1506.46 & 45.55 & 53.59 & 32.77 & 46.07 & 17.6 & 38.04 \\
+        \cellcolor{pink!40}\texttt{TRAIN} - different LR \\
+        + LLaVA@66K, 1e-4 & 68.72 & 1506.75 & 45.55 & 53.07 & 32.88 & 46.52 & 18.5 & 38.08 \\
+        \cellcolor{pink!40}\texttt{INFERENCE} - Two-tailed \\
+        \rowcolor{yellow!30}+ LLaVA@66K, 5:5 & \textbf{75.08} & \textbf{1538.00} & \textbf{47.22} & \textbf{59.34} & \textbf{58.94} & \textbf{80.04} & \textbf{40.6} & \textbf{68.12} & 5.85/2.74/1.37 \\
 
         \rowcolor{green!10}\multicolumn{9}{c}{4x compression} \\
         \rowcolor{gray!10}\multicolumn{9}{c}{\textbf{training-free methods}} \\
@@ -281,7 +398,7 @@
         + fixed pooling & & &  \\
         random pruning & \\
         
-        + Perceiver & \\
+        + (Perceiver) LLaVA@66K, FP & 64.60 & 1371.42 & 44.67 & 51.37 & 15.63 & 14.27 & 2.80 & 21.52 \\
         + DRIP & \\   
 
         \rowcolor{green!10}\multicolumn{9}{c}{8x compression} \\
@@ -290,7 +407,7 @@
         
         + fixed pooling & &  & \\
         + random pruning & \\
-        + Perceiver & \\
+        + (Perceiver) LLaVA@66K, FP & 44.07 & 1049.97 & 42.22 & 47.97 & 10.59 & 9.78 & 1.90 & 13.56 \\
         + DRIP & \\        
         
         \rowcolor{gray!10}\multicolumn{9}{c}{9B scale} \\
@@ -301,7 +418,7 @@
     \label{tab:training-based}
 \end{table*}
 
-
+% todo jack 11/03: expand training experiments to 4x 8x (tab 4), run fast v at deeper layer (16 rather than 2), fix and run perceiver with random initialized perceiver. Think about RQs + more. undestand drip boundary selecting & why two tailed. 
 
 
 % \cite{andrew2007scalable}

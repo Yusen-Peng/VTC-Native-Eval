@@ -2357,6 +2357,19 @@ neo_series.update({
     for r in (2, 4, 8)
 })
 
+# FastV pruning once after decoder layer K (16 = PyramidDrop-16's first layer; 24 = 2B 2x only, saturation check);
+# otherwise identical to the -layer2- keys
+neo_series.update({
+    f"NEO-{scale}-SFT-FastV-layer{k}-{r}x": partial(
+        NEOChat,
+        model_path=f"Paranioar/NEO1_0-{scale}-SFT",
+        llm_vtc_method="fastv",
+        llm_compression_ratio=1 / r,
+        compression_layer=k,
+    )
+    for scale, k, r in [(s, 16, r) for s in ("2B", "9B") for r in (2, 4, 8)] + [("2B", 24, 2)]
+})
+
 # direction perceiver-learned: new Perceiver query modes (same recipe, QUERIES=learned_residual, COMP_LR 1e-3)
 neo_series.update({
     f"NEO-2B-SFT-OV-LLaVA-llava66k-{name}-{r}x": partial(

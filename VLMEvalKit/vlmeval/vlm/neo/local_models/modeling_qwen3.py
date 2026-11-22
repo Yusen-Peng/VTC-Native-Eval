@@ -28,6 +28,7 @@ from transformers import Qwen3Config
 
 from .compressors.llm.fastv import FastV
 from .compressors.llm.pyramid_drop import PyramidDrop
+from .compressors.llm.llm_fixed_pooling import FixedPooling
 
 
 def create_block_causal_mask(index: torch.Tensor):
@@ -419,6 +420,11 @@ class Qwen3Model(Qwen3PreTrainedModel):
                 compression_ratio=config.compression_ratio,
                 compression_layer=config.compression_layer,
             )
+        elif method == "llm_fixed":
+            self.llm_compressor = FixedPooling(
+                compression_ratio=config.compression_ratio,
+                compression_layer=config.compression_layer,
+            )
 
         elif method == "sparsevlm":
             raise NotImplementedError("SparseVLM method is not implemented")
@@ -529,18 +535,25 @@ class Qwen3Model(Qwen3PreTrainedModel):
             )
 
             if (is_compression_prefill and layer_idx + 1 == self.llm_compressor.compression_layer):
-                keep_indices = self.llm_compressor.select_indices(
-                    hidden_states=hidden_states,
-                    indexes=indexes,
-                    visual_mask=visual_mask,
-                    next_layer=self.layers[layer_idx + 1],
-                    attn_weights=decoder_layer.last_attn,
-                )
-                decoder_layer.last_attn = None  # [1, heads, L, L]: too large to keep around
+                if isinstance(self.llm_compressor, FixedPooling):
+                    hidden_states, indexes, visual_mask = self.llm_compressor.pool(
+                        hidden_states=hidden_states,
+                        indexes=indexes,
+                        visual_mask=visual_mask,
+                    )
+                else:
+                    keep_indices = self.llm_compressor.select_indices(
+                        hidden_states=hidden_states,
+                        indexes=indexes,
+                        visual_mask=visual_mask,
+                        next_layer=self.layers[layer_idx + 1],
+                        attn_weights=decoder_layer.last_attn,
+                    )
+                    decoder_layer.last_attn = None  # [1, heads, L, L]: too large to keep around
 
-                hidden_states = hidden_states[:, keep_indices, :]
-                indexes = indexes[:, keep_indices]
-                visual_mask = visual_mask[keep_indices]
+                    hidden_states = hidden_states[:, keep_indices, :]
+                    indexes = indexes[:, keep_indices]
+                    visual_mask = visual_mask[keep_indices]
                 
                 # rebuild the attention mask for the shortened sequence.
                 causal_mask_mapping["full_attention"] = create_block_causal_mask(indexes[0])

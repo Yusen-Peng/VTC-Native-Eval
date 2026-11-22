@@ -2,8 +2,8 @@
 
 set -e
 
-DATASET="OCRBench"
-TIME="00:45:00"
+DATASET="DocVQA_VAL"
+TIME="03:00:00"
 
 # ============================================================
 # Model Zoo
@@ -64,17 +64,17 @@ submit_eval() {
     local MODEL=$1
 
     sbatch \
-        --job-name="OCRBench_${MODEL}" \
+        --job-name="DocVQA_VAL_${MODEL}" \
         --time="$TIME" \
-        --output="logs/${MODEL}_OCRBench_%j.out" \
+        --output="logs/${MODEL}_DocVQA_VAL_%j.out" \
         /users/PAS2912/yusenpeng/VTC-Eval/VTCeval_scripts/eval.sbatch \
         "$DATASET" \
         "$MODEL"
 }
 
 for MODEL in "${MODELS[@]}"; do
-    echo "Submitting OCRBench evaluation for ${MODEL}..."
+    echo "Submitting DocVQA_VAL evaluation for ${MODEL}..."
     submit_eval "$MODEL"
 done
 
-echo "All OCRBench jobs submitted!"
+echo "All DocVQA_VAL jobs submitted!"

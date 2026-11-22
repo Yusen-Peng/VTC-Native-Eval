@@ -8,8 +8,8 @@ conda activate neo
 python tradeoff_analysis.py
 """
 
-baseline_model = "NEO-9B-SFT" # NEO-2B-SFT or NEO-9B-SFT
-csv_path = "training_free_9B.csv" # training_free_2B.csv or training_free_9B.csv
+baseline_model = "NEO-2B-SFT" # NEO-2B-SFT or NEO-9B-SFT
+csv_path = "results_2B.csv"
 
 coarse_benchmarks = [
     "MMBench",
@@ -37,18 +37,6 @@ flops_df = pd.read_csv("flops.csv")
 
 # Select the corresponding model scale
 scale = "2B" if baseline_model == "NEO-2B-SFT" else "9B"
-
-flops_df = flops_df[flops_df["scale"] == scale]
-
-# Merge latency measurements
-df = df.merge(
-    flops_df[
-        ["Model", "compression", "total_latency_ms"]
-    ],
-    on=["Model", "compression"],
-    how="left",
-    validate="one_to_one",
-)
 
 baseline = df[df["Model"] == baseline_model].iloc[0]
 
@@ -84,23 +72,33 @@ df["OCR"] = df.apply(
 
 methods = [
     "fixed pooling",
+    "fixed pooling(train)",
     "spatial pooling",
     "random pruning",
+    "random pruning(train)",
     "ToMe",
     "PruneSID",
     "CDPruner",
+    "Perceiver",
+    "VLVLM",
     "FastV-2",
+    "FastV-16",
     "PyramidDrop-16",
 ]
 
 method_styles = {
     "fixed pooling":   {"marker": "o", "color": "tab:blue"},
-    "spatial pooling": {"marker": "s", "color": "tab:orange"},
+    "fixed pooling(train)": {"marker": "o", "color": "navy"},
+    "spatial pooling": {"marker": "o", "color": "tab:orange"},
     "random pruning":  {"marker": "^", "color": "tab:green"},
+    "random pruning(train)": {"marker": "^", "color": "tab:olive"},
     "ToMe":            {"marker": "D", "color": "tab:red"},
     "PruneSID":        {"marker": "P", "color": "tab:purple"},
     "CDPruner":        {"marker": "H", "color": "tab:cyan"},
+    "Perceiver":        {"marker": "H", "color": "magenta"},
+    "VLVLM":           {"marker": "s", "color": "gold"},
     "FastV-2":         {"marker": "v", "color": "tab:gray"},
+    "FastV-16":        {"marker": "v", "color": "tab:pink"},
     "PyramidDrop-16":  {"marker": "X", "color": "tab:brown"},
 }
 
@@ -195,8 +193,8 @@ def plot_performance(x_col, xlabel, filename):
                 ax.set_xticks([0, 5, 10, 20, 30, 40, 45])
                 ax.set_xlim(0, 50)
 
-            elif x_col == "total_latency_ms":
-                ax.set_xlim(left=0)
+        elif x_col == "stress_total_latency_ms":
+            ax.set_xlim(left=0)
 
     axes[0].set_ylabel(
         f"Relative Performance vs. {baseline_model} (%)",
@@ -214,7 +212,7 @@ def plot_performance(x_col, xlabel, filename):
         labels,
         loc="upper center",
         bbox_to_anchor=(0.5, 1.04),
-        ncol=len(methods) + 2,
+        ncol=(len(methods) + 2)//2,
         frameon=False,
     )
 
@@ -260,7 +258,7 @@ plot_performance(
 # ============================================================
 
 plot_performance(
-    x_col="total_latency_ms",
+    x_col="stress_total_latency_ms",
     xlabel="Prefill Latency (ms)",
     filename=f"training_free_latency_{baseline_model}",
 )

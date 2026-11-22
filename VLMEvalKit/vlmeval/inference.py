@@ -1,7 +1,7 @@
 import torch
 import torch.distributed as dist
 from vlmeval.config import supported_VLM
-from vlmeval.utils import track_progress_rich
+from vlmeval.utils import track_progress_rich, NEOPrefillProfiler
 from vlmeval.smp import *
 
 FAIL_MSG = 'Failed to obtain answer via API.'
@@ -144,6 +144,13 @@ def infer_data(model, model_name, work_dir, dataset, out_file, verbose=False, ap
     else:
         # --------- deserve deserve to note --------- #
         model.set_dump_image(dataset.dump_image)
+    profiler = NEOPrefillProfiler(model.model)
+    profiler.install()
+    latency_records = []
+    latency_csv = osp.join(
+        work_dir,
+        f'{model_name}_{dataset_name}_prefill_latency.csv'
+    )
 
     for i in tqdm(range(lt), desc=f'Infer {model_name}/{dataset_name}, Rank {rank}/{world_size}'):
         idx = data.iloc[i]['index']
@@ -159,13 +166,34 @@ def infer_data(model, model_name, work_dir, dataset, out_file, verbose=False, ap
         if os.environ.get('SKIP_ERR', False) == '1':
             FAIL_MSG = 'Failed to obtain answer'
             try:
-                response = model.generate(message=struct, dataset=dataset_name)
+                # response = model.generate(message=struct, dataset=dataset_name)
+                profiler.start_profiling()
+                try:
+                    response = model.generate(message=struct, dataset=dataset_name)
+                finally:
+                    prefill_latency = profiler.stop_profiling()
+
             except RuntimeError as err:
                 torch.cuda.synchronize()
                 warnings.warn(f'{type(err)} {str(err)}')
                 response = f'{FAIL_MSG}: {type(err)} {str(err)}'
         else:
-            response = model.generate(message=struct, dataset=dataset_name)
+            # response = model.generate(message=struct, dataset=dataset_name)
+            profiler.start_profiling()
+            try:
+                response = model.generate(message=struct, dataset=dataset_name)
+            finally:
+                prefill_latency = profiler.stop_profiling()
+
+        if prefill_latency is not None and not str(response).startswith('Failed to obtain answer'):
+            latency_records.append({
+                'index': idx,
+                'prefill_latency_ms': prefill_latency,
+            })
+
+            if verbose:
+                print(f'[{dataset_name}] Sample {idx}: {prefill_latency:.3f} ms')
+    
         torch.cuda.empty_cache()
 
         if verbose:
@@ -177,6 +205,29 @@ def infer_data(model, model_name, work_dir, dataset, out_file, verbose=False, ap
 
     res = {k: res[k] for k in data_indices}
     dump(res, out_file)
+    profiler.close()
+    # Save per-sample latency measurements
+    latency_df = pd.DataFrame(
+        latency_records,
+        columns=['index', 'prefill_latency_ms']
+    )
+    latency_df.to_csv(latency_csv, index=False)
+    if len(latency_df) > 0:
+        latencies = latency_df['prefill_latency_ms']
+        mean_ms = latencies.mean()
+        median_ms = latencies.median()
+        p90_ms = latencies.quantile(0.90)
+        total_s = latencies.sum() / 1000
+        print(
+            f'\n[{model_name} / {dataset_name}] Prefill Latency:\n'
+            f'  Samples: {len(latencies)}\n'
+            f'  Mean:    {mean_ms:.3f} ms\n'
+            f'  Median:  {median_ms:.3f} ms\n'
+            f'  P90:     {p90_ms:.3f} ms\n'
+            f'  Total:   {total_s:.3f} s\n'
+            f'  CSV:     {latency_csv}\n',
+            flush=True,
+        )
     return model
 
 # --------- deserve deserve to note --------- #

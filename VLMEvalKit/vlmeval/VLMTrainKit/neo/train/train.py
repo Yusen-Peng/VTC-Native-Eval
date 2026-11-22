@@ -33,9 +33,7 @@ def safe_save_model_for_hf_trainer(trainer: Trainer, output_dir: str):
 
 def set_model(model_args, model):
     if model_args.train_buffer:
-        logging.info(
-            f"Only train buffer with extra {model_args.extra_num_layers} layers"
-        )
+        print(f"Only train buffer with extra {model_args.extra_num_layers} layers", flush=True)
         for name, param in model.named_parameters():
             parts = name.split(".")
             if (
@@ -116,7 +114,8 @@ def train():
     torch.set_grad_enabled(True)
 
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
-        logging.info("checkpoint found, resume training")
+        # `transformers.utils.logging` is a module without `.info`; print so the resume shows up in the job log
+        print("checkpoint found, resume training", flush=True)
         trainer.train(resume_from_checkpoint=True)
     else:
         trainer.train()

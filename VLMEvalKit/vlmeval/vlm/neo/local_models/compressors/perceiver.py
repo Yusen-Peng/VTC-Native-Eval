@@ -45,7 +45,13 @@ class PerceiverCompressor(FixedPoolingCompressor):
       positions are the bottom-right native token of each cell. A final LayerNorm, rescaled to the RMS
       of the native tokens, keeps the output on the scale the LLM expects.
 
-    In both modes queries and keys get 2D RoPE inside the attention (queries at their segment / cell
+    - ``learned_residual`` (direction perceiver-learned, item 2): the ``pooled`` module plus a learned
+      [D, G, G] latent grid, bilinearly sampled at each pooled token's segment centroid and added to the
+      query; latents and gates start at 0, so at init the module is again exactly fixed pooling, but the
+      latents can move the queries (and, through the residual, the output tokens) away from the pooled
+      content. Token count and positions are those of ``pooled``.
+
+    In all modes queries and keys get 2D RoPE inside the attention (queries at their segment / cell
     centre), so the scores depend on relative position consistently across resolutions.
     """
 
@@ -63,8 +69,8 @@ class PerceiverCompressor(FixedPoolingCompressor):
         del self.null_group
         if hidden_size % head_dim != 0:
             raise ValueError(f"hidden_size {hidden_size} not divisible by head_dim {head_dim}")
-        if queries not in ("pooled", "learned"):
-            raise ValueError(f"queries must be 'pooled' or 'learned', got {queries}")
+        if queries not in ("pooled", "learned", "learned_residual"):
+            raise ValueError(f"queries must be 'pooled', 'learned' or 'learned_residual', got {queries}")
         self.queries = queries
         self.num_heads = hidden_size // head_dim
         self.head_dim = head_dim
@@ -82,11 +88,12 @@ class PerceiverCompressor(FixedPoolingCompressor):
             nn.GELU(),
             nn.Linear(mlp_ratio * hidden_size, hidden_size),
         )
-        if queries == "pooled":
+        if queries in ("pooled", "learned_residual"):
             self.attn_gate = nn.Parameter(torch.zeros(1))
             self.mlp_gate = nn.Parameter(torch.zeros(1))
-        else:
+        if queries in ("learned", "learned_residual"):
             self.latents = nn.Parameter(torch.zeros(1, hidden_size, latent_grid, latent_grid))
+        if queries == "learned":
             self.norm_out = nn.LayerNorm(hidden_size)
         self.reset_parameters()
 
@@ -96,11 +103,13 @@ class PerceiverCompressor(FixedPoolingCompressor):
         for m in self.modules():
             if isinstance(m, (nn.Linear, nn.LayerNorm)):
                 m.reset_parameters()
-        if self.queries == "pooled":
+        if self.queries in ("pooled", "learned_residual"):
             nn.init.zeros_(self.attn_gate)
             nn.init.zeros_(self.mlp_gate)
-        else:
+        if self.queries == "learned":
             nn.init.trunc_normal_(self.latents, std=0.02)
+        elif self.queries == "learned_residual":
+            nn.init.zeros_(self.latents)  # init = fixed pooling exactly
 
     def load_perceiver_weights(self, perceiver_path):
         print(f"🔭 Loading Perceiver weights from {perceiver_path}")
@@ -112,13 +121,13 @@ class PerceiverCompressor(FixedPoolingCompressor):
         return -(-h // self.cell_h), -(-w // self.cell_w)
 
     def num_output_tokens(self, h: int, w: int) -> int:
-        if self.queries == "pooled":
+        if self.queries != "learned":
             return super().num_output_tokens(h, w)
         gh, gw = self._cell_grid(h, w)
         return gh * gw
 
     def kept_indices(self, h: int, w: int, device: Optional[torch.device] = None) -> torch.Tensor:
-        if self.queries == "pooled":
+        if self.queries != "learned":
             return super().kept_indices(h, w, device=device)
         # bottom-right native token of each cell (cf. fixed pooling's last token per segment)
         gh, gw = self._cell_grid(h, w)
@@ -141,10 +150,16 @@ class PerceiverCompressor(FixedPoolingCompressor):
         key_h = torch.arange(h, device=x.device, dtype=torch.float32).repeat_interleave(w)
         key_w = torch.arange(w, device=x.device, dtype=torch.float32).repeat(h)
 
-        if self.queries == "pooled":
+        if self.queries != "learned":
             queries = super().forward(x)  # [B, S, D] fixed-pooling outputs
             # query position = centroid of its pooling segment
             q_h, q_w = super().forward(torch.stack((key_h, key_w), dim=-1)[None])[0].unbind(-1)
+            if self.queries == "learned_residual":
+                # latent grid sampled (bilinear) at the segment centroids, in normalised image coordinates
+                grid = torch.stack(((q_w + 0.5) / w * 2 - 1, (q_h + 0.5) / h * 2 - 1), dim=-1)  # [S, 2] (x, y)
+                lat = F.grid_sample(self.latents, grid[None, None], mode="bilinear",
+                                    padding_mode="border", align_corners=False)  # [1, D, 1, S]
+                queries = queries + lat[0, :, 0].transpose(0, 1).to(queries.dtype)
         else:
             gh, gw = self._cell_grid(h, w)
             queries = F.interpolate(self.latents, size=(gh, gw), mode="bilinear", align_corners=False)
@@ -167,7 +182,7 @@ class PerceiverCompressor(FixedPoolingCompressor):
         attn = attn.float().softmax(dim=-1).to(v.dtype)
         out = (attn @ v).transpose(1, 2).reshape(B, S, D)
 
-        if self.queries == "pooled":
+        if self.queries != "learned":
             queries = queries + self.attn_gate.tanh() * self.o_proj(out)
             queries = queries + self.mlp_gate.tanh() * self.mlp(self.norm_mlp(queries))
         else:

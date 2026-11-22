@@ -16,13 +16,12 @@ python visualize_neo_drip.py --dataset docvqa
 
 
 MODEL_BASE = "Paranioar/NEO1_0-2B-SFT"
-DRIP_WEIGHT_PATH = "/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x/drip.bin"
-# DRIP_WEIGHT_PATH = "/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_temp001/drip.bin"
-# DRIP_WEIGHT_PATH = "/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_temp05/drip.bin"
-# DRIP_WEIGHT_PATH = "/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_temp10/drip.bin"
-# DRIP_WEIGHT_PATH = "/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_1e4/drip.bin"
-# DRIP_WEIGHT_PATH = "/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x_1e3/drip.bin"
-COMPRESSION_RATIO = 0.5
+# DRIP_WEIGHT_PATH = "/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x/drip.bin"
+# COMPRESSION_RATIO = 0.5
+# DRIP_WEIGHT_PATH = "/fs/scratch/PAS2836/jacktaylor/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_4x/drip.bin"
+# COMPRESSION_RATIO = 0.25
+DRIP_WEIGHT_PATH = "/fs/scratch/PAS2836/jacktaylor/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_8x/drip.bin"
+COMPRESSION_RATIO = 0.125
 
 
 GENERAL_IMAGE_DIR = "/users/PAS2912/yusenpeng/DRIP/QwenVL/qwen-vl-finetune/qwenvl/boundaries/image_examples"

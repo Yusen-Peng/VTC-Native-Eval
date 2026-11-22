@@ -28,11 +28,17 @@ SCALE=${SCALE:-2B}
 VARIANTS=("" -Fixed-2x -Fixed-4x -Fixed-8x -Random-2x -Random-4x -Random-8x -ToMe-2x -ToMe-4x -ToMe-8x
           -PruneSID-2x -PruneSID-4x -PruneSID-8x -Spatial-4x -Spatial-8x)
 SUITE=${SUITE:-general}
-case "$SUITE" in
-    general) DATASETS=(MMBench_DEV_EN MME MMMU_DEV_VAL RealWorldQA) ;;
-    ocr)     DATASETS=(TextVQA_VAL DocVQA_VAL OCRBench ChartQA_TEST) ;;
-    *) echo "unknown SUITE=$SUITE (expected general|ocr)"; exit 2 ;;
-esac
+if [ -n "${DATASETS:-}" ]; then
+    # DATASETS="d1 d2 ..." (space-separated, exported in the submitting shell with --export=ALL) replaces the suite,
+    # e.g. both suites in one array: DATASETS="MMBench_DEV_EN MME MMMU_DEV_VAL RealWorldQA TextVQA_VAL DocVQA_VAL OCRBench ChartQA_TEST"
+    read -ra DATASETS <<< "$DATASETS"
+else
+    case "$SUITE" in
+        general) DATASETS=(MMBench_DEV_EN MME MMMU_DEV_VAL RealWorldQA) ;;
+        ocr)     DATASETS=(TextVQA_VAL DocVQA_VAL OCRBench ChartQA_TEST) ;;
+        *) echo "unknown SUITE=$SUITE (expected general|ocr)"; exit 2 ;;
+    esac
+fi
 if [ -n "${MODELS:-}" ]; then
     # MODELS="name1 name2 ..." (config.py keys, e.g. trained checkpoints) replaces the variant list
     read -ra MODEL_LIST <<< "$MODELS"

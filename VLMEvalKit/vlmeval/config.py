@@ -2333,63 +2333,6 @@ neo_series = {
         drip_path="/fs/scratch/PAS2836/jacktaylor/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_8x/drip.bin",
     ),
 
-    "NEO-2B-SFT-OV-LLaVA-llava66k-DRIP-4x-two-tailed-LATENCY-ONLY": partial(
-        NEOChat,
-        model_path="Paranioar/NEO1_0-2B-SFT",
-        lora_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x",
-        patch_size=16,
-        min_pixels=1280 * 32 * 32,
-        max_pixels=4096 * 32 * 32,
-        downsample_ratio=0.5,
-        vtc_method="drip",
-        compression_ratio=0.25,
-        drip_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x/drip.bin",
-    ),
-
-    "NEO-2B-SFT-OV-LLaVA-llava66k-DRIP-8x-two-tailed-LATENCY-ONLY": partial(
-        NEOChat,
-        model_path="Paranioar/NEO1_0-2B-SFT",
-        lora_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x",
-        patch_size=16,
-        min_pixels=1280 * 32 * 32,
-        max_pixels=4096 * 32 * 32,
-        downsample_ratio=0.5,
-        vtc_method="drip",
-        compression_ratio=0.125,
-        drip_path="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_DRIP_2x/drip.bin",
-    ),
-
-    "NEO-2B-SFT-Perceiver-2x-LATENCY-ONLY": partial(
-        NEOChat,
-        model_path="Paranioar/NEO1_0-2B-SFT",
-        patch_size=16,
-        min_pixels=1280 * 32 * 32,
-        max_pixels=4096 * 32 * 32,
-        downsample_ratio=0.5,
-        vtc_method="perceiver",
-        compression_ratio=0.5,
-    ),
-    "NEO-2B-SFT-Perceiver-4x-LATENCY-ONLY": partial(
-        NEOChat,
-        model_path="Paranioar/NEO1_0-2B-SFT",
-        patch_size=16,
-        min_pixels=1280 * 32 * 32,
-        max_pixels=4096 * 32 * 32,
-        downsample_ratio=0.5,
-        vtc_method="perceiver",
-        compression_ratio=0.25,
-    ),
-    "NEO-2B-SFT-Perceiver-8x-LATENCY-ONLY": partial(
-        NEOChat,
-        model_path="Paranioar/NEO1_0-2B-SFT",
-        patch_size=16,
-        min_pixels=1280 * 32 * 32,
-        max_pixels=4096 * 32 * 32,
-        downsample_ratio=0.5,
-        vtc_method="perceiver",
-        compression_ratio=0.125,
-    ),
-
 
 
 }

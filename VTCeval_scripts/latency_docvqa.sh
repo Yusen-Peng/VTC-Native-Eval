@@ -48,12 +48,10 @@ MODELS=(
     # "NEO-2B-SFT-OV-LLaVA-llava66k-DRIP-4x-two-tailed"
     # "NEO-2B-SFT-OV-LLaVA-llava66k-DRIP-8x-two-tailed" # VLVLM (two-tailed design)
 
-    "NEO-2B-SFT-OV-LLaVA-llava66k-DRIP-4x-two-tailed-LATENCY-ONLY"
-    "NEO-2B-SFT-OV-LLaVA-llava66k-DRIP-8x-two-tailed-LATENCY-ONLY"
     "NEO-2B-SFT-Perceiver-2x-LATENCY-ONLY"
     "NEO-2B-SFT-Perceiver-4x-LATENCY-ONLY"
     "NEO-2B-SFT-Perceiver-8x-LATENCY-ONLY"
-    
+
 
     # "NEO-2B-SFT-OV-LLaVA-llava66k-Perceiver-2x"
     # "NEO-2B-SFT-OV-LLaVA-llava66k-Perceiver-4x"

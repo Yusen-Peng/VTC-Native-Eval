@@ -130,7 +130,7 @@ def plot_performance(x_col, xlabel, filename):
 
             method_df = (
                 df[df["Model"] == method]
-                .sort_values(x_col)
+                .sort_values("compression")
             )
 
             if method_df.empty:
@@ -195,6 +195,8 @@ def plot_performance(x_col, xlabel, filename):
 
         elif x_col == "stress_total_latency_ms":
             ax.set_xlim(left=0)
+        elif x_col == "docvqa_latency_ms":
+            ax.set_xlim(left=0)
 
     axes[0].set_ylabel(
         f"Relative Performance vs. {baseline_model} (%)",
@@ -230,20 +232,8 @@ def plot_performance(x_col, xlabel, filename):
 
     plt.show()
 
-
 # ============================================================
-# Figure 1: Performance vs. Compression Ratio
-# ============================================================
-
-plot_performance(
-    x_col="compression",
-    xlabel="Token Compression Ratio",
-    filename=f"training_free_compression_{baseline_model}",
-)
-
-
-# ============================================================
-# Figure 2: Performance vs. TFLOPs
+# Performance vs. TFLOPs
 # ============================================================
 
 plot_performance(
@@ -254,7 +244,7 @@ plot_performance(
 
 
 # ============================================================
-# Figure 3: Performance vs. Latency
+# Performance vs. Latency
 # ============================================================
 
 plot_performance(
@@ -263,3 +253,9 @@ plot_performance(
     filename=f"training_free_latency_{baseline_model}",
 )
 
+
+plot_performance(
+    x_col="docvqa_latency_ms",
+    xlabel="DocVQA Latency (ms)",
+    filename=f"training_free_docvqa_latency_{baseline_model}",
+)

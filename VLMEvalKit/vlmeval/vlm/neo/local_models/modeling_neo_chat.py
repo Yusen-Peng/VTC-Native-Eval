@@ -344,6 +344,14 @@ class NEOChatModel(PreTrainedModel):
             document_ids, modality_indicators=modality_indicators, div_num=128
         )
 
+        
+        # Identify visual tokens for LLM-stage compression
+        visual_mask = (
+            selected[0]
+            if getattr(self.config.llm_config, "llm_vtc_method", "none") != "none"
+            else None
+        )
+
         llm_outputs = self.language_model(
             inputs_embeds=hidden_states,
             labels=labels,
@@ -352,6 +360,7 @@ class NEOChatModel(PreTrainedModel):
             attention_mask=attention_mask,
             inference_params=None,
             loss_weight=loss_weight,
+            visual_mask=visual_mask,
         )
 
         if self.training and self.vtc_method == "drip" and labels is not None:

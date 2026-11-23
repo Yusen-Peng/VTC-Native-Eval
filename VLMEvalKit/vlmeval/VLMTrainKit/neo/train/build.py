@@ -31,6 +31,13 @@ def build_model(model_args, data_args, tokenizer):
     print(f"🤟🏻🤟🏻🤟🏻 [NEO VTC] method={config.vision_config.vtc_method}, compression_ratio={config.vision_config.compression_ratio}", flush=True)
     if config.vision_config.vtc_method == "drip":
         print(f"🐥🐥🐥 [NEO VTC] drip_temperature={config.vision_config.drip_temperature}", flush=True)
+    
+    # LLM-stage token compression
+    config.llm_vtc_method = model_args.llm_vtc_method
+    config.llm_compression_ratio = model_args.llm_compression_ratio
+    config.compression_layer = model_args.compression_layer
+    print(f"🤟🏻🤟🏻🤟🏻 [NEO LLM VTC] method={config.llm_vtc_method}, compression_ratio={config.llm_compression_ratio}, compression_layer={config.compression_layer}", flush=True)
+    
     model = NEOChatModel.from_pretrained(
         model_args.model_name_or_path,
         config=config,

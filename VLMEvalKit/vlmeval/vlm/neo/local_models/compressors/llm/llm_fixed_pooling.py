@@ -20,12 +20,12 @@ class FixedPooling(BaseLLMVTCCompressor):
         if self.pooling_factor < 1:
             raise ValueError(f"Invalid compression ratio: {compression_ratio}")
 
-    @torch.no_grad()
     def pool(
         self,
         hidden_states: torch.Tensor,
         indexes: torch.Tensor,
         visual_mask: torch.Tensor,
+        return_indices: bool = False,
     ):
         device = hidden_states.device
         visual_mask = visual_mask.to(device=device, dtype=torch.bool)
@@ -100,10 +100,13 @@ class FixedPooling(BaseLLMVTCCompressor):
             )
             new_hidden_states[:, positions, :] = compressed
 
-        return (
+        result = (
             new_hidden_states,
             indexes[:, keep_indices],
             visual_mask[keep_indices],
         )
 
+        if return_indices:
+            return (*result, keep_indices)
+        return result
 

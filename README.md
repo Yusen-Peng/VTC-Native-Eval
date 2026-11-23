@@ -1,24 +1,5 @@
 # VTCNativeEval: A Structured Study of Visual Token Compression Methods for Native VLMs
 
-## Project Proposal
-
-### Current benchmark/evaluation
-
-[Arxiv 2025] [UniPruneBench](https://arxiv.org/abs/2511.02650):
-
-1. underrated baseline: *"Random pruning remains a surprisingly strong baseline."*
-2. no consistent winner: *"No single method achieves universal superiority."*
-
-[ACL 2026] [VTC-Bench](https://aclanthology.org/2026.acl-long.195): 
-
-1. filter "too hard" questions: *"drop out the samples answered incorrectly at the original resolution, which we consider are too hard for the original models to understand."* 
-2. decouple "hard" and "easy" questions: *Difficult Samples (Group A): Samples that are answered incorrectly by the downsampling method* and vice versa.
-
-**🍊🍊🍊Limitations of current evaluation/benchmarking** - no evaluation on Native VLMs (i.e., encoder-free VLMs). We can focus on NEO model from [https://arxiv.org/pdf/2510.14979](https://arxiv.org/pdf/2510.14979):
-
-![alt text](assets/NEO_pipeline.png)
-
-
 ## Environment Setup
 
 We closely follow the setup from [NEO repository](https://github.com/EvolvingLMMs-Lab/NEO/blob/main/VLMEvalKit/docs/en/Quickstart.md) to set up the environment:
@@ -84,18 +65,6 @@ python ../scripts/flops.py
 ```
 
 ## Continued SFT
-
-Let's get started with training! We need to first configure [VLMEvalKit/vlmeval/VLMTrainKit/SFT.sh](VLMEvalKit/vlmeval/VLMTrainKit/SFT.sh).
-
-Really two things need to change/update here: ``vtc_method`` and ``compression_ratio``. For fixed pooling under 2x, we can simply do:
-
-```bash
-args=(
-    ...
-    --vtc_method fixed
-    --compression_ratio 0.5
-)
-```
 
 We can (and we should, full-parameter is expensive) run the training experiment with LoRA:
 

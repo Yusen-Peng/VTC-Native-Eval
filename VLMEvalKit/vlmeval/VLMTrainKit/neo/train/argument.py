@@ -34,6 +34,10 @@ class ModelArguments:
         metadata={"help": "perceiver.bin to warm-start a fresh Perceiver from (strict; e.g. scripts/perceiver_warmstart.py)."},
     )
 
+    # LLM-stage token compression
+    llm_vtc_method: str = field(default="none")
+    llm_compression_ratio: float = field(default=1.0)
+    compression_layer: int = field(default=2)
 
 @dataclass
 class DataArguments:

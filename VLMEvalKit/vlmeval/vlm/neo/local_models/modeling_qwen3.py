@@ -509,17 +509,7 @@ class Qwen3Model(Qwen3PreTrainedModel):
 
         is_compression_prefill = self.llm_compressor is not None and visual_mask is not None and hidden_states.shape[1] > 1
 
-        # for decoder_layer in self.layers[: self.config.num_hidden_layers]:
-        #     hidden_states = decoder_layer(
-        #         hidden_states,
-        #         indexes=indexes,
-        #         attention_mask=causal_mask_mapping[decoder_layer.attention_type],
-        #         position_ids=position_ids,
-        #         past_key_values=past_key_values,
-        #         use_cache=use_cache,
-        #         cache_position=cache_position,
-        #         **kwargs,
-        #     )
+        compression_keep_indices = None
 
         for layer_idx, decoder_layer in enumerate(self.layers[:self.config.num_hidden_layers]):
             decoder_layer.keep_attn = is_compression_prefill and layer_idx + 1 == self.llm_compressor.compression_layer
@@ -536,10 +526,11 @@ class Qwen3Model(Qwen3PreTrainedModel):
 
             if (is_compression_prefill and layer_idx + 1 == self.llm_compressor.compression_layer):
                 if isinstance(self.llm_compressor, FixedPooling):
-                    hidden_states, indexes, visual_mask = self.llm_compressor.pool(
+                    hidden_states, indexes, visual_mask, compression_keep_indices = self.llm_compressor.pool(
                         hidden_states=hidden_states,
                         indexes=indexes,
                         visual_mask=visual_mask,
+                        return_indices=True,
                     )
                 else:
                     keep_indices = self.llm_compressor.select_indices(
@@ -558,11 +549,15 @@ class Qwen3Model(Qwen3PreTrainedModel):
                 # rebuild the attention mask for the shortened sequence.
                 causal_mask_mapping["full_attention"] = create_block_causal_mask(indexes[0])
         hidden_states = self.norm(hidden_states)
-        return BaseModelOutputWithPast(
+
+        outputs = BaseModelOutputWithPast(
             last_hidden_state=hidden_states,
             past_key_values=past_key_values if use_cache else None,
         )
 
+        if compression_keep_indices is not None:
+            outputs["compression_keep_indices"] = compression_keep_indices
+        return outputs
 
 @auto_docstring
 class Qwen3ForCausalLM(Qwen3PreTrainedModel, GenerationMixin):
@@ -633,12 +628,32 @@ class Qwen3ForCausalLM(Qwen3PreTrainedModel, GenerationMixin):
         )
 
         hidden_states = outputs.last_hidden_state
+
+        # Align labels and loss weights after LLM-stage fixed pooling.
+        compression_keep_indices = outputs.get("compression_keep_indices", None)
+        if labels is not None and compression_keep_indices is not None:
+            if not isinstance(logits_to_keep, int) or logits_to_keep != 0:
+                raise ValueError("LLM-stage fixed pooling SFT requires logits_to_keep=0.")
+            keep_indices = compression_keep_indices.to(labels.device)
+            original_length = labels.shape[-1]
+            assert keep_indices.numel() == hidden_states.shape[1], "Retained indices do not match compressed sequence length."
+            assert keep_indices[-1].item() < original_length, "Compression indices exceed original label length."
+            labels = labels.index_select(dim=-1, index=keep_indices) # Match labels to retained token positions.
+            loss_weight = kwargs.get("loss_weight", None) # Align per-token loss weights, if provided.
+
+            if loss_weight is not None:
+                if isinstance(loss_weight, list):
+                    loss_weight = torch.as_tensor(loss_weight, device=labels.device)
+                kwargs["loss_weight"] = loss_weight.index_select(dim=-1, index=keep_indices.to(loss_weight.device))
+
+
         # Only compute necessary logits, and do not upcast them to float if we are not computing the loss
         slice_indices = slice(-logits_to_keep, None) if isinstance(logits_to_keep, int) else logits_to_keep
         logits = self.lm_head(hidden_states[:, slice_indices, :])
 
         loss = None
         if labels is not None:
+            assert logits.shape[1] == labels.shape[-1], f"Logits/labels length mismatch: {logits.shape[1]} vs {labels.shape[-1]}"
             loss = self.loss_function(logits=logits, labels=labels, vocab_size=self.config.vocab_size, **kwargs)
 
         return CausalLMOutputWithPast(

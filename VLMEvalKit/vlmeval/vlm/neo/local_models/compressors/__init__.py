@@ -16,5 +16,9 @@ for _module in pkgutil.iter_modules(__path__):
 
 from .llm.fastv import FastV
 from .llm.pyramid_drop import PyramidDrop
+from .llm.llm_fixed_pooling import FixedPooling
 
-__all__ = ["BaseVTCCompressor", "BaseLLMVTCCompressor", "VTC_REGISTRY", "build_compressor", "register_compressor", "FastV", "PyramidDrop"]
+__all__ = ["BaseVTCCompressor", "BaseLLMVTCCompressor", "VTC_REGISTRY", "build_compressor", "register_compressor", 
+           "FastV", 
+           "PyramidDrop", 
+           "FixedPooling"]

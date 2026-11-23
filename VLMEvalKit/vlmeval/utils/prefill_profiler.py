@@ -2,6 +2,14 @@
 import functools
 import torch
 
+def unwrap_language_model(language_model):
+    from peft import PeftModel
+
+    if isinstance(language_model, PeftModel):
+        return language_model.get_base_model()
+
+    return language_model
+
 class NEOPrefillProfiler:
     """
     CUDA-event profiler for NEO.
@@ -45,8 +53,9 @@ class NEOPrefillProfiler:
 
     def install(self):
         self.model.extract_feature_with_positions = self._extract
+        language_model = unwrap_language_model(self.model.language_model)
         self.handles.append(
-            self.model.language_model.register_forward_hook(
+            language_model.register_forward_hook(
                 self._llm_post
             )
         )

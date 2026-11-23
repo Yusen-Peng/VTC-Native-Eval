@@ -78,7 +78,12 @@ class FixedPooling(BaseLLMVTCCompressor):
                 (torch.arange(num_output, device=device) + 1)
                 * self.pooling_factor
                 - 1
-            ).clamp_(max=N - 1)
+            )
+
+            kept = torch.minimum(
+                kept,
+                torch.as_tensor(N - 1, device=device, dtype=kept.dtype),
+            )
 
             representatives = image_indices[kept]
 

@@ -60,16 +60,26 @@ python run.py --data OCRBench --model NEO-2B-SFT --verbose
 python run.py --data ChartQA_TEST --model NEO-2B-SFT --verbose
 ```
 
-
 Or run all jobs concurrently with SLURM:
 
 ```bash
 bash VTCeval_scripts/eval_all.sh <model_name>
 ```
 
+Measure benchmark-level latency (for example, DocVQA):
+
+```bash
+bash VTCeval_scripts/latency_docvqa.sh
+```
+
 Measure FLOPs:
 
 ```bash
+salloc --nodes=1 --ntasks-per-node=1 --gpus-per-node=1 -A PAS2836 --partition debug-nextgen --time 01:00:00
+module load miniconda3/24.1.2-py310
+conda activate neo
+cd VLMEvalKit
+export LMUData=/fs/scratch/PAS2836/yusenpeng_dataset/VLMEvalKit_data
 python ../scripts/flops.py
 ```
 

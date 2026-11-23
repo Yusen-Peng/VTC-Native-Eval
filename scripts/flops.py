@@ -30,30 +30,31 @@ from torch.utils.flop_counter import FlopCounterMode
 
 from vlmeval.config import supported_VLM
 from vlmeval.vlm.neo.local_models.compressors import build_compressor
-from vlmeval.vlm.neo.local_models.compressors import FastV, PyramidDrop
+from vlmeval.vlm.neo.local_models.compressors import FastV, PyramidDrop, FixedPooling
 from vlmeval.vlm.neo.local_models.conversation import get_conv_template
 from vlmeval.vlm.neo.utils import load_image_native, preprocess_pixel_values, smart_resize
 
 # vtc_method -> (label used in training_free.csv, ratios); spatial 2x equals fixed 2x, as in summarize_table2.py
 METHODS = {
-    "fixed": ("fixed pooling", [2, 4, 8]),
-    "spatial": ("spatial pooling", [4, 8]),
-    "random": ("random pruning", [2, 4, 8]),
-    "tome": ("ToMe", [2, 4, 8]),
-    "prunesid": ("PruneSID", [2, 4, 8]),
-    "cdpruner": ("CDPruner", [2, 4, 8]),
-    "perceiver": ("Perceiver", [2, 4, 8]),  # untrained weights: FLOPs don't depend on them
-    "drip": ("VLVLM", [2, 4, 8]),
-    "perceiver_learned": ("Perceiver (learned queries)", [2, 4, 8]),
-    "perceiver_learned_residual": ("Perceiver (pooled + learned residual queries)", [2, 4, 8]),
+    # "fixed": ("fixed pooling", [2, 4, 8]),
+    # "spatial": ("spatial pooling", [4, 8]),
+    # "random": ("random pruning", [2, 4, 8]),
+    # "tome": ("ToMe", [2, 4, 8]),
+    # "prunesid": ("PruneSID", [2, 4, 8]),
+    # "cdpruner": ("CDPruner", [2, 4, 8]),
+    # "perceiver": ("Perceiver", [2, 4, 8]),  # untrained weights: FLOPs don't depend on them
+    # "drip": ("VLVLM", [2, 4, 8]),
+    # "perceiver_learned": ("Perceiver (learned queries)", [2, 4, 8]),
+    # "perceiver_learned_residual": ("Perceiver (pooled + learned residual queries)", [2, 4, 8]),
 }
 
 # LLM-stage compression methods
 LLM_METHODS = {
-    "pdrop-16": ("PyramidDrop-16", [2, 4, 8]),
-    "fastv-2": ("FastV-2", [2, 4, 8]),
-    "fastv-16": ("FastV-16", [2, 4, 8]),
-    "fastv-24": ("FastV-24", [2]),
+    # "pdrop-16": ("PyramidDrop-16", [2, 4, 8]),
+    # "fastv-2": ("FastV-2", [2, 4, 8]),
+    # "fastv-16": ("FastV-16", [2, 4, 8]),
+    # "fastv-24": ("FastV-24", [2]),
+    "llm_fixed-2": ("LLM Fixed-2", [2, 4, 8]),
 }
 
 IMG_START_TOKEN, IMG_END_TOKEN, IMG_CONTEXT_TOKEN = "<img>", "</img>", "<IMG_CONTEXT>"
@@ -257,6 +258,11 @@ def main():
 
                 elif method_name == "fastv":
                     model.language_model.model.llm_compressor = FastV(
+                        compression_ratio=1.0 / ratio,
+                        compression_layer=layer,
+                    ).to(device=vlm.device, dtype=model.dtype)
+                elif method_name == "llm_fixed":
+                    model.language_model.model.llm_compressor = FixedPooling(
                         compression_ratio=1.0 / ratio,
                         compression_layer=layer,
                     ).to(device=vlm.device, dtype=model.dtype)

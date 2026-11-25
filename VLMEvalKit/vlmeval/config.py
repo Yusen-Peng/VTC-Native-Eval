@@ -2383,6 +2383,18 @@ neo_series.update({
     for scale, k, r in [(s, 2, r) for s in ("2B", "9B") for r in (2, 4, 8)]
 }) # example: NEO-2B-SFT-LLM_Fixed-layer2-2x
 
+neo_series.update({
+    f"NEO-{scale}-SFT-OV-LLaVA-llava66k-LLM_Fixed-layer{k}-{r}x": partial(
+        NEOChat,
+        model_path=f"Paranioar/NEO1_0-{scale}-SFT",        
+        lora_path=f"/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_LLM_fixed_{r}x",
+        llm_vtc_method="llm_fixed",
+        llm_compression_ratio=1 / r,
+        compression_layer=k,
+    )
+    for scale, k, r in [(s, 2, r) for s in ("2B", "9B") for r in (2, 4, 8)]
+}) # example: NEO-2B-SFT-OV-LLaVA-llava66k-LLM_Fixed-layer2-2x
+
 # direction perceiver-learned: new Perceiver query modes (same recipe, QUERIES=learned_residual, COMP_LR 1e-3)
 neo_series.update({
     f"NEO-2B-SFT-OV-LLaVA-llava66k-{name}-{r}x": partial(

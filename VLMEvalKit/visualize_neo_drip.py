@@ -243,11 +243,20 @@ def visualize_neo_soft_probs(
     ):
         soft_mask = np.asarray(soft_mask)
 
+        # im = ax.imshow(
+        #     soft_mask,
+        #     cmap="viridis",
+        #     vmin=0.0,
+        #     vmax=1.0,
+        # )
+
+        vmin = np.percentile(soft_mask, 1)
+        vmax = np.percentile(soft_mask, 99)
         im = ax.imshow(
             soft_mask,
             cmap="viridis",
-            vmin=0.0,
-            vmax=1.0,
+            vmin=vmin,
+            vmax=vmax if vmax > vmin else vmin + 1e-6,
         )
 
         grid_h, grid_w = soft_mask.shape

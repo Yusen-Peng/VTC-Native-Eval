@@ -1,14 +1,14 @@
 #!/bin/bash
-#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_llava66k_LLM_DRIP_2x_SMOKE
-#SBATCH --output=NEO_continue_SFT_LLaVA_OV_llava66k_LLM_DRIP_2x_SMOKE.log
+#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_llava66k_LLM_Fixed_8x
+#SBATCH --output=NEO_continue_SFT_LLaVA_OV_llava66k_LLM_Fixed_8x.log
 #SBATCH --account=PAS2836
-#SBATCH --partition=debug-nextgen
+#SBATCH --partition=nextgen
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=128G
-#SBATCH --time=01:00:00
+#SBATCH --time=15:00:00
 
 module load miniconda3/24.1.2-py310
 conda deactivate
@@ -36,7 +36,7 @@ entry_file="./neo/train/train.py"
 
 datasets="llava_665k%10"
 
-run_name="NEO_continue_SFT_LLaVA_OV_llava66k_LLM_DRIP_2x_SMOKE"
+run_name="NEO_continue_SFT_LLaVA_OV_llava66k_LLM_Fixed_8x"
 output_dir="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/${run_name}"
 
 args=(
@@ -74,10 +74,10 @@ args=(
     # --drip_temperature 0.1
 
 
-    # --llm_vtc_method "llm_fixed"
-    --llm_vtc_method "llm_drip"
-    --llm_drip_temperature 0.1
-    --llm_compression_ratio 0.5
+    --llm_vtc_method "llm_fixed"
+    # --llm_vtc_method "llm_drip"
+    # --llm_drip_temperature 0.1
+    --llm_compression_ratio 0.125
     --compression_layer 2
 
 )

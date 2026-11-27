@@ -368,6 +368,15 @@ class NEOChatModel(PreTrainedModel):
             if boundary_loss is not None:
                 llm_outputs.loss = llm_outputs.loss + self.boundary_loss_weight * boundary_loss
 
+        if self.training and labels is not None and getattr(self.config.llm_config, "llm_vtc_method", "none") == "llm_drip":
+            language_model = self.language_model
+            if hasattr(language_model, "get_base_model"):
+                language_model = language_model.get_base_model()
+            llm_compressor = language_model.model.llm_compressor
+            boundary_loss = llm_compressor.last_boundary_loss
+            if boundary_loss is not None:
+                weight = getattr(self.config.llm_config, "llm_boundary_loss_weight", 1.0)
+                llm_outputs.loss = llm_outputs.loss + weight * boundary_loss
         return llm_outputs
 
     def floating_point_ops(self, input_dict, exclude_embeddings=True):

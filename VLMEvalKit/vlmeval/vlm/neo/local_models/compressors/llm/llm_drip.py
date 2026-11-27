@@ -56,7 +56,6 @@ class LLMDRIP(BaseLLMVTCCompressor):
             soft_boundaries, hard_boundaries = self.boundary_predictor(hidden)
         else:
             soft_boundaries, hard_boundaries = self.boundary_predictor.inference(hidden)
-        self.last_soft_boundaries = soft_boundaries.detach()
         # Ensure the final segment always terminates.
         hard_boundaries = torch.cat([hard_boundaries[:, :-1], torch.ones_like(hard_boundaries[:, -1:])],dim=-1)
         return soft_boundaries, hard_boundaries

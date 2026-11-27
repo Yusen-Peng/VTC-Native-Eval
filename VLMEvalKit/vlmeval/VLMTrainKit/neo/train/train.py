@@ -99,11 +99,6 @@ def train():
         if llm_compressor is None:
             raise RuntimeError("LLM-stage DRIP compressor was not initialized.")
         llm_compressor.requires_grad_(True)
-        print(
-            f"🌊 [LLM DRIP] Trainable parameters: "
-            f"{sum(p.numel() for p in llm_compressor.parameters() if p.requires_grad):,}",
-            flush=True,
-        )
     model.language_model.print_trainable_parameters()
 
     if training_args.gradient_checkpointing:
@@ -127,6 +122,16 @@ def train():
     # train the model
     model.train()
     torch.set_grad_enabled(True)
+
+    # Final LLMDRIP trainability check before training.
+    if model_args.llm_vtc_method == "llm_drip":
+        llm_compressor = trainer.model.language_model.get_base_model().model.llm_compressor
+        print("\n========== PRE-TRAIN LLMDRIP CHECK ==========", flush=True)
+        for name, p in llm_compressor.named_parameters():
+            print(f"{name}: requires_grad={p.requires_grad}, dtype={p.dtype}", flush=True)
+        assert all(p.requires_grad for p in llm_compressor.parameters()), "LLMDRIP parameters unexpectedly frozen before training!"
+        print("✅ All LLMDRIP parameters remain trainable.", flush=True)
+        print("============================================\n", flush=True)
 
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
         # `transformers.utils.logging` is a module without `.info`; print so the resume shows up in the job log

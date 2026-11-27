@@ -159,22 +159,11 @@ class LoRATrainer(Trainer):
         # LLM-stage DRIP boundary regularization.
         if self.model.training and getattr(self.model.config.llm_config, "llm_vtc_method", "none") == "llm_drip":
             language_model = self.model.language_model
-
             if _is_peft_model(language_model):
                 language_model = language_model.get_base_model()
-
             llm_compressor = language_model.model.llm_compressor
             boundary_loss = llm_compressor.last_boundary_loss
-
             if boundary_loss is not None:
-                weight = getattr(
-                    self.model.config.llm_config,
-                    "llm_boundary_loss_weight",
-                    1.0,
-                )
-
-                loss = loss + weight * boundary_loss
-
                 self._llm_boundary_loss_sum += boundary_loss.detach().float().item()
                 self._llm_boundary_loss_count += 1
 

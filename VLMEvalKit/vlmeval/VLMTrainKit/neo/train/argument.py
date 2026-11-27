@@ -38,6 +38,8 @@ class ModelArguments:
     llm_vtc_method: str = field(default="none")
     llm_compression_ratio: float = field(default=1.0)
     compression_layer: int = field(default=2)
+    llm_drip_temperature: float = field(default=0.1)
+    llm_boundary_loss_weight: float = field(default=1.0)
 
 @dataclass
 class DataArguments:
@@ -80,6 +82,12 @@ class TrainingArguments(HfTrainingArguments):
     compressor_learning_rate: Optional[float] = field(
         default=None,
         metadata={"help": "Separate learning rate for a trainable VTC compressor (default: learning_rate)."},
+    )
+    llm_compressor_learning_rate: Optional[float] = field(
+        default=None,
+        metadata={
+            "help": "Separate learning rate for the trainable LLM-stage DRIP compressor."
+        },
     )
 
     kd_lambda: float = field(

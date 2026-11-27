@@ -20,6 +20,9 @@ from VLMEvalKit.vlmeval.vlm.neo.local_models.modeling_neo_chat import NEOChatMod
 # VTC methods with learned compressor weights: trained alongside the LoRA, saved as <vtc_method>.bin
 TRAINABLE_VTC_METHODS = ("drip", "perceiver")
 
+
+LLM_TRAINABLE_VTC_METHODS = ("llm_drip")
+
 # DRIP_LR = 1e-4
 DRIP_LR = 1e-3
     
@@ -30,6 +33,8 @@ class LoRATrainer(Trainer):
         self._boundary_loss_sum = 0.0
         self._boundary_loss_count = 0
 
+        self._llm_boundary_loss_sum = 0.0
+        self._llm_boundary_loss_count = 0
     def create_optimizer(self):
         opt_model = self.model_wrapped if is_sagemaker_mp_enabled() else self.model
 
@@ -150,6 +155,29 @@ class LoRATrainer(Trainer):
             if boundary_loss is not None:
                 self._boundary_loss_sum += boundary_loss.detach().float().item()
                 self._boundary_loss_count += 1
+
+        # LLM-stage DRIP boundary regularization.
+        if self.model.training and getattr(self.model.config.llm_config, "llm_vtc_method", "none") == "llm_drip":
+            language_model = self.model.language_model
+
+            if _is_peft_model(language_model):
+                language_model = language_model.get_base_model()
+
+            llm_compressor = language_model.model.llm_compressor
+            boundary_loss = llm_compressor.last_boundary_loss
+
+            if boundary_loss is not None:
+                weight = getattr(
+                    self.model.config.llm_config,
+                    "llm_boundary_loss_weight",
+                    1.0,
+                )
+
+                loss = loss + weight * boundary_loss
+
+                self._llm_boundary_loss_sum += boundary_loss.detach().float().item()
+                self._llm_boundary_loss_count += 1
+
         return (loss, outputs) if return_outputs else loss
 
     def log(self, logs, start_time=None):
@@ -157,6 +185,10 @@ class LoRATrainer(Trainer):
             logs["boundary_loss"] = self._boundary_loss_sum / self._boundary_loss_count
             self._boundary_loss_sum = 0.0
             self._boundary_loss_count = 0
+        if "loss" in logs and self._llm_boundary_loss_count > 0:
+            logs["llm_boundary_loss"] = self._llm_boundary_loss_sum / self._llm_boundary_loss_count
+            self._llm_boundary_loss_sum = 0.0
+            self._llm_boundary_loss_count = 0
         super().log(logs, start_time=start_time)
 
     def create_optimizer(self):
@@ -176,21 +208,56 @@ class LoRATrainer(Trainer):
                     {**{k: v for k, v in group.items() if k != "params"}, "params": moved, "lr": compressor_lr}
                 )
         self._compressor_group_added = True
+
+        # NEW: LLM-stage DRIP compressor learning rate.
+        llm_compressor_lr = self.args.llm_compressor_learning_rate
+        if llm_compressor_lr is not None and not getattr(self, "_llm_compressor_group_added", False):
+            language_model = self.model.language_model
+            if _is_peft_model(language_model):
+                language_model = language_model.get_base_model()
+            llm_compressor = language_model.model.llm_compressor
+            if llm_compressor is not None:
+                llm_compressor_params = {id(p) for p in llm_compressor.parameters()}
+                for group in list(optimizer.param_groups):
+                    moved = [p for p in group["params"] if id(p) in llm_compressor_params]
+                    if moved:
+                        group["params"] = [p for p in group["params"] if id(p) not in llm_compressor_params]
+                        optimizer.add_param_group({
+                            **{k: v for k, v in group.items() if k != "params"},
+                            "params": moved,
+                            "lr": llm_compressor_lr,
+                        })
+            self._llm_compressor_group_added = True
         return optimizer
 
     def _save_compressor(self, output_dir):
         model = self.accelerator.unwrap_model(self.model)
 
-        if model.vtc_method not in TRAINABLE_VTC_METHODS:
+        if not self.args.should_save:
             return
 
-        if self.args.should_save:
+        # Existing encoder-stage compressor checkpoint.
+        if model.vtc_method in TRAINABLE_VTC_METHODS:
             torch.save(
                 {
                     name: param.detach().cpu().clone()
                     for name, param in model.compressor.named_parameters()
                 },
                 os.path.join(output_dir, f"{model.vtc_method}.bin"),
+            )
+
+        # LLM-stage DRIP checkpoint.
+        if getattr(model.config.llm_config, "llm_vtc_method", "none") == "llm_drip":
+            language_model = model.language_model
+            if _is_peft_model(language_model):
+                language_model = language_model.get_base_model()
+            llm_compressor = language_model.model.llm_compressor
+            torch.save(
+                {
+                    name: param.detach().cpu().clone()
+                    for name, param in llm_compressor.named_parameters()
+                },
+                os.path.join(output_dir, "llm_drip.bin"),
             )
 
     def _save(self, output_dir: str | None = None, state_dict=None):
@@ -288,6 +355,20 @@ class LoRATrainer(Trainer):
                 raise FileNotFoundError(f"Missing {vtc_method} checkpoint: {weights_path}")
             # load_drip_weights / load_perceiver_weights
             getattr(target_model.compressor, f"load_{vtc_method}_weights")(weights_path)
+
+        # Restore LLM-stage DRIP checkpoint
+        if getattr(target_model.config.llm_config, "llm_vtc_method", "none") == "llm_drip":
+            language_model = target_model.language_model
+            if _is_peft_model(language_model):
+                language_model = language_model.get_base_model()
+            llm_compressor = language_model.model.llm_compressor
+            weights_path = os.path.join(resume_from_checkpoint, "llm_drip.bin")
+            if not os.path.isfile(weights_path):
+                raise FileNotFoundError(f"Missing LLMDRIP checkpoint: {weights_path}")
+            state_dict = torch.load(weights_path, map_location="cpu", weights_only=True)
+            llm_compressor.load_state_dict(state_dict, strict=True)
+
+            print(f"🔁 Resumed LLMDRIP from {weights_path}", flush=True)
 
 
 class DistillationLoRATrainer(LoRATrainer):

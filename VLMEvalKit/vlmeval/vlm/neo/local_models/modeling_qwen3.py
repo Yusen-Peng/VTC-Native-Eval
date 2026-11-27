@@ -26,9 +26,12 @@ from transformers.utils.generic import check_model_inputs
 from transformers import Qwen3Config
 
 
+from .configuration_neo_chat import NEOLLMConfig
+
 from .compressors.llm.fastv import FastV
 from .compressors.llm.pyramid_drop import PyramidDrop
 from .compressors.llm.llm_fixed_pooling import FixedPooling
+from .compressors.llm.llm_drip import LLMDRIP
 
 
 def create_block_causal_mask(index: torch.Tensor):
@@ -391,7 +394,7 @@ class Qwen3PreTrainedModel(PreTrainedModel):
 
 @auto_docstring
 class Qwen3Model(Qwen3PreTrainedModel):
-    def __init__(self, config: Qwen3Config):
+    def __init__(self, config: NEOLLMConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
@@ -424,6 +427,14 @@ class Qwen3Model(Qwen3PreTrainedModel):
             self.llm_compressor = FixedPooling(
                 compression_ratio=config.compression_ratio,
                 compression_layer=config.compression_layer,
+            )
+        elif method == "llm_drip":
+            self.llm_compressor = LLMDRIP(
+                compression_ratio=config.compression_ratio,
+                compression_layer=config.compression_layer,
+                hidden_size=config.hidden_size,
+                intermediate_size=config.hidden_size * 2,
+                temperature=getattr(config, "llm_drip_temperature", 0.1),
             )
 
         elif method == "sparsevlm":
@@ -525,7 +536,7 @@ class Qwen3Model(Qwen3PreTrainedModel):
             )
 
             if (is_compression_prefill and layer_idx + 1 == self.llm_compressor.compression_layer):
-                if isinstance(self.llm_compressor, FixedPooling):
+                if isinstance(self.llm_compressor, (FixedPooling, LLMDRIP)):
                     hidden_states, indexes, visual_mask, compression_keep_indices = self.llm_compressor.pool(
                         hidden_states=hidden_states,
                         indexes=indexes,

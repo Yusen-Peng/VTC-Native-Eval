@@ -15,6 +15,8 @@ class NEOLLMConfig(Qwen3Config):
             llm_vtc_method="none",
             compression_ratio=1.0,
             compression_layer=16,
+            llm_drip_temperature=0.1,
+            llm_boundary_loss_weight=1.0,
             **kwargs
         ):
         super().__init__(**kwargs)
@@ -25,6 +27,8 @@ class NEOLLMConfig(Qwen3Config):
         self.llm_vtc_method = llm_vtc_method
         self.compression_ratio = compression_ratio
         self.compression_layer = compression_layer
+        self.llm_drip_temperature = llm_drip_temperature
+        self.llm_boundary_loss_weight = llm_boundary_loss_weight
 
 class NEOChatConfig(PretrainedConfig):
     model_type = 'neo_chat'

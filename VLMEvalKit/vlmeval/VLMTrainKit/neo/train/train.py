@@ -84,11 +84,26 @@ def train():
         task_type=TaskType.CAUSAL_LM,
     )
 
+    print(f"[DEBUG] model_args.llm_vtc_method = {model_args.llm_vtc_method}", flush=True)
+    print(f"[DEBUG] model.config.llm_config.llm_vtc_method = {getattr(model.config.llm_config, 'llm_vtc_method', None)}", flush=True)
+    print(f"[DEBUG] language_model.config.llm_vtc_method = {getattr(model.language_model.config, 'llm_vtc_method', None)}", flush=True)
+    print(f"[DEBUG] llm_compressor = {type(model.language_model.model.llm_compressor).__name__ if model.language_model.model.llm_compressor is not None else None}", flush=True)
     model.language_model = get_peft_model(model.language_model, lora_config)
     
     if model_args.vtc_method in TRAINABLE_VTC_METHODS:
         model.compressor.requires_grad_(True)
 
+    # Trainable LLM-stage DRIP/VLVLM (NEW)
+    if model_args.llm_vtc_method == "llm_drip":
+        llm_compressor = model.language_model.get_base_model().model.llm_compressor
+        if llm_compressor is None:
+            raise RuntimeError("LLM-stage DRIP compressor was not initialized.")
+        llm_compressor.requires_grad_(True)
+        print(
+            f"🌊 [LLM DRIP] Trainable parameters: "
+            f"{sum(p.numel() for p in llm_compressor.parameters() if p.requires_grad):,}",
+            flush=True,
+        )
     model.language_model.print_trainable_parameters()
 
     if training_args.gradient_checkpointing:

@@ -36,6 +36,12 @@ def build_model(model_args, data_args, tokenizer):
     config.llm_vtc_method = model_args.llm_vtc_method
     config.llm_compression_ratio = model_args.llm_compression_ratio
     config.compression_layer = model_args.compression_layer
+    # LLM-stage token compression for training methods
+    config.llm_config.llm_vtc_method = model_args.llm_vtc_method
+    config.llm_config.compression_ratio = model_args.llm_compression_ratio
+    config.llm_config.compression_layer = model_args.compression_layer
+    config.llm_config.llm_drip_temperature = model_args.llm_drip_temperature
+    config.llm_config.llm_boundary_loss_weight = model_args.llm_boundary_loss_weight
     print(f"🤟🏻🤟🏻🤟🏻 [NEO LLM VTC] method={config.llm_vtc_method}, compression_ratio={config.llm_compression_ratio}, compression_layer={config.compression_layer}", flush=True)
     
     model = NEOChatModel.from_pretrained(
@@ -58,6 +64,10 @@ def build_model(model_args, data_args, tokenizer):
         # verify actual DRIP temperature
         print("🔥🔥🔥 [NEO VTC] Actual DRIP temperature:", model.vision_model.embeddings.compressor.temperature, flush=True)
 
+    # if model_args.llm_vtc_method == "llm_drip":
+    #     llm_compressor = model.language_model.model.llm_compressor
+    #     llm_compressor.float()
+    #     print(f"🌊 [LLM DRIP] Compressor initialized in {next(llm_compressor.parameters()).dtype}", flush=True)
     logger.info("Loaded model from pretrained path.")
     return model
 

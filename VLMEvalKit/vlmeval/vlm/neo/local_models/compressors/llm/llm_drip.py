@@ -52,6 +52,8 @@ class LLMDRIP(BaseLLMVTCCompressor):
     def _predict_boundaries(self, features):
         # [B, N, D] -> [N, B, D]
         hidden = features.transpose(0, 1)
+        # use FP 32 instead of BF 16
+        # hidden = features.float().transpose(0, 1)
         if self.training:
             soft_boundaries, hard_boundaries = self.boundary_predictor(hidden)
         else:

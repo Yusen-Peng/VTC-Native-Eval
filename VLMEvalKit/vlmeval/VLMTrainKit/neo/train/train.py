@@ -98,6 +98,7 @@ def train():
         llm_compressor = model.language_model.get_base_model().model.llm_compressor
         if llm_compressor is None:
             raise RuntimeError("LLM-stage DRIP compressor was not initialized.")
+        llm_compressor.float()
         llm_compressor.requires_grad_(True)
     model.language_model.print_trainable_parameters()
 

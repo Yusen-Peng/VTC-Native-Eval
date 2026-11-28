@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_llava66k_LLM_DRIP_2x_SMOKE
-#SBATCH --output=NEO_continue_SFT_LLaVA_OV_llava66k_LLM_DRIP_2x_SMOKE.log
+#SBATCH --job-name=NEO_continue_SFT_LLaVA_OV_llava66k_LLM_DRIP_2x_SMOKE_FP32
+#SBATCH --output=NEO_continue_SFT_LLaVA_OV_llava66k_LLM_DRIP_2x_SMOKE_FP32.log
 #SBATCH --account=PAS2836
 #SBATCH --partition=debug-nextgen
 #SBATCH --nodes=1
@@ -36,7 +36,7 @@ entry_file="./neo/train/train.py"
 
 datasets="llava_665k%10"
 
-run_name="NEO_continue_SFT_LLaVA_OV_llava66k_LLM_DRIP_2x_SMOKE"
+run_name="NEO_continue_SFT_LLaVA_OV_llava66k_LLM_DRIP_2x_SMOKE_FP32"
 output_dir="/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/${run_name}"
 
 args=(

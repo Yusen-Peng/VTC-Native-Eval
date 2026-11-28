@@ -16,7 +16,8 @@ import visualize_neo_drip as shared
 from vlmeval.vlm.neo.local_models.configuration_neo_chat import NEOChatConfig
 from vlmeval.vlm.neo.local_models.modeling_neo_chat import NEOChatModel
 
-DEFAULT_CHECKPOINT = "/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_LLM_DRIP_2x_SMOKE/checkpoint-10/llm_drip.bin"
+# DEFAULT_CHECKPOINT = "/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_LLM_DRIP_2x_SMOKE/checkpoint-10/llm_drip.bin"
+DEFAULT_CHECKPOINT = "/fs/scratch/PAS2836/yusenpeng_checkpoint/VTC-Native-Eval-ckpts/output/NEO_continue_SFT_LLaVA_OV_llava66k_LLM_DRIP_2x_SMOKE_SMART_INIT/checkpoint-20/llm_drip.bin"
 
 def build_model(model_base, checkpoint_path, compression_ratio, compression_layer, temperature):
     config = NEOChatConfig.from_pretrained(model_base)
